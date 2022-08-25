@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-
-xrandr -s 1920x1080
+xrandr --setprovideroutputsource modesetting NVIDIA-0
+xrandr --auto
 
 # Switch to DE with caps as CTRL
 setxkbmap -layout de -option ctrl:nocaps -option compose:sclk

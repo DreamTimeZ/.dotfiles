@@ -14,3 +14,6 @@
 	pl = pull
 	ps = push
 	s = status
+[user]
+	email = olli.k.2001@gmail.com
+	name = Oliver
