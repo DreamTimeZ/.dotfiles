@@ -1,0 +1,17 @@
+# macOS & system stuff
+.DS_Store
+.Trash/
+.cache/
+.local/
+
+# Shell state files
+.zcompdump
+.zsh_history
+.zsh_sessions
+
+# Vim/Neovim
+.viminfo
+
+# Logs and temp
+*.log
+*.swp

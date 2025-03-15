@@ -1,0 +1,23 @@
+# Global settings for all SSH connections
+Host *
+  IgnoreUnknown UseKeychain
+  AddKeysToAgent yes
+  ServerAliveInterval 60  # Keep connection alive
+  ServerAliveCountMax 3   # Prevent excessive retries
+
+# GitHub
+Host github
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github
+  PreferredAuthentications publickey
+
+# GitLab Hochschule Stralsund
+Host gitlab-host
+  HostName gitlab.hochschule-stralsund.de
+  User git
+  IdentityFile ~/.ssh/gitlab-host
+  PreferredAuthentications publickey
+
+# Include local, private SSH config (if it exists)
+Include ~/.ssh/config.local

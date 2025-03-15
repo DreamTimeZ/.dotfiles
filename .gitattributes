@@ -1,0 +1,81 @@
+# Global .gitattributes for dotfiles repository
+# Ensure consistent line endings across environments
+
+# Set default behavior to automatically normalize line endings
+* text=auto eol=lf
+
+# Force all text files to use LF
+*.* text eol=lf
+
+# Scripts should use LF
+*.sh text eol=lf
+*.zsh text eol=lf
+*.bash text eol=lf
+*.fish text eol=lf
+
+# Config files should use LF
+*.conf text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+*.ini text eol=lf
+
+# Vim/Neovim files
+*.vim text eol=lf
+*.lua text eol=lf
+vimrc text eol=lf
+.vimrc text eol=lf
+
+# Shell configs
+*rc text eol=lf
+.zshrc text eol=lf
+.bashrc text eol=lf
+.bash_profile text eol=lf
+.profile text eol=lf
+
+# Git files
+*.git* text eol=lf
+
+# Tmux configuration
+*.tmux text eol=lf
+.tmux.conf text eol=lf
+tmux.conf text eol=lf
+
+# Specific files and directories that need LF endings
+tpm text eol=lf
+bin/* text eol=lf
+bindings/* text eol=lf
+tests/* text eol=lf
+
+# Binary files (should not be modified)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.pyc binary
+*.pdf binary
+*.jar binary
+
+# Ensure patches are handled properly
+*.patch -text
+
+# Exclude files from diffs
+package-lock.json -diff
+yarn.lock -diff
+*.lock -diff
