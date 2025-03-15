@@ -94,9 +94,45 @@ ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
 ln -sf ~/.dotfiles/git/.gitconfig ~/.gitconfig
 ln -sf ~/.dotfiles/git/.gitignore_global ~/.gitignore_global
 
+# Create local Git config (if not exists)
+if [ ! -f ~/.dotfiles/git/.gitconfig.local ]; then
+  cat > ~/.dotfiles/git/.gitconfig.local <<EOL
+[user]
+    name = Your Name
+    email = your.email@example.com
+EOL
+fi
+
 # SSH
+mkdir -p ~/.ssh
 ln -sf ~/.dotfiles/ssh/config ~/.ssh/config
+
+# Create local SSH config (if not exists)
+if [ ! -f ~/.dotfiles/ssh/config.local ]; then
+  cat > ~/.dotfiles/ssh/config.local <<EOL
+# Local SSH configurations - Example private server
+Host myserver
+    HostName server.example.com
+    User admin
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519_server
+    AddKeysToAgent yes
+    UseKeychain yes
+    ForwardAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 10
+EOL
+fi
+
+# Set proper permissions for SSH files
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/config*
 ```
+
+3. Configure local settings:
+   - Edit `~/.dotfiles/git/.gitconfig.local` with your Git user information
+   - Edit `~/.dotfiles/ssh/config.local` with your SSH keys and host-specific settings
+   - Both files are ignored by Git to keep sensitive information private
 
 ## 📋 Requirements
 
