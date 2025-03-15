@@ -1,3 +1,7 @@
+# Include local, private SSH config (if it exists)
+# Must be at the top of the file to work
+Include ~/.ssh/config.local
+
 # Global settings for all SSH connections
 Host *
   IgnoreUnknown UseKeychain
@@ -18,6 +22,3 @@ Host gitlab-host
   User git
   IdentityFile ~/.ssh/gitlab-host
   PreferredAuthentications publickey
-
-# Include local, private SSH config (if it exists)
-Include ~/.ssh/config.local
