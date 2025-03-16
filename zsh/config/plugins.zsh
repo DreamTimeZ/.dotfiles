@@ -26,3 +26,13 @@ fi
 if [ -f "$(brew --prefix powerlevel10k)/share/powerlevel10k/powerlevel10k.zsh-theme" ]; then
     source "$(brew --prefix powerlevel10k)/share/powerlevel10k/powerlevel10k.zsh-theme"
 fi
+
+# Initialize asdf version manager
+if [ -f "$(brew --prefix asdf)/libexec/asdf.sh" ]; then
+    source "$(brew --prefix asdf)/libexec/asdf.sh"
+fi
+
+# Initialize direnv
+if command -v direnv &>/dev/null; then
+    eval "$(direnv hook zsh)"
+fi
