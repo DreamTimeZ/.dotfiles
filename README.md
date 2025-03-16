@@ -163,6 +163,11 @@ The configuration supports local overrides through `.local` files:
 - [ ] Package manager integration (Homebrew)
 - [ ] Backup and restore system for configurations
 - [ ] Performance optimization and startup time improvements
+- [ ] Path structure implementation:
+  ```
+  ~/.local/bin/     # Direct symlinks only
+  ~/dotfiles/bin/   # Helper scripts, install script, manifest
+  ```
 
 ## 📝 License
 
