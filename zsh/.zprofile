@@ -3,7 +3,7 @@
 # ===============================
 
 # Set PATH
-export PATH="$HOME/bin:/opt/homebrew/bin:$HOME/Dev/utils/ai-utils/dist:$PATH"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 
 # Set default editor
 export EDITOR=nvim
