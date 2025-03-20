@@ -7,6 +7,11 @@ if command -v zoxide &>/dev/null; then
     eval "$(zoxide init zsh)"
 fi
 
+# Initialize direnv
+if command -v direnv &>/dev/null; then
+    eval "$(direnv hook zsh)"
+fi
+
 # Initialize fzf (Zsh version)
 if [ -f ~/.fzf.zsh ]; then
     source ~/.fzf.zsh
@@ -30,9 +35,4 @@ fi
 # Initialize asdf version manager
 if [ -f "$(brew --prefix asdf)/libexec/asdf.sh" ]; then
     source "$(brew --prefix asdf)/libexec/asdf.sh"
-fi
-
-# Initialize direnv
-if command -v direnv &>/dev/null; then
-    eval "$(direnv hook zsh)"
 fi
