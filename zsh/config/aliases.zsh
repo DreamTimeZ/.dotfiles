@@ -41,6 +41,7 @@ alias vi='nvim'
 
 ## Cursor with Profiles
 alias cu="cursor --profile 'Default'"
+alias cun="cursor --new-window --profile 'Default'"
 alias cpy="cursor --profile 'Python'"
 alias ctr="cursor --profile 'TypeScript React'"
 alias cs="cursor --profile 'Spring Boot'"
@@ -84,7 +85,7 @@ alias sniff='sudo tcpdump -i any port'
 alias nscan='sudo nmap -sS -Pn'
 alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'‚
 alias ip='grc ip a'
-alias ip4='curl -s https://ipv4.icanhazip.com'
+alias ipv4='curl -s https://ipv4.icanhazip.com'
 alias ipv6='curl -s https://ipv6.icanhazip.com'
 
 # Miscellaneous
@@ -99,3 +100,6 @@ if command -v kubectl &>/dev/null; then
     alias kgs='kubectl get svc'
     alias kgn='kubectl get nodes'
 fi
+
+# Ollama
+alias ollama-up='pgrep -x ollama >/dev/null || (ollama serve > /dev/null 2>&1 &)'
