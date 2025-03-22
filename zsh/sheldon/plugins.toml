@@ -42,3 +42,7 @@ use = ["asdf.zsh"]
 # fzf-tab plugin (must be loaded after compinit but before plugins that wrap widgets)
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
+
+# [plugins.iterm]
+# local = "~/.dotfiles/zsh/sheldon"
+# use = ["iterm.zsh"]

@@ -136,7 +136,12 @@ chmod 700 ~/.ssh
 chmod 600 ~/.ssh/config*
 ```
 
-3. Configure local settings:
+3. Install iTerm2 shell integration:
+```bash
+curl -L https://iterm2.com/shell_integration/zsh -o ~/.iterm2_shell_integration.zsh
+```
+
+4. Configure local settings:
    - Edit `~/.dotfiles/git/.gitconfig.local` with your Git user information
    - Edit `~/.dotfiles/ssh/config.local` with your SSH keys and host-specific settings
    - Both files are ignored by Git to keep sensitive information private
