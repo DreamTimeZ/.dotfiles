@@ -9,6 +9,8 @@
 	trustctime = false
 	# Speed up commands involving untracked files such as `git status`
 	untrackedCache = true
+	# Use delta as the pager
+	pager = delta
 
 [init]
 	defaultBranch = main
@@ -49,5 +51,15 @@
 
 [include]
     path = ~/.gitconfig.local
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	light = false
+	features = decorations
+	side-by-side = true
+	line-numbers = true
 
 
