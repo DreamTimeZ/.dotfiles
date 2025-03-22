@@ -6,6 +6,7 @@ Modern, modular dotfiles configuration for a productive macOS development enviro
 
 A carefully curated collection of dotfiles optimized for:
 - 🔧 Zsh with Powerlevel10k
+- 🔌 Plugin management with Sheldon
 - 📝 Neovim with lazy.nvim
 - 📦 Tmux with plugin management
 - 🔑 SSH with local overrides
@@ -17,6 +18,7 @@ A carefully curated collection of dotfiles optimized for:
 
 - Powerlevel10k prompt with instant startup
 - Smart directory navigation with `zoxide`
+- Sheldon plugin manager for fast, modern plugin management
 - Enhanced shell experience:
   - Syntax highlighting
   - Auto-suggestions and autocompletion
@@ -83,6 +85,11 @@ git clone git@github.com:DreamTimeZ/dotfiles-macos.git ~/.dotfiles
 ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc
 ln -sf ~/.dotfiles/zsh/.zprofile ~/.zprofile
 
+# Sheldon (Zsh plugin manager)
+mkdir -p ~/.config/sheldon
+ln -sf ~/.dotfiles/zsh/sheldon/plugins.toml ~/.config/sheldon/plugins.toml
+sheldon lock --update
+
 # Neovim
 mkdir -p ~/.config/nvim
 ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
@@ -141,6 +148,7 @@ chmod 600 ~/.ssh/config*
 - Zsh
 - Neovim >= 0.8.0
 - Tmux >= 3.0
+- Sheldon (Zsh plugin manager, installed via Homebrew)
 - [Optional] Powerlevel10k
 - [Optional] Tmuxinator for session management
 - Additional tools:
