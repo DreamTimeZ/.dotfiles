@@ -109,7 +109,12 @@ fi
 alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'‚
 
 if command -v grc &>/dev/null; then
-    alias ip='grc ip'
+  GRC_CMDS=(
+    ip ifconfig ping traceroute dig whois df du mount ps lsof
+  )
+  for cmd in "${GRC_CMDS[@]}"; do
+    alias "$cmd"="grc $cmd"
+  done
 fi
 
 alias ipv4='curl -s https://ipv4.icanhazip.com'
