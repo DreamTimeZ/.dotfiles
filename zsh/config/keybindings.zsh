@@ -9,3 +9,8 @@ backward-kill-to-beginning-of-line() {
 }
 zle -N backward-kill-to-beginning-of-line
 bindkey '\e[79~' backward-kill-to-beginning-of-line
+
+# iTerm2/Cursor fallback bindings
+bindkey '^[[3~' delete-char             # Fn+Delete fallback
+bindkey '^[[3;9~' kill-line             # Fn+Cmd+Delete (iterm in Cursor)
+bindkey '^[[99~' kill-line              # iTerm2: Fn + Cmd + Delete
