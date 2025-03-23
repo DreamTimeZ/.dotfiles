@@ -18,16 +18,18 @@ ZSH_CONFIG_DIR="$DOTFILES_DIR/zsh/config"
 # Source configuration files in specific order
 # 1. Environment variables and options first (fundamental settings)
 # 2. Plugins and tools initialization
-# 3. Aliases for daily use
-# 4. Functions
-# 5. Extra and optional configurations
+# 3. Keybindings (must be after plugins to override their bindings)
+# 4. Aliases for daily use
+# 5. Functions
+# 6. Extra and optional configurations
 
 files=(
-  "exports.zsh"   # Environment variables and options
-  "plugins.zsh"   # Plugin initialization
-  "aliases.zsh"   # Command aliases
-  "functions.zsh" # Custom functions
-  "extras.zsh"    # Optional configurations
+  "exports.zsh"     # Environment variables and options
+  "plugins.zsh"     # Plugin initialization
+  "keybindings.zsh" # Custom key bindings (after plugins)
+  "aliases.zsh"     # Command aliases
+  "functions.zsh"   # Custom functions
+  "extras.zsh"      # Optional configurations
 )
 
 for file in "${files[@]}"; do

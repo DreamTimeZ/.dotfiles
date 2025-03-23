@@ -24,6 +24,3 @@ autoload -Uz compinit && compinit
 autoload -Uz bracketed-paste-magic
 zle -N bracketed-paste bracketed-paste-magic
 
-# Fixes not being able to delete empty lines after pasting (iTerm2: Natural Text Editing)
-bindkey '^?' backward-delete-char
-
