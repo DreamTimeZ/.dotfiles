@@ -106,6 +106,41 @@ if command -v nmap &>/dev/null; then
     alias nscan='sudo nmap -sS -Pn'
 fi
 
+# Docker aliases
+if command -v docker &>/dev/null; then
+    # Most essential docker commands
+    alias d='docker'
+    alias dps='docker ps'
+    alias di='docker images'
+    alias dex='docker exec -it'
+    alias dlogs='docker logs -f'
+    
+    # Docker compose essentials
+    if command -v docker-compose &>/dev/null || command -v docker &>/dev/null; then
+        alias dc='docker-compose'
+        alias dcup='docker-compose up -d'
+        alias dcdown='docker-compose down'
+    fi
+    
+    # Clean up
+    alias dprune='docker system prune'
+fi
+
+# HTTPie aliases
+if command -v http &>/dev/null; then
+    # Basic http methods
+    alias hget='http GET'
+    alias hpost='http POST'
+    alias hput='http PUT'
+    
+    # Content types
+    alias hjson='http --json'
+    
+    # Debug helpers
+    alias hverbose='http --verbose'
+    alias hheaders='http --headers'
+fi
+
 alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
 
 if command -v grc &>/dev/null; then

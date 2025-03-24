@@ -24,12 +24,23 @@ function kb() {
     local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
     
     # Check if glow is installed
-    if ! command -v glow &> /dev/null; then
-        echo "Error: glow is not installed. Please install it first:"
-        echo "  brew install glow"
-        return 1
+    if command -v glow &> /dev/null; then
+        # Display the keybindings using glow
+        glow "$keybindings_file"
+    else
+        # Fallback to less with color if glow is not available
+        echo "Note: Install glow for better formatting: brew install glow"
+        echo "Displaying with basic formatting...\n"
+        
+        # Check if bat is available (better fallback with syntax highlighting)
+        if command -v bat &> /dev/null; then
+            bat --style=plain --language=markdown "$keybindings_file"
+        # Check if less is available with color support
+        elif command -v less &> /dev/null && less -V | grep -q "color"; then
+            less -R "$keybindings_file"
+        # Last resort, use cat
+        else
+            cat "$keybindings_file"
+        fi
     fi
-    
-    # Display the keybindings using glow
-    glow "$keybindings_file"
 }
