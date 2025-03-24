@@ -20,7 +20,7 @@ bindkey '^K' history-substring-search-up
 bindkey '^J' history-substring-search-down
 
 # Function to display keybindings using glow
-function show-keybindings() {
+function kb() {
     local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
     
     # Check if glow is installed
