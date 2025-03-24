@@ -47,5 +47,4 @@ if [[ -f ~/.p10k.zsh ]]; then
   source ~/.p10k.zsh
 else
   PROMPT='%F{blue}%n@%m:%~%f$ '
-  echo "⚠️  Warning: ~/.p10k.zsh not found. Using fallback prompt."
 fi

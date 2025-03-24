@@ -131,5 +131,3 @@
 |-------------|-----------------------|
 | `ESC + 0-9` | Digit argument input  |
 | `ESC + -`   | Negative argument     |
-``` 
-</rewritten_file>

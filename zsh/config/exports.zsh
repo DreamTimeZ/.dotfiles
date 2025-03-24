@@ -12,6 +12,7 @@ setopt SHARE_HISTORY          # Share history among all sessions
 setopt EXTENDED_HISTORY       # Record timestamp with each command
 setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_IGNORE_ALL_DUPS   # Do not record duplicate entries
+setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space
 
 # ----- Miscellaneous Options -----
 # CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.
