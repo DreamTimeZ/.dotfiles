@@ -43,6 +43,19 @@ use = ["asdf.zsh"]
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
 
+[plugins.zsh-history-substring-search]
+github = "zsh-users/zsh-history-substring-search"
+
+[plugins.thefuck]
+inline = 'eval "$(thefuck --alias f)"'
+
 # [plugins.iterm]
 # local = "~/.dotfiles/zsh/sheldon"
 # use = ["iterm.zsh"]
+
+[plugins.direnv]
+inline = '''
+if command -v direnv &>/dev/null; then
+    eval "$(direnv hook zsh)"
+fi
+'''

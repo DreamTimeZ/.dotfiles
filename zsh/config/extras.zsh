@@ -15,11 +15,3 @@ if [ -d "$ZSH_CONFIG_DIR/modules" ]; then
         [ -r "$f" ] && source "$f"
     done
 fi
-
-# Source additional scripts from ~/.config/zsh/
-if [ -d "$HOME/.config/zsh" ]; then
-    for f in "$HOME/.config/zsh/"*; do
-        [ -r "$f" ] && source "$f"
-    done
-fi
-

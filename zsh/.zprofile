@@ -29,7 +29,11 @@ for key in ~/.ssh/*; do
         
         # Check if the key is already loaded
         if ! echo "$LOADED_KEYS" | grep -q "$KEY_FINGERPRINT"; then
-            ssh-add --apple-use-keychain "$key"
+            if [[ "$OSTYPE" == darwin* ]]; then
+                ssh-add --apple-use-keychain "$key"
+            else
+                ssh-add "$key"
+            fi
         fi
     fi
 done
