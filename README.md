@@ -137,12 +137,25 @@ chmod 700 ~/.ssh
 chmod 600 ~/.ssh/config*
 ```
 
-3. Install iTerm2 shell integration:
+3. Secure important directories (run once):
+```bash
+# Restrict write permissions on Zsh function path directory
+# This prevents potential security vulnerabilities by ensuring 
+# only the owner can modify the directory where Zsh loads functions
+chmod go-w "$(dirname ${fpath[1]})"
+
+# Restrict write permissions on the cache directory
+# This improves security by preventing other users from modifying cached data
+# that might affect program execution or contain sensitive information
+chmod go-w "${XDG_CACHE_HOME:-$HOME/.cache}"
+```
+
+4. Install iTerm2 shell integration:
 ```bash
 curl -L https://iterm2.com/shell_integration/zsh -o ~/.iterm2_shell_integration.zsh
 ```
 
-4. Configure local settings:
+5. Configure local settings:
    - Edit `~/.dotfiles/git/.gitconfig.local` with your Git user information
    - Edit `~/.dotfiles/ssh/config.local` with your SSH keys and host-specific settings
    - Both files are ignored by Git to keep sensitive information private
