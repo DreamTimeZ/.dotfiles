@@ -43,4 +43,9 @@ done
 # P10K CONFIGURATION (must be at the end)
 # ===============================
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+if [[ -f ~/.p10k.zsh ]]; then
+  source ~/.p10k.zsh
+else
+  PROMPT='%F{blue}%n@%m:%~%f$ '
+  echo "⚠️  Warning: ~/.p10k.zsh not found. Using fallback prompt."
+fi

@@ -106,7 +106,7 @@ if command -v nmap &>/dev/null; then
     alias nscan='sudo nmap -sS -Pn'
 fi
 
-alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'‚
+alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
 
 if command -v grc &>/dev/null; then
   GRC_CMDS=(

@@ -29,6 +29,7 @@ A carefully curated collection of dotfiles optimized for:
   - Aliases
   - Functions
   - Extra configurations
+- iTerm2 integration with optimized settings (see [iTerm2 Configuration](docs/iterm2.md))
 
 ### Neovim
 

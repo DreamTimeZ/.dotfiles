@@ -3,14 +3,19 @@
 # ===============================
 
 # ----- History Configuration -----
-HISTSIZE=10000                # Maximum number of events in memory
-SAVEHIST=1000000              # Maximum number of events saved to history file
+HISTSIZE=50000                # Maximum number of events in memory
+SAVEHIST=2000000              # Maximum number of events saved to history file
 HISTFILE="$HOME/.zsh_history" # History file location
-setopt EXTENDED_HISTORY       # Record timestamp with each command
+setopt INC_APPEND_HISTORY     # Append commands as you type them
 setopt APPEND_HISTORY         # Append to history rather than overwrite
+setopt SHARE_HISTORY          # Share history among all sessions
+setopt EXTENDED_HISTORY       # Record timestamp with each command
+setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_IGNORE_ALL_DUPS   # Do not record duplicate entries
 
 # ----- Miscellaneous Options -----
+# CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.
+# CORRECT: You want smart correction of just command names, low false positives.
 setopt CORRECT                # Auto-correct minor errors in commands and paths
 setopt PROMPT_SP
 setopt NO_CASE_GLOB           # Enable case-insensitive globbing

@@ -14,3 +14,22 @@ bindkey '\e[79~' backward-kill-to-beginning-of-line
 bindkey '^[[3~' delete-char             # Fn+Delete fallback
 bindkey '^[[3;9~' kill-line             # Fn+Cmd+Delete (iterm in Cursor)
 bindkey '^[[99~' kill-line              # iTerm2: Fn + Cmd + Delete
+
+# History substring search
+bindkey '^K' history-substring-search-up
+bindkey '^J' history-substring-search-down
+
+# Function to display keybindings using glow
+function show-keybindings() {
+    local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
+    
+    # Check if glow is installed
+    if ! command -v glow &> /dev/null; then
+        echo "Error: glow is not installed. Please install it first:"
+        echo "  brew install glow"
+        return 1
+    fi
+    
+    # Display the keybindings using glow
+    glow "$keybindings_file"
+}
