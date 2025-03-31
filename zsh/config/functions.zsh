@@ -348,6 +348,8 @@ venv() {
     if [ -f "$venv_dir/bin/activate" ]; then
       source "$venv_dir/bin/activate"
       echo "Activated virtual environment '$venv_dir'."
+      echo "Upgrading pip install..."
+      pip install --upgrade pip
     else
       echo "Error: Activate script not found in '$venv_dir/bin/activate'" >&2
       return 1
