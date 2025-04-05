@@ -48,3 +48,10 @@ if [[ -f ~/.p10k.zsh ]]; then
 else
   PROMPT='%F{blue}%n@%m:%~%f$ '
 fi
+# pnpm
+export PNPM_HOME="/Users/cognix/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
