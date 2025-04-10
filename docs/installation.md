@@ -137,4 +137,4 @@ The configuration supports local overrides through `.local` files:
 - `git/.gitconfig.local`: Git user info and machine-specific settings
 - `ssh/config.local`: Machine-specific SSH configurations
 
-These files are ignored by Git to keep sensitive information private. 
+These files are ignored by Git to keep sensitive information private.

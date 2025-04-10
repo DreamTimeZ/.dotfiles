@@ -51,7 +51,7 @@ hs.hotkey.bind(hyper, "w", function()
     websites.enter()
 end)
 
-hs.hotkey.bind(hyper, "n", function()
+hs.hotkey.bind(hyper, "d", function()
     utils.debug("Activating system modal")
     exitAllModals()
     system.enter()

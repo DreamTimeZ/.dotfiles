@@ -22,7 +22,7 @@ The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped 
 | Hyper + A | Open Apps Modal | Select from various applications |
 | Hyper + F | Open Finder Modal | Quick access to common folders |
 | Hyper + W | Open Websites Modal | Open frequently used websites |
-| Hyper + N | Open System Modal | Perform system actions |
+| Hyper + D | Open System Modal | Perform system actions |
 | Hyper + S | Open Settings Modal | Quick access to system preferences |
 | Hyper + Return | Open iTerm2 | Directly launch or focus terminal |
 
@@ -65,11 +65,13 @@ The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped 
 | S | Studies |
 | P | Audio Processed |
 
-### System Actions (Hyper+N, then...)
+### System Actions (Hyper+D, then...)
 
 | Key | Action |
 |-----|--------|
 | C | Clear Notifications |
+| S | Shutdown System (with confirmation) |
+| R | Restart System (with confirmation) |
 
 ### Settings Shortcuts (Hyper+S, then...)
 
@@ -93,4 +95,4 @@ ln -sf ~/.dotfiles/hammerspoon ~/.hammerspoon
 # Note: Ensure the init.lua is directly in ~/.hammerspoon
 # If not, you may need to remove the existing directory:
 # rm -rf ~/.hammerspoon && ln -s ~/.dotfiles/hammerspoon ~/.hammerspoon
-``` 
+```

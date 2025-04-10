@@ -62,4 +62,4 @@ chmod go-w "${XDG_CACHE_HOME:-$HOME/.cache}"
   - `zoxide` for smart directory jumping
   - `zsh-syntax-highlighting` for command syntax highlighting
   - `zsh-autosuggestions` for Fish-like autosuggestions
-  - `fzf` for fuzzy finding 
+  - `fzf` for fuzzy finding
