@@ -27,4 +27,4 @@ ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
 ## Requirements
 
 - Neovim >= 0.8.0
-- Git (for plugin management) 
+- Git (for plugin management)
