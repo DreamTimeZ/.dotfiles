@@ -19,15 +19,18 @@ This document outlines the recommended iTerm2 settings for optimal terminal usag
 
 ### Default Profile
 
-#### Window
+#### Window (Default)
+
 - Columns: 122
 - Rows: 29
   > Note: These values are optimized for quarter window snapping. Adjust based on your window manager settings.
 
 #### Colors
+
 See [Color Presets](../terminal/color-presets.md) for recommended color schemes.
 
 #### Key Mappings
+
 1. Select "Natural Text Editing" preset
 2. Add the following custom mappings:
    - `opt + delete` → Send Hex Codes: `0x17`
@@ -36,11 +39,13 @@ See [Color Presets](../terminal/color-presets.md) for recommended color schemes.
 
 ### Hotkey Profile
 
-#### Window
+#### Window (Hotkey)
+
 - Text → Font: MesloLGS NF
 - Colors: See [Color Presets](../terminal/color-presets.md)
 - Keys → Key Mappings → Presets: "Natural Text Editing"
 
 #### Terminal
+
 - Notifications → Silence bell: Checked
-  > This disables the beep/bell sound in iTerm2. [Source](https://superuser.com/questions/1680502/how-do-i-disable-the-beep-bell-sound-in-iterm2-in-macbook) 
+  > This disables the beep/bell sound in iTerm2. [Source](https://superuser.com/questions/1680502/how-do-i-disable-the-beep-bell-sound-in-iterm2-in-macbook)
