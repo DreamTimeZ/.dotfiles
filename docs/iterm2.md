@@ -10,9 +10,11 @@ This document outlines the recommended iTerm2 settings for optimal terminal usag
 ## General Settings
 
 ### Closing
+
 - Uncheck "Confirm 'Quit iTerm2 (`cmd + q`)'"
 
 ### Selection
+
 - Check "Applications in terminal max access clipboard"
 
 ## Profile Settings

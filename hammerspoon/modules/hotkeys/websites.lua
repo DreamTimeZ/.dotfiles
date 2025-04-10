@@ -4,12 +4,21 @@ local utils = require("modules.hotkeys.utils")
 local modal = hs.hotkey.modal.new()
 local M = {}
 
+-- Default website mappings (common websites)
 local websitesMapping = {
-    o = { url = "https://onedrive.live.com/",    desc = "OneDrive Live" },
-    g = { url = "https://github.com/",           desc = "GitHub" },
-    d = { url = "https://www.deepl.com/",        desc = "DeepL" },
-    y = { url = "https://www.youtube.com/",      desc = "YouTube" },
+    a = { url = "https://www.apple.com/",             desc = "Apple" },
+    g = { url = "https://www.google.com/",            desc = "Google" },
+    m = { url = "https://www.google.com/maps",        desc = "Google Maps" },
+    n = { url = "https://www.netflix.com/",           desc = "Netflix" },
+    r = { url = "https://www.reddit.com/",            desc = "Reddit" },
+    t = { url = "https://translate.google.com/",      desc = "Translate" },
+    w = { url = "https://en.wikipedia.org/",          desc = "Wikipedia" },
+    y = { url = "https://www.youtube.com/",           desc = "YouTube" },
 }
+
+-- Load local mappings from local/websites_mappings.lua if it exists
+-- If local mappings exist, they will completely replace the defaults
+websitesMapping = utils.loadLocalMappings(websitesMapping, "modules.hotkeys.local.websites_mappings", "website")
 
 function modal:entered()
     hs.alert.closeAll()
