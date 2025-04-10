@@ -30,22 +30,22 @@ done
 1. Create a new plist file in `~/.dotfiles/launchagents/`
 2. Follow the standard LaunchAgent format:
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.username.servicename</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/path/to/executable</string>
-        <string>argument1</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-</dict>
-</plist>
-```
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.username.servicename</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/path/to/executable</string>
+            <string>argument1</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+    </dict>
+    </plist>
+    ```
 
-3. Run the installation commands to link and load the new service 
+3. Run the installation commands to link and load the new service
