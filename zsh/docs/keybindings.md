@@ -108,7 +108,7 @@
 | `Ctrl+X Ctrl+B` | vi-match-bracket                     |
 | `Ctrl+X Ctrl+N` | Infer next history                   |
 | `Ctrl+X Ctrl+V` | Enter vi-cmd-mode                    |
-| `ESC + |`       | vi-goto-column                       |
+| `ESC + \|`      | vi-goto-column                       |
 | `ESC + *`       | Expand word                          |
 
 ---

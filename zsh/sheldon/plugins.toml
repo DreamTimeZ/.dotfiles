@@ -16,46 +16,90 @@ shell = "zsh"
 
 [plugins]
 
-[plugins.zsh-autosuggestions]
-github = "zsh-users/zsh-autosuggestions"
-
-[plugins.zsh-syntax-highlighting]
-github = "zsh-users/zsh-syntax-highlighting"
-
+# Critical plugins that should load early
 [plugins.powerlevel10k]
 github = "romkatv/powerlevel10k"
 use = ["powerlevel10k.zsh-theme"]
+apply = ["source"]
 
+# Version managers with lazy-loading
+[plugins.asdf]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["asdf.zsh"]
+apply = ["source"]
+
+[plugins.pyenv]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["pyenv.zsh"]
+apply = ["source"]
+
+# Directory navigation with immediate loading
+[plugins.zoxide]
+github = "ajeetdsouza/zoxide"
+hooks.post = '''
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh --hook prompt)" >/dev/null 2>&1
+fi
+'''
+
+# Terminal appearance and behavior
+[plugins.terminal-title]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["terminal-title.zsh"]
+apply = ["source"]
+
+# Tools with deferred loading
+[plugins.direnv]
+inline = '''
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook zsh)" >/dev/null 2>&1
+fi
+'''
+
+[plugins.thefuck]
+inline = '''
+if command -v thefuck >/dev/null 2>&1; then
+  eval "$(thefuck --alias f)" >/dev/null 2>&1
+fi
+'''
+
+# FZF and related plugins (load in correct order)
 [plugins.fzf]
 github = "junegunn/fzf"
 dir = "shell"
 use = ["key-bindings.zsh", "completion.zsh"]
 
-[plugins.zoxide]
-github = "ajeetdsouza/zoxide"
-hooks.post = "eval \"$(zoxide init zsh)\""
-
-[plugins.asdf]
-local = "~/.dotfiles/zsh/sheldon"
-use = ["asdf.zsh"]
-
-# fzf-tab plugin (must be loaded after compinit but before plugins that wrap widgets)
+# fzf-tab must be loaded after compinit but before plugins that wrap widgets
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
+apply = ["source"]
 
+[plugins.fzf-tab-config]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["fzf-tab-config.zsh"]
+apply = ["source"]
+hooks.pre = '''
+# Enable caching for better completion performance
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$HOME/.zcompcache"
+'''
+
+# Syntax highlighting and autosuggestions (load last for best performance)
 [plugins.zsh-history-substring-search]
 github = "zsh-users/zsh-history-substring-search"
+apply = ["source"]
 
-[plugins.thefuck]
-inline = 'eval "$(thefuck --alias f)"'
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+apply = ["source"]
 
+
+[plugins.zsh-syntax-highlighting]
+github = "zsh-users/zsh-syntax-highlighting"
+apply = ["source"]
+
+
+# Optional iTerm integration (commented out by default)
 # [plugins.iterm]
 # local = "~/.dotfiles/zsh/sheldon"
 # use = ["iterm.zsh"]
-
-[plugins.direnv]
-inline = '''
-if command -v direnv &>/dev/null; then
-    eval "$(direnv hook zsh)"
-fi
-'''
