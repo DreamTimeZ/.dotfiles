@@ -1,5 +1,7 @@
 # Shell Configuration (Zsh)
 
+- [zsh README](../zsh/README.md)
+
 ## Overview
 
 The shell configuration uses Zsh with a modern, modular approach:

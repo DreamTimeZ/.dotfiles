@@ -1,5 +1,6 @@
 # Custom
 tmux/sessions
+**/*.bak
 
 *.local
 .vscode
@@ -15,3 +16,10 @@ hammerspoon/Spoons
 # Exclude local config directory contents but keep README
 hammerspoon/modules/hotkeys/local/*
 !hammerspoon/modules/hotkeys/local/README.md
+
+# ZSH local configurations - exclude everything in the local directory
+zsh/config/modules/local/*
+
+# Keep only these specific files
+!zsh/config/modules/local/README.md
+!zsh/config/modules/local/example.zsh.template

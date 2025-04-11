@@ -10,12 +10,21 @@ The dotfiles use a clean, organized path structure:
 ├── docs/            # Documentation
 ├── git/             # Git configuration
 ├── hammerspoon/     # Hammerspoon configuration
+│   └── hammerspoon.md  # Hammerspoon documentation
 ├── launchagents/    # LaunchAgent plists
+│   └── launchagents.md # LaunchAgents documentation
 ├── nvim/            # Neovim configuration
+│   └── neovim.md    # Neovim documentation
 ├── ssh/             # SSH configuration
 ├── tmux/            # Tmux configuration
+│   └── tmux.md      # Tmux documentation
 ├── zsh/             # Zsh configuration
+│   └── README.md    # Zsh documentation
 ├── install.sh       # Installation script
+├── installation.md  # Installation guide
+├── iterm2.md        # iTerm2 configuration
+├── shell.md         # Shell configuration guide
+├── structure.md     # This file
 └── README.md        # Main documentation
 ```
 

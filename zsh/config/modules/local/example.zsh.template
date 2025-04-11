@@ -1,0 +1,25 @@
+# ===============================
+# LOCAL CONFIGURATION EXAMPLE
+# ===============================
+# Rename this file to example.zsh (remove the .template suffix) to activate it
+# Or create your own .zsh files in this directory
+
+# Personal environment variables (sensitive data)
+# export GITHUB_TOKEN="your-token-here"
+# export AWS_ACCESS_KEY_ID="your-access-key"
+# export AWS_SECRET_ACCESS_KEY="your-secret-key"
+
+# Machine-specific paths
+# export PATH="$HOME/custom-tools/bin:$PATH"
+
+# Custom overrides for this machine
+# alias ll='eza -la --git --icons'  # Override with your preferred ls replacement
+# export EDITOR="code"              # Use VSCode instead of vim/neovim
+
+# Local machine-specific functions
+# weather() {
+#   curl -s "wttr.in/$1"
+# }
+
+# Work-specific configurations
+# source "$HOME/work/work-config.sh" 

@@ -1,57 +1,68 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-# username: ${(%):-%n} -> vscode extensions mostly are for bash and do not understand zsh
+# ===============================
+# ZSH SHELL CONFIGURATION
+# ===============================
 
-# zsh-specific syntax — do not format below block
+# ------ Powerlevel10k Instant Prompt ------
+# Enable Powerlevel10k instant prompt. Should stay at the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# ===============================
-# SOURCE CONFIGURATION FILES
-# ===============================
-# Define configuration directory
-DOTFILES_DIR="$HOME/.dotfiles"
-ZSH_CONFIG_DIR="$DOTFILES_DIR/zsh/config"
+# ------ Base Configuration ------
+# Define configuration directories with fallbacks (export for subprocesses)
+export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
+export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
+export ZDOTFILES_MODULES_DIR="${ZDOTFILES_MODULES_DIR:-$ZDOTFILES_CONFIG_DIR/modules}"
+export ZDOTFILES_LOG_LEVEL="${ZDOTFILES_LOG_LEVEL:-1}"  # 0=silent, 1=error, 2=warn, 3=info
 
-# Source configuration files in specific order
-# 1. Environment variables and options first (fundamental settings)
-# 2. Plugins and tools initialization
-# 3. Keybindings (must be after plugins to override their bindings)
-# 4. Aliases for daily use
-# 5. Functions
-# 6. Extra and optional configurations
+# ------ Load Core Helper Functions ------
+# Load helpers first to make functions available to other files
+if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
+  source "$ZDOTFILES_CONFIG_DIR/helpers.zsh"
+else
+  echo "Error: Failed to load helper functions" >&2
+  return 1
+fi
 
-files=(
+# ------ Configuration Files Management ------
+# Static list of configuration files to load in order
+_CONFIG_FILES=(
   "exports.zsh"     # Environment variables and options
   "plugins.zsh"     # Plugin initialization
+  "modules.zsh"     # Modular function and plugin system
   "keybindings.zsh" # Custom key bindings (after plugins)
   "aliases.zsh"     # Command aliases
-  "functions.zsh"   # Custom functions
-  "extras.zsh"      # Optional configurations
 )
 
-for file in "${files[@]}"; do
-  config_file="$ZSH_CONFIG_DIR/$file"
-  if [[ -r "$config_file" ]]; then
-    source "$config_file"
+# Load each config file directly
+for _config_file in "${_CONFIG_FILES[@]}"; do
+  _full_path="$ZDOTFILES_CONFIG_DIR/$_config_file"
+  if [[ -r "$_full_path" ]]; then
+    zdotfiles_info "Loading $_config_file"
+    source "$_full_path"
+  else
+    zdotfiles_warn "Could not load $_config_file"
   fi
 done
 
-# ===============================
-# P10K CONFIGURATION (must be at the end)
-# ===============================
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# ------ Tool-Specific Path Management ------
+# Add PNPM path if directory exists
+if [[ -d "$HOME/Library/pnpm" ]]; then
+  export PNPM_HOME="$HOME/Library/pnpm"
+  zdotfiles_path_prepend "$PNPM_HOME"
+fi
+
+# ------ Prompt Configuration ------
+# Powerlevel10k configuration
 if [[ -f ~/.p10k.zsh ]]; then
   source ~/.p10k.zsh
 else
+  # Fallback prompt if p10k is not configured
   PROMPT='%F{blue}%n@%m:%~%f$ '
+  zdotfiles_warn "p10k configuration not found, using fallback prompt"
 fi
-# pnpm
-export PNPM_HOME="/Users/cognix/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
+
+# Cleanup temporary variables
+unset _CONFIG_FILES _config_file _full_path
