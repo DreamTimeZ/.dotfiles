@@ -1,6 +1,9 @@
 -- Main Hammerspoon configuration file
 
 -- Load and initialize the hotkeys module.
-require("modules.hotkeys")
+local hotkeys = require("modules.hotkeys")
 
-hs.alert.show("Hammerspoon Config Loaded")
+-- Access the utils module through the hotkeys module
+local utils = require("modules.hotkeys.utils")
+
+utils.showFormattedAlert("Hammerspoon Config Loaded")
