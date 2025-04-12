@@ -7,12 +7,14 @@ This directory contains local hotkey mappings that are not included in git. You 
 - `apps_mappings.lua`: Custom application mappings
 - `websites_mappings.lua`: Custom website mappings
 - `finder_mappings.lua`: Custom Finder folder mappings
+- `settings_mappings.lua`: Custom System Settings mappings
+- Add custom ones (add them also in the config e.g. `config.settings = ...`)
 
 ## How to Use
 
-1. Edit the appropriate mapping file in this directory
-2. Add your own mappings
-3. Reload Hammerspoon configuration (Cmd+Alt+Ctrl+R or via the menu bar)
+1. Create or edit the appropriate mapping file in this directory
+2. Add your own mappings following the examples below
+3. Reload Hammerspoon configuration (Hyper+R or via the menu bar)
 
 **Important**: If a local mapping file exists and contains mappings, it will **completely replace** the default mappings. This means you need to define all the hotkeys you want to use in your local files.
 
@@ -20,7 +22,7 @@ This directory contains local hotkey mappings that are not included in git. You 
 
 If you don't have local mapping files, the following default mappings will be used. You can use these as a starting point for your custom mappings.
 
-### Default Application Mappings (in apps.lua)
+### Default Application Mappings (in config.lua)
 
 | Key | Application | Description |
 |-----|-------------|-------------|
@@ -42,31 +44,44 @@ If you don't have local mapping files, the following default mappings will be us
 | x   | Calculator  | Calculator  |
 | z   | System Settings | Settings |
 
-### Default Website Mappings (in websites.lua)
-
-| Key | URL | Description |
-|-----|-----|-------------|
-| a   | `https://www.apple.com/` | Apple |
-| g   | `https://www.google.com/` | Google |
-| m   | `https://www.google.com/maps` | Google Maps |
-| n   | `https://www.netflix.com/` | Netflix |
-| r   | `https://www.reddit.com/` | Reddit |
-| t   | `https://translate.google.com/` | Translate |
-| w   | `https://en.wikipedia.org/` | Wikipedia |
-| y   | `https://www.youtube.com/` | YouTube |
-
-### Default Finder Folder Mappings (in finder.lua)
+### Default Finder Folder Mappings (in config.lua)
 
 | Key | Path | Description |
 |-----|------|-------------|
 | a   | ~/Applications | Applications |
 | d   | ~/Desktop | Desktop |
-| o   | ~/Documents | Documents |
-| w   | ~/Downloads | Downloads |
-| m   | ~/Movies | Movies |
-| u   | ~/Music | Music |
-| p   | ~/Pictures | Pictures |
+| c   | ~/Documents | Documents |
+| f   | ~/Downloads | Downloads |
 | h   | ~ | Home |
+| p   | ~/Pictures | Pictures |
+| m   | ~/Music | Music |
+| v   | ~/Movies | Movies |
+| l   | ~/Library | Library |
+| u   | /Utilities | Utilities |
+| i   | ~/Library/CloudStorage/iCloud Drive | iCloud |
+
+### Default Website Mappings (in config.lua)
+
+| Key | URL | Description |
+|-----|-----|-------------|
+| a   | `https://www.apple.com` | Apple |
+| g   | `https://github.com` | GitHub |
+| m   | `https://maps.google.com` | Maps |
+| n   | `https://www.netflix.com` | Netflix |
+| r   | `https://www.reddit.com` | Reddit |
+| s   | `https://www.stackoverflow.com` | Stack Overflow |
+| w   | `https://www.wikipedia.orm` | Wikipedia |
+| y   | `https://www.youtube.com` | YouTube |
+
+### Default System Settings Mappings (in config.lua)
+
+| Key | System Setting |
+|-----|----------------|
+| b | Bluetooth |
+| w | Wi-Fi |
+| u | Software Update |
+| p | Security & Privacy |
+| d | Displays |
 
 ## Examples
 
@@ -77,6 +92,8 @@ In `apps_mappings.lua`:
 ```lua
 return {
     a = { app = "Obsidian",              desc = "Obsidian" },
+    d = { app = "Discord",               desc = "Discord" },
+    f = { app = "Firefox",               desc = "Firefox" },
     -- Add all the applications you want to use
 }
 ```
@@ -87,7 +104,8 @@ In `websites_mappings.lua`:
 
 ```lua
 return {
-    y = { url = "https://www.youtube.com/", desc = "YouTube" },
+    g = { url = "https://github.com",        desc = "GitHub" },
+    y = { url = "https://www.youtube.com",   desc = "YouTube" },
     -- Add all the websites you want to use
 }
 ```
@@ -98,7 +116,8 @@ In `finder_mappings.lua`:
 
 ```lua
 return {
-    d = { path = os.getenv("HOME") .. "/Downloads", desc = "Downloads" },
+    d = { path = "~/Downloads",    desc = "Downloads" },
+    p = { path = "~/Projects",     desc = "Projects" },
     -- Add all the folders you want to use
 }
 ```
@@ -107,18 +126,20 @@ return {
 
 The mapping system includes several robustness features:
 
-1. **Mapping Validation**: Each mapping is validated to ensure it contains the required fields.
-2. **Error Handling**: Corrupted or invalid mappings are filtered out.
-3. **Path Existence Checks**: Finder paths are checked for existence (with warnings).
-4. **Debugging Capabilities**: Enable debug mode in `init.lua` to troubleshoot issues.
-5. **Fallback Mechanism**: If local mappings cause errors, the system falls back to defaults.
+1. **Mapping Validation**: Each mapping is validated to ensure it contains the required fields
+2. **Error Handling**: Corrupted or invalid mappings are filtered out
+3. **Path Existence Checks**: Finder paths are checked for existence (with warnings)
+4. **Debugging Capabilities**: Enable debug mode in config.lua to troubleshoot issues
+5. **Fallback Mechanism**: If local mappings cause errors, the system falls back to defaults
+6. **Sorted Alerts**: Items in alerts are displayed alphabetically by description
 
 ## Enabling Debug Mode
 
-To troubleshoot issues, you can enable debug mode by uncommenting this line in `init.lua`:
+To troubleshoot issues, you can enable debug mode by editing `config.lua`:
 
 ```lua
--- utils.setDebug(true)
+-- Debug settings
+config.debug = true
 ```
 
 Debug messages will appear in the Hammerspoon console (accessible via the Hammerspoon menu bar icon).

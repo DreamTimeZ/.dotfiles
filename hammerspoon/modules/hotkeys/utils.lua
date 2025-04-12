@@ -1,8 +1,14 @@
--- Utility functions for launching/focusing apps, opening folders, URLs, etc.
+-- Utility functions for hotkeys module with focus on performance and maintainability
 local M = {}
 
+-- Debug settings
+local debugEnabled = false
+
+-- Core functionality
 function M.launchOrFocus(appName)
+    if not appName then return end
     hs.application.launchOrFocus(appName)
+    -- Small delay to ensure app is ready before activation
     hs.timer.doAfter(0.1, function()
         local app = hs.application.get(appName)
         if app then app:activate() end
@@ -10,89 +16,117 @@ function M.launchOrFocus(appName)
 end
 
 function M.openFinderFolder(path)
-    if not path then
-        hs.alert.show("Error: No path specified")
-        return
+    if not path then return end
+    if hs.fs.attributes(path) then
+        hs.execute("open " .. path)
+    else
+        hs.alert.show("Path does not exist: " .. path)
     end
-    -- Check if path exists before trying to open it
-    local exists = hs.fs.attributes(path) ~= nil
-    if not exists then
-        hs.alert.show("Warning: Path does not exist: " .. path)
-    end
-    hs.execute("open " .. path)
 end
 
 function M.openURL(url)
-    if not url then
-        hs.alert.show("Error: No URL specified")
-        return
-    end
-    hs.urlevent.openURL(url)
+    if url then hs.urlevent.openURL(url) end
 end
 
 function M.openSystemPreferencePane(url)
-    if not url then
-        hs.alert.show("Error: No preference pane URL specified")
-        return
+    if not url then return end
+    
+    -- Check macOS version to determine which app to use
+    local macOSVersion = hs.host.operatingSystemVersion()
+    local isVentura = macOSVersion.major >= 13
+    
+    if isVentura then
+        -- macOS Ventura or later uses System Settings
+        hs.execute("killall 'System Settings' 2>/dev/null")
+        hs.timer.doAfter(0.3, function() 
+            hs.execute("open \"" .. url .. "\"") 
+        end)
+    else
+        -- Earlier versions use System Preferences
+        hs.execute("killall 'System Preferences' 2>/dev/null")
+        hs.timer.doAfter(0.3, function() 
+            hs.execute("open \"" .. url .. "\"") 
+        end)
     end
-    -- Force-quit System Preferences so that it reopens fresh.
-    hs.execute("killall 'System Preferences'")
-    -- Wait 0.5 seconds for it to quit completely, then open the given URL.
-    hs.timer.doAfter(0.5, function()
-        hs.execute("open \"" .. url .. "\"")
-    end)
 end
 
 function M.clearNotifications()
-    hs.execute("killall NotificationCenter")
+    hs.execute("killall NotificationCenter 2>/dev/null")
 end
 
--- Debug function to log messages if debug mode is enabled
-local debugEnabled = false
+-- Debug helpers
 function M.debug(message)
-    if debugEnabled then
-        print("[Hotkeys Debug] " .. message)
-    end
+    if debugEnabled then print("[Hotkeys Debug] " .. message) end
 end
 
--- Enable or disable debug mode
 function M.setDebug(enabled)
     debugEnabled = enabled
 end
 
--- Validate the structure of a mapping entry based on its type
-function M.validateMapping(key, mapping, mappingType)
-    if type(mapping) ~= "table" then
-        M.debug("Invalid mapping for key '" .. key .. "': not a table")
-        return false
+-- Modal management
+function M.setupModal(mappings, title, actionType)
+    local modal = hs.hotkey.modal.new()
+    
+    -- Modal entry behavior
+    function modal:entered()
+        hs.alert.closeAll()
+        local hints = {}
+        
+        -- Collect hints with their descriptions
+        for key, binding in pairs(mappings) do
+            local description = binding.desc or key
+            table.insert(hints, { 
+                key = key, 
+                text = string.format("[%s] %s", key, description),
+                description = description
+            })
+        end
+        
+        -- Sort hints by description
+        table.sort(hints, function(a, b) 
+            return a.description:lower() < b.description:lower() 
+        end)
+        
+        -- Extract the formatted text
+        local sortedTexts = {}
+        for _, hint in ipairs(hints) do
+            table.insert(sortedTexts, hint.text)
+        end
+        
+        M.showFormattedAlert(sortedTexts, title or "Actions:")
     end
     
-    if mappingType == "app" and not mapping.app then
-        M.debug("Invalid app mapping for key '" .. key .. "': missing 'app' field")
-        return false
-    elseif mappingType == "website" and not mapping.url then
-        M.debug("Invalid website mapping for key '" .. key .. "': missing 'url' field")
-        return false
-    elseif mappingType == "finder" and not mapping.path then
-        M.debug("Invalid finder mapping for key '" .. key .. "': missing 'path' field")
-        return false
+    -- Bind all mapped keys
+    for key, binding in pairs(mappings) do
+        modal:bind("", key, function()
+            if actionType == "app" and binding.app then
+                M.launchOrFocus(binding.app)
+            elseif actionType == "url" and binding.url then
+                M.openURL(binding.url)
+            elseif actionType == "path" and binding.path then
+                M.openFinderFolder(binding.path)
+            elseif actionType == "pref" and binding.pref then
+                M.openSystemPreferencePane(binding.pref)
+            elseif actionType == "fn" and binding.action then
+                binding.action()
+            end
+            hs.alert.closeAll()
+            modal:exit()
+        end)
     end
     
-    if not mapping.desc then
-        M.debug("Warning: Mapping for key '" .. key .. "' is missing 'desc' field")
-    end
+    -- Always include escape to exit modal
+    modal:bind("", "escape", function() hs.alert.closeAll() modal:exit() end)
     
-    return true
+    return modal
 end
 
--- Load local mappings and merge them with default mappings
-function M.loadLocalMappings(defaultMappings, localModulePath, mappingType)
-    if not defaultMappings then 
-        defaultMappings = {} 
-        M.debug("Creating empty default mappings table")
-    end
+-- Configuration management
+function M.loadMappings(defaultMappings, localModulePath, mappingType)
+    -- Ensure defaultMappings is a table
+    if not defaultMappings then defaultMappings = {} end
     
-    -- Store original mappings for error recovery
+    -- Store original mappings in case we need to restore them
     local originalMappings = {}
     for k, v in pairs(defaultMappings) do
         originalMappings[k] = v
@@ -102,45 +136,86 @@ function M.loadLocalMappings(defaultMappings, localModulePath, mappingType)
     local status, localMappings = pcall(require, localModulePath)
     
     if status and type(localMappings) == "table" then
-        M.debug("Successfully loaded local mappings from " .. localModulePath)
-        
         if next(localMappings) ~= nil then
-            -- If local mappings exist, use them instead of the defaults
-            M.debug("Local mappings found - replacing default mappings")
+            -- Local mappings found - replace defaults completely
+            M.debug("Using local mappings from " .. localModulePath)
             
-            -- Clear default mappings
-            defaultMappings = {}
-            
-            -- Add only the local mappings
+            -- Validate local mappings (optional)
+            local validatedMappings = {}
             for key, binding in pairs(localMappings) do
-                if M.validateMapping(key, binding, mappingType) then
-                    defaultMappings[key] = binding
-                    M.debug("Added mapping for key '" .. key .. "'")
-                else
-                    M.debug("Skipped invalid mapping for key '" .. key .. "'")
+                local isValid = true
+                
+                -- Basic validation based on mapping type
+                if mappingType == "app" and not binding.app then
+                    M.debug("Invalid app mapping for key '" .. key .. "': missing 'app' field")
+                    isValid = false
+                elseif mappingType == "url" and not binding.url then
+                    M.debug("Invalid website mapping for key '" .. key .. "': missing 'url' field")
+                    isValid = false
+                elseif mappingType == "path" and not binding.path then
+                    M.debug("Invalid path mapping for key '" .. key .. "': missing 'path' field")
+                    isValid = false
+                elseif mappingType == "pref" and not binding.pref then
+                    M.debug("Invalid preference mapping for key '" .. key .. "': missing 'pref' field")
+                    isValid = false
+                elseif mappingType == "fn" and not binding.action then
+                    M.debug("Invalid function mapping for key '" .. key .. "': missing 'action' field")
+                    isValid = false
+                end
+                
+                if isValid then
+                    validatedMappings[key] = binding
                 end
             end
+            
+            return validatedMappings
         else
             M.debug("Local mappings file exists but is empty, keeping defaults")
         end
     elseif not status then
-        -- Only log if it's not a "module not found" error, which is expected
+        -- Only log if it's not a "module not found" error
         if not string.match(localMappings, "module '" .. localModulePath .. "' not found") then
             M.debug("Error loading local mappings: " .. tostring(localMappings))
         else
-            M.debug("No local mappings found at " .. localModulePath .. " (this is normal if you haven't created this file)")
+            M.debug("No local mappings found at " .. localModulePath)
         end
     else
         M.debug("Error: Local mappings file does not return a table")
     end
     
-    -- Ensure we always return a valid table
-    if type(defaultMappings) ~= "table" or next(defaultMappings) == nil then
-        M.debug("Error: Corrupted or empty mappings, restoring defaults")
-        return originalMappings
+    -- Return original mappings if we reach this point
+    return originalMappings
+end
+
+-- UI helpers
+function M.showFormattedAlert(content, title)
+    local maxItemsPerLine = 5
+    
+    if type(content) ~= "table" then
+        hs.alert.show(content)
+        return
     end
     
-    return defaultMappings
+    local formattedContent = title and (title .. "\n") or ""
+    local currentLine = ""
+    local itemCount = 0
+    
+    for _, item in ipairs(content) do
+        if itemCount >= maxItemsPerLine then
+            formattedContent = formattedContent .. currentLine .. "\n"
+            currentLine = ""
+            itemCount = 0
+        end
+        
+        currentLine = currentLine .. item .. "  "
+        itemCount = itemCount + 1
+    end
+    
+    if currentLine ~= "" then
+        formattedContent = formattedContent .. currentLine
+    end
+    
+    hs.alert.show(formattedContent)
 end
 
 return M

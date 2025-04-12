@@ -23,65 +23,97 @@ The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped 
 | Hyper + F | Open Finder Modal | Quick access to common folders |
 | Hyper + W | Open Websites Modal | Open frequently used websites |
 | Hyper + D | Open System Modal | Perform system actions |
-| Hyper + S | Open Settings Modal | Quick access to system preferences |
+| Hyper + S | Open Settings Modal | Quick access to system settings |
 | Hyper + Return | Open iTerm2 | Directly launch or focus terminal |
 
 ### App Shortcuts (Hyper+A, then...)
 
-| Key | Application |
-|-----|-------------|
-| A | Obsidian |
-| C | Cursor |
-| D | Discord |
-| E | Microsoft Excel |
-| F | Firefox |
-| G | ChatGPT |
-| I | Microsoft PowerPoint |
-| K | Docker |
-| L | Slack |
-| M | Mullvad VPN |
-| O | Microsoft Outlook |
-| P | App Store |
-| R | Trello |
-| S | Spotify |
-| T | Microsoft Teams |
-| W | WhatsApp |
-| Y | Microsoft Word |
+Items appear in alphabetical order in the modal:
 
-### Website Shortcuts (Hyper+W, then...)
-
-| Key | Website |
-|-----|---------|
-| O | OneDrive Live |
-| G | GitHub |
-| D | DeepL |
-| Y | YouTube |
+| Key | Application | Description |
+|-----|-------------|-------------|
+| a   | App Store   | App Store   |
+| b   | Books       | Books       |
+| c   | Calendar    | Calendar    |
+| f   | FaceTime    | FaceTime    |
+| h   | Photos      | Photos      |
+| m   | Mail        | Mail        |
+| n   | Notes       | Notes       |
+| o   | Maps        | Maps        |
+| p   | Preview     | Preview     |
+| r   | Reminders   | Reminders   |
+| s   | Safari      | Safari      |
+| t   | Terminal    | Terminal    |
+| u   | Music       | Music       |
+| v   | QuickTime Player | QuickTime |
+| w   | Weather     | Weather     |
+| x   | Calculator  | Calculator  |
+| z   | System Settings | Settings |
 
 ### Finder Shortcuts (Hyper+F, then...)
 
+Items appear in alphabetical order in the modal:
+
 | Key | Location |
 |-----|----------|
-| D | Downloads |
-| S | Studies |
-| P | Audio Processed |
+| a | Applications |
+| c | Documents |
+| d | Desktop |
+| f | Downloads |
+| h | Home |
+| i | iCloud |
+| l | Library |
+| m | Music |
+| p | Pictures |
+| u | Utilities |
+| v | Movies |
+
+### Website Shortcuts (Hyper+W, then...)
+
+Items appear in alphabetical order in the modal:
+
+| Key | Website |
+|-----|---------|
+| a | Apple |
+| g | GitHub |
+| m | Google Maps |
+| n | Netflix |
+| r | Reddit |
+| s | Stack Overflow |
+| w | Wikipedia |
+| y | YouTube |
 
 ### System Actions (Hyper+D, then...)
 
+Items appear in alphabetical order in the modal:
+
 | Key | Action |
 |-----|--------|
-| C | Clear Notifications |
-| S | Shutdown System (with confirmation) |
-| R | Restart System (with confirmation) |
+| c | Clear Notifications |
+| h | Reload Hammerspoon |
+| r | Restart System (with confirmation) |
+| s | Shutdown System (with confirmation) |
 
 ### Settings Shortcuts (Hyper+S, then...)
 
-| Key | System Preference |
-|-----|------------------|
-| U | Software Update |
-| D | Displays/Arrange |
-| P | Privacy/Accessibility |
-| W | Wi-Fi |
-| B | Bluetooth |
+Items appear in alphabetical order in the modal:
+
+| Key | System Setting |
+|-----|----------------|
+| b | Bluetooth |
+| w | Wi-Fi |
+| u | Software Update |
+| p | Security & Privacy |
+| d | Displays |
+
+## Customization
+
+All hotkey mappings can be customized in the following locations:
+
+- Global configuration: `~/.hammerspoon/modules/hotkeys/config.lua`
+- Local (user-specific) mappings: `~/.hammerspoon/modules/hotkeys/local/*.lua`
+
+See the README in the `local` directory for detailed customization instructions.
 
 ## Installation
 
