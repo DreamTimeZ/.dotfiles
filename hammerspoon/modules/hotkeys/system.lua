@@ -2,6 +2,9 @@
 local utils = require("modules.hotkeys.utils")
 local config = require("modules.hotkeys.config")
 
+-- Get the system-specific modal definition
+local systemModal = config.modals.system
+
 -- System actions with confirmation to prevent accidental triggers
 local function shutdownSystem()
     utils.info("Shutdown requested, showing confirmation dialog")
@@ -13,10 +16,11 @@ local function shutdownSystem()
     if button == "Shutdown" then
         utils.info("Shutdown confirmed, executing shutdown command")
         hs.execute("osascript -e 'tell app \"System Events\" to shut down'")
+        return true
     else
         utils.info("Shutdown cancelled by user")
+        return false
     end
-    return true
 end
 
 local function restartSystem()
@@ -29,10 +33,11 @@ local function restartSystem()
     if button == "Restart" then
         utils.info("Restart confirmed, executing restart command")
         hs.execute("osascript -e 'tell app \"System Events\" to restart'")
+        return true
     else
         utils.info("Restart cancelled by user")
+        return false
     end
-    return true
 end
 
 local function reloadHammerspoon()
@@ -42,25 +47,22 @@ local function reloadHammerspoon()
 end
 
 -- Define system actions mapping
-local systemMapping = {
+local systemMappings = {
     c = { action = utils.clearNotifications, desc = "Clear Notifications" },
     s = { action = shutdownSystem, desc = "Shutdown System" },
     r = { action = restartSystem, desc = "Restart System" },
     h = { action = reloadHammerspoon, desc = "Reload Hammerspoon" },
 }
 
--- Store the mapping in config for consistent definition
-config.system = systemMapping
+-- Store the mappings in the modal definition
+systemModal.mappings = systemMappings
 
--- Get the system-specific modal definition
-local systemDef = config.modalDefinitions.system
-
--- Create modal module with the system configuration
+-- Create the modal module
 local modal = utils.createModalModule(
-    systemMapping,
-    systemDef.title,
-    systemDef.type,
-    "modules.hotkeys.local.system_mappings"
+    systemMappings,
+    systemModal.title,
+    systemModal,
+    "system"
 )
 
 return modal

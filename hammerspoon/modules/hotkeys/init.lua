@@ -5,60 +5,104 @@
 local config = require("modules.hotkeys.config")
 local utils = require("modules.hotkeys.utils")
 
--- Store all created hotkeys for clean reloading
+-- Store state
 local globalHotkeys = {}
+local modules = {}
 
 utils.info("Initializing hotkeys module")
 
 -- Load all config settings from local configurations
 config.loadLocalConfigs(false, utils)
 
--- Function to create a modal module based on type
-local function createModalForType(moduleName)
-    local modalDef = config.modalDefinitions[moduleName]
+-- Function to create a modal module
+local function createModal(modalName)
+    local modal = config.modals[modalName]
     
-    if not modalDef then
-        utils.error("Unknown modal type: " .. moduleName .. ". Add it to config.modalDefinitions to use it.")
+    if not modal then
+        utils.error("Unknown modal: " .. modalName)
         return nil
     end
     
     -- Handle modules with custom implementations
-    if modalDef.hasCustomImpl and modalDef.customModule then
-        return require(modalDef.customModule)
+    if modal.customModule then
+        return require(modal.customModule)
+    end
+    
+    -- Check for required fields
+    if not modal.handler or not modal.handler.field or not modal.handler.action then
+        utils.error("Invalid modal definition for " .. modalName .. ": missing handler information")
+        return nil
+    end
+    
+    -- Use mappings directly from the modal definition
+    local mappings = modal.mappings or {}
+    if not next(mappings) then
+        utils.warn("No mappings found for modal: " .. modalName)
     end
     
     -- Create standard modal using the configuration
-    local mappings = config[modalDef.mappingName]
-    local localPath = config.paths.localModulesBase .. moduleName .. "_mappings"
-    
     return utils.createModalModule(
         mappings,
-        modalDef.title,
-        modalDef.type,
-        localPath
+        modal.title or (modalName:gsub("^%l", string.upper) .. ":"),
+        modal,
+        modalName
     )
 end
 
--- Get modal modules from config.modalDefinitions and load them
-local modules = {}
-local moduleCount = 0
-
--- Load all modal modules efficiently
-for moduleName, _ in pairs(config.modalDefinitions) do
-    utils.debug("Loading modal module: " .. moduleName)
-    modules[moduleName] = createModalForType(moduleName)
-    moduleCount = moduleCount + 1
-end
-
-utils.info("Loaded " .. moduleCount .. " modal modules")
-
--- Function to exit all active modals and clear any alerts
+-- Exit all active modals and clear any alerts
 local function exitAllModals()
     utils.debug("Exiting all modals")
     for _, mod in pairs(modules) do
         if mod.exit then mod.exit() end
     end
     hs.alert.closeAll()
+end
+
+-- Execute an action using a handler definition
+local function executeAction(handler, mapping)
+    if not handler or not handler.field or not handler.action or not mapping then
+        utils.error("Invalid handler or mapping")
+        return
+    end
+    
+    utils.debug("Executing action: " .. handler.action)
+    exitAllModals()
+    
+    local value = mapping[handler.field]
+    if not value then
+        utils.error("Missing required field in mapping: " .. handler.field)
+        return
+    end
+    
+    if handler.action == "launchOrFocus" then
+        utils.launchOrFocus(value)
+    elseif handler.action == "openURL" then
+        utils.openURL(value)
+    elseif handler.action == "openFinderFolder" then
+        utils.openFinderFolder(value)
+    elseif handler.action == "openSystemPreferencePane" then
+        utils.openSystemPreferencePane(value)
+    elseif type(value) == "function" then
+        value()
+    elseif utils[handler.action] and type(utils[handler.action]) == "function" then
+        utils[handler.action](value)
+    else
+        utils.error("Unknown action handler: " .. handler.action)
+    end
+end
+
+-- Load all modal modules
+local function loadModules()
+    utils.info("Loading modal modules")
+    local moduleCount = 0
+    
+    for modalName, _ in pairs(config.modals) do
+        utils.debug("Loading modal: " .. modalName)
+        modules[modalName] = createModal(modalName)
+        moduleCount = moduleCount + 1
+    end
+    
+    utils.info("Loaded " .. moduleCount .. " modals")
 end
 
 -- Create key bindings from configuration
@@ -71,22 +115,25 @@ local function createKeyBindings()
     globalHotkeys = {}
     utils.info("Creating key bindings from configuration")
     
-    -- Set up global hotkeys from config
     local validCount = 0
     
-    -- Set up global hotkeys from config
     for _, shortcut in ipairs(config.globalShortcuts) do
-        -- Get keyboard modifiers
         local mods = config.modifiers.hyper
         local key = shortcut.key
+        
+        if not key then
+            utils.warn("Skipping shortcut without key")
+            goto continue
+        end
+        
         local callback
         
-        if shortcut.action and modules[shortcut.action] then
+        if shortcut.modal and modules[shortcut.modal] then
             -- Modal activator
             callback = function()
-                utils.debug("Activating " .. shortcut.action .. " modal")
+                utils.debug("Activating " .. shortcut.modal .. " modal")
                 exitAllModals()
-                modules[shortcut.action].enter()
+                modules[shortcut.modal].enter()
             end
         elseif shortcut.fn then
             -- Direct function call
@@ -95,9 +142,15 @@ local function createKeyBindings()
                 exitAllModals()
                 shortcut.fn()
             end
+        elseif shortcut.handler and shortcut.mapping then
+            -- Action with handler and mapping
+            callback = function()
+                utils.debug("Executing action with handler")
+                executeAction(shortcut.handler, shortcut.mapping)
+            end
         else
             -- Skip invalid shortcuts
-            utils.warn("Skipping invalid shortcut for key '" .. key .. "': missing action or function")
+            utils.warn("Skipping invalid shortcut for key '" .. key .. "'")
             goto continue
         end
         
@@ -112,16 +165,25 @@ local function createKeyBindings()
     utils.info("Created " .. validCount .. " global hotkeys")
 end
 
--- Initialize key bindings
-createKeyBindings()
+-- Initialize the module
+local function initialize()
+    loadModules()
+    createKeyBindings()
+    utils.info("Hotkeys module fully initialized")
+end
 
-utils.info("Hotkeys module fully initialized")
+-- Call initialize
+initialize()
 
 -- Return the module API
 return {
     exitAllModals = exitAllModals,
     setLogLevel = utils.setLogLevel,
     setLoggingEnabled = utils.setLoggingEnabled,
-    createModalForType = createModalForType,  -- Expose factory function
-    config = config
+    createModal = createModal,
+    executeAction = executeAction,
+    reloadConfig = function()
+        config.reloadConfigs(utils)
+        initialize()
+    end
 }

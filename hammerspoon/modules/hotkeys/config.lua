@@ -53,132 +53,141 @@ config.systemPreferences = {
     forceKillDelay = 0.5,   -- Delay after force kill before opening a new URL (seconds)
 }
 
--- Modal definitions - defines all available modals and their configuration
--- To add a new modal, just add a new entry to this table and create a mapping table
-config.modalDefinitions = {
+-- HOW TO ADD A NEW MODAL:
+-- Just add a new entry to config.modals with the following structure:
+--
+-- config.modals.newmodal = {
+--     title = "My New Modal:",  -- Title to display in the modal
+--     handler = {
+--         field = "myfield",    -- Field name required in mappings
+--         action = "myHandler"  -- Function in utils to handle the action
+--     },
+--     mappings = {              -- Key mappings for this modal
+--         a = { myfield = "value1", desc = "Description 1" },
+--         b = { myfield = "value2", desc = "Description 2" }
+--     },
+--     -- Optional for custom implementations:
+--     customModule = "modules.hotkeys.mymodule"
+-- }
+--
+-- The system will automatically handle your new modal without any code changes.
+
+-- Modal definitions with their mappings
+config.modals = {
+    -- Applications modal
     apps = {
         title = "Apps:",
-        type = "app",        -- Field name used in mappings
-        mappingName = "apps", -- Config table containing mappings
-        hasCustomImpl = false -- Whether this module has custom implementation
+        handler = {
+            field = "app",
+            action = "launchOrFocus"
+        },
+        mappings = {
+            a = { app = "App Store",             desc = "App Store" },
+            b = { app = "Books",                 desc = "Books" },
+            c = { app = "Calendar",              desc = "Calendar" },
+            f = { app = "FaceTime",              desc = "FaceTime" },
+            h = { app = "Photos",                desc = "Photos" },
+            m = { app = "Mail",                  desc = "Mail" },
+            n = { app = "Notes",                 desc = "Notes" },
+            o = { app = "Maps",                  desc = "Maps" },
+            p = { app = "Preview",               desc = "Preview" },
+            r = { app = "Reminders",             desc = "Reminders" },
+            s = { app = "Safari",                desc = "Safari" },
+            t = { app = "Terminal",              desc = "Terminal" },
+            u = { app = "Music",                 desc = "Music" },
+            v = { app = "QuickTime Player",      desc = "QuickTime" },
+            w = { app = "Weather",               desc = "Weather" },
+            x = { app = "Calculator",            desc = "Calculator" },
+            z = { app = "System Settings",       desc = "Settings" }
+        }
     },
+    
+    -- Finder locations modal
     finder = {
         title = "Finder:",
-        type = "path",
-        mappingName = "finder",
-        hasCustomImpl = false
+        handler = {
+            field = "path",
+            action = "openFinderFolder"
+        },
+        mappings = {
+            a = { path = "~/Applications",           desc = "Applications" },
+            d = { path = "~/Desktop",                desc = "Desktop" },
+            c = { path = "~/Documents",              desc = "Documents" },
+            f = { path = "~/Downloads",              desc = "Downloads" },
+            h = { path = "~/",                       desc = "Home" },
+            p = { path = "~/Pictures",               desc = "Pictures" },
+            m = { path = "~/Music",                  desc = "Music" },
+            v = { path = "~/Movies",                 desc = "Movies" },
+            l = { path = "~/Library",                desc = "Library" },
+            u = { path = "/Utilities",               desc = "Utilities" },
+            i = { path = "~/Library/CloudStorage/iCloud Drive", desc = "iCloud" }
+        }
     },
+    
+    -- Websites modal
     websites = {
         title = "Websites:",
-        type = "url",
-        mappingName = "websites",
-        hasCustomImpl = false
+        handler = {
+            field = "url",
+            action = "openURL"
+        },
+        mappings = {
+            a = { url = "https://www.apple.com",         desc = "Apple" },
+            g = { url = "https://github.com",            desc = "GitHub" },
+            m = { url = "https://maps.google.com",       desc = "Maps" },
+            n = { url = "https://www.netflix.com",       desc = "Netflix" },
+            r = { url = "https://www.reddit.com",        desc = "Reddit" },
+            s = { url = "https://www.stackoverflow.com", desc = "Stack Overflow" },
+            w = { url = "https://www.wikipedia.org",     desc = "Wikipedia" },
+            y = { url = "https://www.youtube.com",       desc = "YouTube" }
+        }
     },
+    
+    -- System Settings panes modal
     settings = {
         title = "Settings:",
-        type = "pref",
-        mappingName = "settings",
-        hasCustomImpl = false
+        handler = {
+            field = "pref",
+            action = "openSystemPreferencePane"
+        },
+        mappings = {
+            u = { pref = "x-apple.systempreferences:com.apple.preferences.softwareupdate",    desc = "Software Update" },
+            d = { pref = "x-apple.systempreferences:com.apple.preference.displays",           desc = "Displays" },
+            p = { pref = "x-apple.systempreferences:com.apple.preference.security",           desc = "Privacy/Accessibility" },
+            w = { pref = "x-apple.systempreferences:com.apple.preference.network",            desc = "Wi‑Fi" },
+            b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" }
+        }
     },
+    
+    -- System actions modal
     system = {
         title = "System Actions:",
-        type = "fn",
-        mappingName = "system",
-        hasCustomImpl = true,  -- system.lua has a custom implementation
+        handler = {
+            field = "action",
+            action = "functionCall"
+        },
         customModule = "modules.hotkeys.system"
+        -- mappings defined in system.lua
     }
-    -- To add a new modal type, just add a new entry here
-    -- Example:
-    -- newmodal = {
-    --    title = "New Modal:",
-    --    type = "newtype",     -- Field name used for validation
-    --    mappingName = "newmappings",
-    --    hasCustomImpl = false
-    -- }
-}
-
--- Default mappings
-------------------------------
-
--- Default application mappings
-config.apps = {
-    a = { app = "App Store",             desc = "App Store" },
-    b = { app = "Books",                 desc = "Books" },
-    c = { app = "Calendar",              desc = "Calendar" },
-    f = { app = "FaceTime",              desc = "FaceTime" },
-    h = { app = "Photos",                desc = "Photos" },
-    m = { app = "Mail",                  desc = "Mail" },
-    n = { app = "Notes",                 desc = "Notes" },
-    o = { app = "Maps",                  desc = "Maps" },
-    p = { app = "Preview",               desc = "Preview" },
-    r = { app = "Reminders",             desc = "Reminders" },
-    s = { app = "Safari",                desc = "Safari" },
-    t = { app = "Terminal",              desc = "Terminal" },
-    u = { app = "Music",                 desc = "Music" },
-    v = { app = "QuickTime Player",      desc = "QuickTime" },
-    w = { app = "Weather",               desc = "Weather" },
-    x = { app = "Calculator",            desc = "Calculator" },
-    z = { app = "System Settings",       desc = "Settings" },
-}
-
--- Default finder locations
-config.finder = {
-    a = { path = "~/Applications",           desc = "Applications" },
-    d = { path = "~/Desktop",                desc = "Desktop" },
-    c = { path = "~/Documents",              desc = "Documents" },
-    f = { path = "~/Downloads",              desc = "Downloads" },
-    h = { path = "~/",                       desc = "Home" },
-    p = { path = "~/Pictures",               desc = "Pictures" },
-    m = { path = "~/Music",                  desc = "Music" },
-    v = { path = "~/Movies",                 desc = "Movies" },
-    l = { path = "~/Library",                desc = "Library" },
-    u = { path = "/Utilities",               desc = "Utilities" },
-    i = { path = "~/Library/CloudStorage/iCloud Drive", desc = "iCloud" },
-}
-
--- Default website mappings
-config.websites = {
-    a = { url = "https://www.apple.com",         desc = "Apple" },
-    g = { url = "https://github.com",            desc = "GitHub" },
-    m = { url = "https://maps.google.com",       desc = "Maps" },
-    n = { url = "https://www.netflix.com",       desc = "Netflix" },
-    r = { url = "https://www.reddit.com",        desc = "Reddit" },
-    s = { url = "https://www.stackoverflow.com", desc = "Stack Overflow" },
-    w = { url = "https://www.wikipedia.org",     desc = "Wikipedia" },
-    y = { url = "https://www.youtube.com",       desc = "YouTube" },
-}
-
--- System preferences panes
-config.settings = {
-    u = { pref = "x-apple.systempreferences:com.apple.preferences.softwareupdate",    desc = "Software Update" },
-    d = { pref = "x-apple.systempreferences:com.apple.preference.displays",           desc = "Displays" },
-    p = { pref = "x-apple.systempreferences:com.apple.preference.security",           desc = "Privacy/Accessibility" },
-    w = { pref = "x-apple.systempreferences:com.apple.preference.network",            desc = "Wi‑Fi" },
-    b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" },
 }
 
 -- Global shortcuts configuration
 config.globalShortcuts = {
     -- Modal activators
-    { key = "a", action = "apps",     desc = "Apps Modal" },
-    { key = "f", action = "finder",   desc = "Finder Modal" },
-    { key = "w", action = "websites", desc = "Websites Modal" },
-    { key = "d", action = "system",   desc = "System Modal" },
-    { key = "s", action = "settings", desc = "Settings Modal" },
+    { key = "a", modal = "apps",     desc = "Apps Modal" },
+    { key = "f", modal = "finder",   desc = "Finder Modal" },
+    { key = "w", modal = "websites", desc = "Websites Modal" },
+    { key = "d", modal = "system",   desc = "System Modal" },
+    { key = "s", modal = "settings", desc = "Settings Modal" },
     
     -- Direct app shortcuts
     { 
         key = "return", 
-        fn = function() 
-            -- We'll call the utility function in init.lua to avoid circular dependency
-            local appName = "iTerm"
-            hs.application.launchOrFocus(appName)
-            hs.timer.doAfter(config.delays.appActivation, function()
-                local app = hs.application.get(appName)
-                if app then app:activate() end
-            end)
-        end,
-        desc = "Launch iTerm" 
+        handler = {
+            field = "app",
+            action = "launchOrFocus"
+        },
+        mapping = { app = "iTerm", desc = "Launch iTerm" }
     }
 }
 
@@ -192,8 +201,25 @@ local configCache = {
 }
 
 -- Get the module path for a given module name
-local function getLocalModulePath(moduleName)
-    return config.paths.localModulesBase .. moduleName .. "_mappings"
+local function getLocalModulePath(modalName)
+    return config.paths.localModulesBase .. modalName .. "_mappings"
+end
+
+-- Safely require a module with error handling
+local function safeRequire(modulePath, logFn)
+    local status, result = pcall(require, modulePath)
+    
+    if status and type(result) == "table" then
+        return result
+    elseif logFn then
+        if not status then
+            logFn("Failed to load module " .. modulePath .. ": " .. tostring(result))
+        else
+            logFn("Module " .. modulePath .. " did not return a valid table")
+        end
+    end
+    
+    return nil
 end
 
 -- Load local configurations
@@ -203,36 +229,35 @@ function config.loadLocalConfigs(forceReload, utils)
     
     if utils then utils.info("Loading local configurations" .. (forceReload and " (forced)" or "")) end
     
-    -- Load local mappings for all module types defined in modalDefinitions
-    for moduleName, modalDef in pairs(config.modalDefinitions) do
-        -- Check if the modal definition has a type field
-        if not modalDef.type then 
-            if utils then utils.warn("No type defined for module: " .. moduleName) end
-            goto continue 
+    -- Load local mappings for all defined modals
+    for modalName, modal in pairs(config.modals) do
+        -- Skip if we've already loaded this modal's mappings and not forcing reload
+        if not forceReload and configCache.localMappingsLoaded[modalName] then goto continue end
+        
+        -- Only try to load local mappings if this isn't a custom implementation
+        if not modal.customModule then
+            local localPath = getLocalModulePath(modalName)
+            
+            -- Load the local mappings
+            local localMappings = safeRequire(localPath, utils and utils.debug)
+            
+            -- If local mappings loaded successfully, replace the defaults
+            if localMappings and next(localMappings) ~= nil then
+                if utils then utils.info("Using local mappings for " .. modalName) end
+                modal.mappings = localMappings
+            end
         end
         
-        -- Check if we need to reload this mapping
-        if forceReload or not configCache.localMappingsLoaded[moduleName] then
-            local localPath = getLocalModulePath(moduleName)
-            
-            -- Load the mappings using utils or fallback
-            if utils then
-                config[modalDef.mappingName] = utils.loadMappings(config[modalDef.mappingName], localPath, modalDef.type)
-            else
-                local status, localMappings = pcall(require, localPath)
-                if status and type(localMappings) == "table" then
-                    config[modalDef.mappingName] = localMappings
-                end
-            end
-            configCache.localMappingsLoaded[moduleName] = true
-        end
+        configCache.localMappingsLoaded[modalName] = true
         
         ::continue::
     end
     
     -- Load custom global shortcuts if available
-    local status, localGlobalShortcuts = pcall(require, getLocalModulePath("global_shortcuts"))
-    if status and type(localGlobalShortcuts) == "table" and next(localGlobalShortcuts) ~= nil then
+    local localGlobalShortcuts = safeRequire(getLocalModulePath("global_shortcuts"), 
+                                             utils and utils.debug)
+    
+    if localGlobalShortcuts and next(localGlobalShortcuts) ~= nil then
         if utils then utils.info("Using local global shortcuts configuration") end
         config.globalShortcuts = localGlobalShortcuts
     end
@@ -246,19 +271,21 @@ function config.reloadConfigs(utils)
     if utils then utils.info("Forcing configuration reload") end
     
     -- Clear package.loaded cache for all module mappings
-    for moduleName, _ in pairs(config.modalDefinitions) do
-        package.loaded[getLocalModulePath(moduleName)] = nil
+    for modalName, _ in pairs(config.modals) do
+        package.loaded[getLocalModulePath(modalName)] = nil
     end
     
-    -- Also clear global shortcuts
+    -- Clear global shortcuts module from cache
     package.loaded[getLocalModulePath("global_shortcuts")] = nil
     
-    -- Reset cache
+    -- Reset cache state
     configCache.isInitialized = false
     configCache.localMappingsLoaded = {}
     
-    -- Reload configurations
+    -- Reload all configurations
     config.loadLocalConfigs(true, utils)
+    
+    if utils then utils.info("Configuration reload complete") end
 end
 
 return config 
