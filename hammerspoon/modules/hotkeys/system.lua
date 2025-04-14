@@ -48,7 +48,7 @@ end
 
 -- Define system actions mapping
 local systemMappings = {
-    c = { action = utils.clearNotifications, desc = "Clear Notifications" },
+    c = { action = utils.actions.clearNotifications, desc = "Clear Notifications" },
     s = { action = shutdownSystem, desc = "Shutdown System" },
     r = { action = restartSystem, desc = "Restart System" },
     h = { action = reloadHammerspoon, desc = "Reload Hammerspoon" },
