@@ -102,6 +102,17 @@ config.modals = {
         }
     },
     
+    -- Window management modal
+    window = {
+        title = "Window Management:",
+        handler = {
+            field = "action",
+            action = "functionCall"
+        },
+        customModule = "modules.hotkeys.modals.window"
+        -- mappings defined in window.lua
+    },
+    
     -- Finder locations modal
     finder = {
         title = "Finder:",
@@ -179,6 +190,7 @@ config.globalShortcuts = {
     { key = "w", modal = "websites", desc = "Websites Modal" },
     { key = "d", modal = "system",   desc = "System Modal" },
     { key = "s", modal = "settings", desc = "Settings Modal" },
+    { key = "space", modal = "window", desc = "Window Management Modal" },
     
     -- Direct app shortcuts
     { 
