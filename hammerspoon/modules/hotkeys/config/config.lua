@@ -166,7 +166,7 @@ config.modals = {
             field = "action",
             action = "functionCall"
         },
-        customModule = "modules.hotkeys.system"
+        customModule = "modules.hotkeys.modals.system"
         -- mappings defined in system.lua
     }
 }

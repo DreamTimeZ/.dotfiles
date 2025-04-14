@@ -2,7 +2,26 @@
 
 ## Overview
 
-Hammerspoon is a powerful automation tool for macOS that allows for extensive customization and control of your system through Lua scripting.
+Hammerspoon is a powerful automation tool for macOS that allows for extensive customization and control of your system through Lua scripting. This configuration uses a modular architecture for better maintainability and extensibility.
+
+## Architecture
+
+The configuration is organized into a modular structure:
+
+```markdown
+hammerspoon/
+├── init.lua                # Main entry point
+├── modules/               
+│   └── hotkeys/           # Hotkeys module
+│       ├── config/        # Configuration files
+│       ├── core/          # Core functionality
+│       ├── modals/        # Modal implementations
+│       ├── ui/            # UI components
+│       ├── utils/         # Utility functions
+│       ├── local/         # User customizations
+│       └── init.lua       # Module entry point
+└── Spoons/                # Hammerspoon Spoons (plugins)
+```
 
 ## Features
 
@@ -10,6 +29,8 @@ Hammerspoon is a powerful automation tool for macOS that allows for extensive cu
 - **Application Switching**: Quickly launch or focus applications
 - **Custom Configurations**: Extensible with Lua scripting
 - **System Monitoring**: Monitor and react to system events
+- **Modular Design**: Clean separation of concerns for better maintainability
+- **Local Customizations**: User-specific configurations without modifying shared code
 
 ## Hotkey System
 
@@ -110,10 +131,54 @@ Items appear in alphabetical order in the modal:
 
 All hotkey mappings can be customized in the following locations:
 
-- Global configuration: `~/.hammerspoon/modules/hotkeys/config.lua`
+- Global configuration: `~/.hammerspoon/modules/hotkeys/config/config.lua`
 - Local (user-specific) mappings: `~/.hammerspoon/modules/hotkeys/local/*.lua`
 
-See the README in the `local` directory for detailed customization instructions.
+See the README in the `modules/hotkeys/local` directory for detailed customization instructions.
+
+## Advanced Usage
+
+### Accessing Specialized Modules
+
+The modular architecture allows direct access to specialized functionality:
+
+```lua
+-- Load the hotkeys module
+local hotkeys = require("modules.hotkeys")
+
+-- Access specialized modules directly
+local ui = require("modules.hotkeys.ui.ui")
+local logging = require("modules.hotkeys.core.logging")
+local actions = require("modules.hotkeys.core.actions")
+local configUtils = require("modules.hotkeys.utils.config_utils")
+
+-- Use functionality from the specialized modules
+ui.showFormattedAlert("Hammerspoon Config Loaded")
+logging.info("Initialization complete")
+configUtils.loadMappings(defaultMappings, nil, "customModal")
+```
+
+### Adding Custom Modals
+
+You can add new modal interfaces by editing the config file:
+
+```lua
+-- In modules/hotkeys/config/config.lua
+config.modals.newmodal = {
+    title = "My New Modal:",
+    handler = {
+        field = "myfield",
+        action = "myHandler"
+    },
+    mappings = {
+        a = { myfield = "value1", desc = "Description 1" },
+        b = { myfield = "value2", desc = "Description 2" }
+    }
+}
+
+-- For custom modal implementation:
+config.modals.newmodal.customModule = "modules.hotkeys.modals.mymodal"
+```
 
 ## Installation
 
