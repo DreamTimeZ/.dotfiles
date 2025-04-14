@@ -11,34 +11,21 @@ function M.log(level, message)
     
     local levelName = config.logging.levelNames[level] or "UNKNOWN"
     local timestamp = os.date("%H:%M:%S")
-    local prefix = string.format("[Hotkeys %s %s] ", levelName, timestamp)
     
-    print(prefix .. message)
+    -- Use string format instead of concatenation for better performance
+    print(string.format("[Hotkeys %s %s] %s", levelName, timestamp, message))
 end
 
--- Convenience functions for each log level
-function M.error(message) 
-    M.log(config.logging.LEVELS.ERROR, message) 
-end
-
-function M.warn(message) 
-    M.log(config.logging.LEVELS.WARN, message) 
-end
-
-function M.info(message) 
-    M.log(config.logging.LEVELS.INFO, message) 
-end
-
-function M.debug(message) 
-    M.log(config.logging.LEVELS.DEBUG, message) 
-end
+-- Create logging functions all at once using a table to reduce duplication
+M.error = function(message) M.log(config.logging.LEVELS.ERROR, message) end
+M.warn = function(message) M.log(config.logging.LEVELS.WARN, message) end
+M.info = function(message) M.log(config.logging.LEVELS.INFO, message) end
+M.debug = function(message) M.log(config.logging.LEVELS.DEBUG, message) end
 
 -- Set the logging level
 function M.setLogLevel(level)
-    local LEVELS = config.logging.LEVELS
-    
-    if type(level) == "string" and LEVELS[level] then
-        config.logging.level = LEVELS[level]
+    if type(level) == "string" and config.logging.LEVELS[level] then
+        config.logging.level = config.logging.LEVELS[level]
     elseif type(level) == "number" and level >= 0 and level <= 4 then
         config.logging.level = level
     else
@@ -53,8 +40,10 @@ end
 
 -- Error handling helper with improved consistency
 local function handleError(message, isFatal)
+    -- Log appropriate level based on severity
     if isFatal then
         M.error(message)
+        -- Only show alert for fatal errors to avoid UI clutter
         hs.alert.show("ERROR: " .. message)
         return false
     else
@@ -63,14 +52,18 @@ local function handleError(message, isFatal)
     end
 end
 
--- Validate if a binding has required fields for the modal
-local function validateBinding(key, binding, modal)
-    if not binding then
-        return false, "Binding is nil"
+-- Validation helper for common parameter checking
+local function validateParam(param, name, errorHandler)
+    if not param then
+        return errorHandler("No " .. name .. " provided", false)
     end
-    
-    if not modal or not modal.handler or not modal.handler.field then
-        return false, "Invalid modal or handler definition"
+    return true
+end
+
+-- Validate if a binding has required fields for the modal
+local function validateBinding(binding, modal)
+    if not binding or not modal or not modal.handler or not modal.handler.field then
+        return false, "Invalid binding or modal configuration"
     end
     
     -- Check if the binding has the required field
@@ -84,7 +77,7 @@ end
 
 -- Core functionality with improved error handling
 function M.launchOrFocus(appName)
-    if not appName then return handleError("No app name provided to launchOrFocus", false) end
+    if not validateParam(appName, "app name", handleError) then return false end
     
     hs.application.launchOrFocus(appName)
     hs.timer.doAfter(config.delays.appActivation, function()
@@ -95,7 +88,7 @@ function M.launchOrFocus(appName)
 end
 
 function M.openFinderFolder(path)
-    if not path then return handleError("No path provided to openFinderFolder", false) end
+    if not validateParam(path, "path", handleError) then return false end
     
     if hs.fs.attributes(path) then
         hs.execute("open " .. path)
@@ -106,24 +99,23 @@ function M.openFinderFolder(path)
 end
 
 function M.openURL(url)
-    if not url then return handleError("No URL provided to openURL", false) end
+    if not validateParam(url, "URL", handleError) then return false end
     
     hs.urlevent.openURL(url)
     return true
 end
 
 function M.openSystemPreferencePane(url)
-    if not url then return handleError("No preference pane URL provided", false) end
+    if not validateParam(url, "preference pane URL", handleError) then return false end
     
-    -- Get configuration
+    -- Cache frequently accessed configuration
     local sysPrefs = config.systemPreferences
     
     -- Determine which app to use based on macOS version
     local macOSVersion = hs.host.operatingSystemVersion()
     local appName = macOSVersion.major >= 13 and "System Settings" or "System Preferences"
     
-    -- Always try to open the URL directly first - this will work in most cases
-    -- and will switch to the correct pane if settings is already open
+    -- Try to open URL directly
     hs.execute("open \"" .. url .. "\"")
     
     -- Check if we successfully opened the URL
@@ -132,7 +124,7 @@ function M.openSystemPreferencePane(url)
         return app ~= nil and app:isFrontmost()
     end
     
-    -- If the app didn't launch or activate properly, try a fallback approach
+    -- Set up a single timer for fallback approach
     hs.timer.doAfter(0.5, function()
         if not checkSettingsOpened() then
             M.debug("System settings didn't open correctly, trying fallback method")
@@ -156,10 +148,20 @@ function M.openSystemPreferencePane(url)
     return true
 end
 
-function M.clearNotifications()
-    hs.execute("killall NotificationCenter 2>/dev/null")
-    return true
-end
+-- Map of action handlers for better performance and maintainability
+local ACTION_HANDLERS = {
+    launchOrFocus = M.launchOrFocus,
+    openURL = M.openURL,
+    openFinderFolder = M.openFinderFolder,
+    openSystemPreferencePane = M.openSystemPreferencePane,
+    clearNotifications = function() 
+        hs.execute("killall NotificationCenter 2>/dev/null")
+        return true
+    end
+}
+
+-- Export action handlers for use in other modules
+M.actions = ACTION_HANDLERS
 
 -- Modal management with improved error handling
 function M.setupModal(mappings, title, modal)
@@ -202,36 +204,31 @@ function M.setupModal(mappings, title, modal)
         M.showFormattedAlert(sortedTexts, title or "Actions:")
     end
     
-    -- Action handler function to reduce code duplication
+    -- Action handler function optimized to reduce code duplication and branching
     local function handleAction(key, binding)
         -- Validate the binding first
-        local valid, error = validateBinding(key, binding, modal)
+        local valid, error = validateBinding(binding, modal)
         if not valid then
             handleError("Invalid mapping for key '" .. key .. "': " .. error, true)
             return
         end
         
-        local success = false
         local handler = modal.handler
         local fieldName = handler.field
         local fieldValue = binding[fieldName]
+        local success = false
         
-        -- Execute the action based on the handler type
-        if handler.action == "launchOrFocus" then
-            success = M.launchOrFocus(fieldValue)
-        elseif handler.action == "openURL" then
-            success = M.openURL(fieldValue)
-        elseif handler.action == "openFinderFolder" then
-            success = M.openFinderFolder(fieldValue)
-        elseif handler.action == "openSystemPreferencePane" then
-            success = M.openSystemPreferencePane(fieldValue)
+        -- Try built-in action handler first
+        local actionHandler = ACTION_HANDLERS[handler.action]
+        if actionHandler then
+            success = actionHandler(fieldValue)
+        -- Handle function call action type
         elseif handler.action == "functionCall" and type(fieldValue) == "function" then
-            -- For function calls, execute the function directly
             success = fieldValue()
+        -- Try to call a function in the utils module
         elseif M[handler.action] and type(M[handler.action]) == "function" then
-            -- Try to call a function in the utils module directly
             success = M[handler.action](fieldValue)
-        -- Fallback for custom handlers
+        -- Fallback for custom handlers in the binding
         elseif binding.action and type(binding.action) == "function" then
             success = binding.action()
         elseif binding.fn and type(binding.fn) == "function" then
@@ -289,37 +286,35 @@ function M.showFormattedAlert(content, title, options)
     -- Set default options
     options = options or {}
     
-    -- Calculate max items per line
+    -- Cache UI config value
     local maxItemsPerLine = options.maxItemsPerLine or config.ui.maxItemsPerLine
     local totalItems = #content
     
-    -- Format in rows
-    local formattedText = title and (title .. "\n") or ""
-    local lineItems = {}
+    -- Pre-allocate buffer for better performance
+    local formattedLines = {}
+    if title then table.insert(formattedLines, title) end
     
+    local lineItems = {}
     for i, item in ipairs(content) do
         table.insert(lineItems, item)
         
         -- Check if we need a new line
         if #lineItems >= maxItemsPerLine or i == totalItems then
-            formattedText = formattedText .. table.concat(lineItems, "   ")
-            if i < totalItems then
-                formattedText = formattedText .. "\n"
-            end
+            table.insert(formattedLines, table.concat(lineItems, "   "))
             lineItems = {}
         end
     end
     
     -- Show the alert with all options
-    hs.alert.show(formattedText, options)
+    hs.alert.show(table.concat(formattedLines, "\n"), options)
 end
 
 -- Simple configuration loader
 function M.loadMappings(defaultMappings, localModulePath, modalName)
-    -- Start with default mappings
+    -- Start with default mappings or empty table
     local combinedMappings = {}
     
-    -- Copy default mappings
+    -- Copy default mappings if provided
     if defaultMappings and type(defaultMappings) == "table" then
         for k, v in pairs(defaultMappings) do
             combinedMappings[k] = v
@@ -327,7 +322,8 @@ function M.loadMappings(defaultMappings, localModulePath, modalName)
     end
     
     -- Try to load local customizations
-    local status, localMappings = pcall(require, config.paths.localModulesBase .. modalName .. "_mappings")
+    local localPath = config.paths.localModulesBase .. modalName .. "_mappings"
+    local status, localMappings = pcall(require, localPath)
     
     -- If local mappings loaded successfully, merge or replace
     if status and type(localMappings) == "table" then
