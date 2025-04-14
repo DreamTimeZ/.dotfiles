@@ -4,7 +4,7 @@ local M = {}
 -- Cache config reference to avoid redundant requires
 local config = require("modules.hotkeys.config")
 
--- Log a message at the specified level
+-- Log a message at the specified level with minimal overhead
 function M.log(level, message)
     -- Check if logging is enabled and level is appropriate
     if not config.logging.enabled or level > config.logging.level then return end
@@ -16,11 +16,30 @@ function M.log(level, message)
     print(string.format("[Hotkeys %s %s] %s", levelName, timestamp, message))
 end
 
--- Create logging functions all at once using a table to reduce duplication
-M.error = function(message) M.log(config.logging.LEVELS.ERROR, message) end
-M.warn = function(message) M.log(config.logging.LEVELS.WARN, message) end
-M.info = function(message) M.log(config.logging.LEVELS.INFO, message) end
-M.debug = function(message) M.log(config.logging.LEVELS.DEBUG, message) end
+-- Create optimized inline logging functions with level checks to avoid function calls when not needed
+function M.error(message) 
+    if config.logging.enabled and config.logging.LEVELS.ERROR <= config.logging.level then
+        M.log(config.logging.LEVELS.ERROR, message) 
+    end
+end
+
+function M.warn(message) 
+    if config.logging.enabled and config.logging.LEVELS.WARN <= config.logging.level then
+        M.log(config.logging.LEVELS.WARN, message) 
+    end
+end
+
+function M.info(message) 
+    if config.logging.enabled and config.logging.LEVELS.INFO <= config.logging.level then
+        M.log(config.logging.LEVELS.INFO, message) 
+    end
+end
+
+function M.debug(message) 
+    if config.logging.enabled and config.logging.LEVELS.DEBUG <= config.logging.level then
+        M.log(config.logging.LEVELS.DEBUG, message) 
+    end
+end
 
 -- Set the logging level
 function M.setLogLevel(level)
@@ -62,8 +81,12 @@ end
 
 -- Validate if a binding has required fields for the modal
 local function validateBinding(binding, modal)
-    if not binding or not modal or not modal.handler or not modal.handler.field then
-        return false, "Invalid binding or modal configuration"
+    if not binding then
+        return false, "Invalid binding configuration"
+    end
+    
+    if not modal or not modal.handler or not modal.handler.field then
+        return false, "Invalid modal configuration"
     end
     
     -- Check if the binding has the required field
@@ -157,11 +180,45 @@ local ACTION_HANDLERS = {
     clearNotifications = function() 
         hs.execute("killall NotificationCenter 2>/dev/null")
         return true
+    end,
+    functionCall = function(fn)
+        if type(fn) == "function" then
+            return fn()
+        end
+        return false
     end
 }
 
 -- Export action handlers for use in other modules
 M.actions = ACTION_HANDLERS
+
+-- Generic action executor that handles all action types
+function M.executeAction(handler, mapping)
+    if not handler or not handler.field or not handler.action or not mapping then
+        return handleError("Invalid handler or mapping", true)
+    end
+    
+    local value = mapping[handler.field]
+    if not value then
+        return handleError("Missing required field in mapping: " .. handler.field, true)
+    end
+    
+    -- Try built-in action handler first
+    local actionHandler = ACTION_HANDLERS[handler.action]
+    if actionHandler then
+        return actionHandler(value)
+    -- Try to call a function in the utils module
+    elseif M[handler.action] and type(M[handler.action]) == "function" then
+        return M[handler.action](value)
+    -- Fallback for custom handlers in the mapping
+    elseif mapping.action and type(mapping.action) == "function" then
+        return mapping.action()
+    elseif mapping.fn and type(mapping.fn) == "function" then
+        return mapping.fn()
+    else
+        return handleError("Unknown action handler: " .. handler.action, true)
+    end
+end
 
 -- Modal management with improved error handling
 function M.setupModal(mappings, title, modal)
@@ -182,12 +239,21 @@ function M.setupModal(mappings, title, modal)
         
         -- Collect hints with their descriptions
         for key, binding in pairs(mappings) do
+            -- Skip invalid bindings
+            local valid, _ = validateBinding(binding, modal)
+            if not valid then
+                M.warn("Skipping invalid binding for key: " .. key)
+                goto continue
+            end
+            
             local description = binding.desc or key
             table.insert(hints, { 
                 key = key, 
                 text = string.format(config.ui.keyFormat, key, description),
                 description = description
             })
+            
+            ::continue::
         end
         
         -- Sort hints by description
@@ -204,42 +270,19 @@ function M.setupModal(mappings, title, modal)
         M.showFormattedAlert(sortedTexts, title or "Actions:")
     end
     
-    -- Action handler function optimized to reduce code duplication and branching
-    local function handleAction(key, binding)
-        -- Validate the binding first
-        local valid, error = validateBinding(binding, modal)
+    -- Create a single action handler function to avoid repeated function creation
+    local function handleModalAction(key, binding)
+        -- Validate binding only once
+        local valid, errorMsg = validateBinding(binding, modal)
         if not valid then
-            handleError("Invalid mapping for key '" .. key .. "': " .. error, true)
+            handleError("Invalid mapping for key '" .. key .. "': " .. errorMsg, true)
             return
         end
         
-        local handler = modal.handler
-        local fieldName = handler.field
-        local fieldValue = binding[fieldName]
-        local success = false
-        
-        -- Try built-in action handler first
-        local actionHandler = ACTION_HANDLERS[handler.action]
-        if actionHandler then
-            success = actionHandler(fieldValue)
-        -- Handle function call action type
-        elseif handler.action == "functionCall" and type(fieldValue) == "function" then
-            success = fieldValue()
-        -- Try to call a function in the utils module
-        elseif M[handler.action] and type(M[handler.action]) == "function" then
-            success = M[handler.action](fieldValue)
-        -- Fallback for custom handlers in the binding
-        elseif binding.action and type(binding.action) == "function" then
-            success = binding.action()
-        elseif binding.fn and type(binding.fn) == "function" then
-            success = binding.fn()
-        else
-            handleError("Unsupported action: " .. key .. " with handler " .. handler.action, true)
-            return
-        end
+        -- Execute the action
+        local success = M.executeAction(modal.handler, binding)
         
         if not success then
-            -- Only show error if action function didn't already show one
             handleError("Failed to execute action for key '" .. key .. "'", true)
         end
         
@@ -249,7 +292,7 @@ function M.setupModal(mappings, title, modal)
     
     -- Bind all mapped keys
     for key, binding in pairs(mappings) do
-        hotModal:bind("", key, function() handleAction(key, binding) end)
+        hotModal:bind("", key, function() handleModalAction(key, binding) end)
     end
     
     -- Always include escape to exit modal
@@ -312,14 +355,7 @@ end
 -- Simple configuration loader
 function M.loadMappings(defaultMappings, localModulePath, modalName)
     -- Start with default mappings or empty table
-    local combinedMappings = {}
-    
-    -- Copy default mappings if provided
-    if defaultMappings and type(defaultMappings) == "table" then
-        for k, v in pairs(defaultMappings) do
-            combinedMappings[k] = v
-        end
-    end
+    local combinedMappings = defaultMappings and table.shallow_copy(defaultMappings) or {}
     
     -- Try to load local customizations
     local localPath = config.paths.localModulesBase .. modalName .. "_mappings"
@@ -332,17 +368,27 @@ function M.loadMappings(defaultMappings, localModulePath, modalName)
             combinedMappings = {}
         end
         
-        -- Merge in local mappings
+        -- Merge in local mappings (excluding special flags)
         for k, v in pairs(localMappings) do
             if k ~= "_replaceDefaults" then
                 combinedMappings[k] = v
             end
         end
         
-        M.info("Local mappings loaded and merged for " .. modalName)
+        M.info("Local mappings loaded for " .. modalName)
     end
     
     return combinedMappings
+end
+
+-- Helper function to create a shallow copy of a table
+function table.shallow_copy(t)
+    if type(t) ~= "table" then return t end
+    local copy = {}
+    for k, v in pairs(t) do
+        copy[k] = v
+    end
+    return copy
 end
 
 return M

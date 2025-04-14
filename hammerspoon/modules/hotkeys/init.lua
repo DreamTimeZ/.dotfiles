@@ -58,39 +58,6 @@ local function exitAllModals()
     hs.alert.closeAll()
 end
 
--- Execute an action using a handler definition
-local function executeAction(handler, mapping)
-    if not handler or not handler.field or not handler.action or not mapping then
-        utils.error("Invalid handler or mapping")
-        return
-    end
-    
-    utils.debug("Executing action: " .. handler.action)
-    exitAllModals()
-    
-    local value = mapping[handler.field]
-    if not value then
-        utils.error("Missing required field in mapping: " .. handler.field)
-        return
-    end
-    
-    if handler.action == "launchOrFocus" then
-        utils.launchOrFocus(value)
-    elseif handler.action == "openURL" then
-        utils.openURL(value)
-    elseif handler.action == "openFinderFolder" then
-        utils.openFinderFolder(value)
-    elseif handler.action == "openSystemPreferencePane" then
-        utils.openSystemPreferencePane(value)
-    elseif type(value) == "function" then
-        value()
-    elseif utils[handler.action] and type(utils[handler.action]) == "function" then
-        utils[handler.action](value)
-    else
-        utils.error("Unknown action handler: " .. handler.action)
-    end
-end
-
 -- Load all modal modules
 local function loadModules()
     utils.info("Loading modal modules")
@@ -146,7 +113,8 @@ local function createKeyBindings()
             -- Action with handler and mapping
             callback = function()
                 utils.debug("Executing action with handler")
-                executeAction(shortcut.handler, shortcut.mapping)
+                exitAllModals()
+                utils.executeAction(shortcut.handler, shortcut.mapping)
             end
         else
             -- Skip invalid shortcuts
@@ -181,7 +149,7 @@ return {
     setLogLevel = utils.setLogLevel,
     setLoggingEnabled = utils.setLoggingEnabled,
     createModal = createModal,
-    executeAction = executeAction,
+    executeAction = utils.executeAction,
     reloadConfig = function()
         config.reloadConfigs(utils)
         initialize()
