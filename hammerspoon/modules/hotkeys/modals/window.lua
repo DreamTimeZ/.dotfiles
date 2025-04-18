@@ -1,59 +1,28 @@
 -- Window management modal implementation
 local config = require("modules.hotkeys.config")
-local logging = require("modules.hotkeys.core.logging")
-local actions = require("modules.hotkeys.core.actions")
 local modals = require("modules.hotkeys.core.modals")
-local ui = require("modules.hotkeys.ui.ui")
 
 -- Get the window-specific modal definition
 local windowModal = config.modals.window
-
--- Window history for undo/redo functionality
-local windowHistory = {}
-local historyIndex = 0
-local MAX_HISTORY = 20
 
 -- Window overlay data
 local windowOverlays = {}
 local showingOverlays = false
 
--- Helper function to create window operations
-local function windowOperation(fn, noHistory)
+-- Cache frequently used Hammerspoon APIs
+local hs_window = hs.window
+local hs_mouse = hs.mouse
+local hs_grid = hs.grid
+local hs_canvas = hs.canvas
+local hs_hotkey = hs.hotkey
+local hs_timer = hs.timer
+local hs_alert = hs.alert
+
+-- Helper function to create window operations - optimized for performance
+local function windowOperation(fn)
     return function()
-        local win = hs.window.focusedWindow()
-        if not win then
-            hs.alert.show("No focused window")
-            return true
-        end
-        
-        -- Save window state for undo functionality if this is a position-changing operation
-        if not noHistory then
-            -- Only save if we have a position to save
-            if win:frame() then
-                -- Remove any redo history
-                while #windowHistory > historyIndex do
-                    table.remove(windowHistory)
-                end
-                
-                -- Add current position to history
-                if historyIndex < MAX_HISTORY then
-                    table.insert(windowHistory, {
-                        id = win:id(),
-                        frame = win:frame(),
-                        screen = win:screen():id()
-                    })
-                    historyIndex = historyIndex + 1
-                else
-                    -- Remove oldest entry
-                    table.remove(windowHistory, 1)
-                    table.insert(windowHistory, {
-                        id = win:id(),
-                        frame = win:frame(),
-                        screen = win:screen():id()
-                    })
-                end
-            end
-        end
+        local win = hs_window.focusedWindow()
+        if not win then return true end
         
         -- Execute the operation
         fn(win)
@@ -61,334 +30,288 @@ local function windowOperation(fn, noHistory)
     end
 end
 
--- Define basic window operations
-local function moveWindowLeft()
-    return windowOperation(function(win) win:moveToUnit({0, 0, 0.5, 1}) end, false)()
+-- Optimized predefined window position operations using a table-based approach
+local windowPositions = {
+    -- Basic positions
+    left = {0, 0, 0.5, 1},
+    right = {0.5, 0, 0.5, 1},
+    top = {0, 0, 1, 0.5},
+    bottom = {0, 0.5, 1, 0.5},
+    
+    -- Corners
+    topLeft = {0, 0, 0.5, 0.5},
+    topRight = {0.5, 0, 0.5, 0.5},
+    bottomLeft = {0, 0.5, 0.5, 0.5},
+    bottomRight = {0.5, 0.5, 0.5, 0.5},
+    
+    -- Thirds
+    leftThird = {0, 0, 1/3, 1},
+    middleThird = {1/3, 0, 1/3, 1},
+    rightThird = {2/3, 0, 1/3, 1},
+    
+    -- Full screen
+    fullScreen = {0, 0, 1, 1}
+}
+
+-- Factory function for creating move functions - optimized by pre-compiling the window unit
+local moveWindowFunctions = {}
+for name, pos in pairs(windowPositions) do
+    moveWindowFunctions[name] = windowOperation(function(win) win:moveToUnit(pos) end)
 end
 
-local function moveWindowRight()
-    return windowOperation(function(win) win:moveToUnit({0.5, 0, 0.5, 1}) end, false)()
-end
+-- Special operations that require custom logic
+local centerWindow = windowOperation(function(win) 
+    local size = win:size()
+    local screen = win:screen():frame()
+    win:setTopLeft({
+        x = (screen.w - size.w) / 2,
+        y = (screen.h - size.h) / 2
+    })
+end)
 
-local function moveWindowTop()
-    return windowOperation(function(win) win:moveToUnit({0, 0, 1, 0.5}) end, false)()
-end
+-- Cache the resize delta values
+local RESIZE_DELTA = 25
+local RESIZE_DELTA_2X = 50
+local MIN_WINDOW_SIZE = 100
 
-local function moveWindowBottom()
-    return windowOperation(function(win) win:moveToUnit({0, 0.5, 1, 0.5}) end, false)()
-end
+local largerWindow = windowOperation(function(win)
+    local f = win:frame()
+    local screen = win:screen():frame()
+    win:setFrame({
+        x = math.max(f.x - RESIZE_DELTA, screen.x),
+        y = math.max(f.y - RESIZE_DELTA, screen.y),
+        w = math.min(f.w + RESIZE_DELTA_2X, screen.w - (f.x - screen.x)),
+        h = math.min(f.h + RESIZE_DELTA_2X, screen.h - (f.y - screen.y))
+    })
+end)
 
-local function moveWindowTopLeft()
-    return windowOperation(function(win) win:moveToUnit({0, 0, 0.5, 0.5}) end, false)()
-end
-
-local function moveWindowTopRight()
-    return windowOperation(function(win) win:moveToUnit({0.5, 0, 0.5, 0.5}) end, false)()
-end
-
-local function moveWindowBottomLeft()
-    return windowOperation(function(win) win:moveToUnit({0, 0.5, 0.5, 0.5}) end, false)()
-end
-
-local function moveWindowBottomRight()
-    return windowOperation(function(win) win:moveToUnit({0.5, 0.5, 0.5, 0.5}) end, false)()
-end
-
-local function moveWindowLeftThird()
-    return windowOperation(function(win) win:moveToUnit({0, 0, 1/3, 1}) end, false)()
-end
-
-local function moveWindowMiddleThird()
-    return windowOperation(function(win) win:moveToUnit({1/3, 0, 1/3, 1}) end, false)()
-end
-
-local function moveWindowRightThird()
-    return windowOperation(function(win) win:moveToUnit({2/3, 0, 1/3, 1}) end, false)()
-end
-
-local function fullScreenWindow()
-    return windowOperation(function(win) win:moveToUnit({0, 0, 1, 1}) end, false)()
-end
-
-local function centerWindow()
-    return windowOperation(function(win) 
-        local size = win:size()
-        local screen = win:screen():frame()
-        local x = (screen.w - size.w) / 2
-        local y = (screen.h - size.h) / 2
-        win:setTopLeft({x = x, y = y})
-    end, false)()
-end
-
-local function largerWindow()
-    return windowOperation(function(win)
-        local f = win:frame()
-        local screen = win:screen():frame()
+local smallerWindow = windowOperation(function(win)
+    local f = win:frame()
+    if f.w > MIN_WINDOW_SIZE and f.h > MIN_WINDOW_SIZE then
         win:setFrame({
-            x = math.max(f.x - 25, screen.x),
-            y = math.max(f.y - 25, screen.y),
-            w = math.min(f.w + 50, screen.w - (f.x - screen.x)),
-            h = math.min(f.h + 50, screen.h - (f.y - screen.y))
+            x = f.x + RESIZE_DELTA,
+            y = f.y + RESIZE_DELTA,
+            w = f.w - RESIZE_DELTA_2X,
+            h = f.h - RESIZE_DELTA_2X
         })
-    end, false)()
-end
-
-local function smallerWindow()
-    return windowOperation(function(win)
-        local f = win:frame()
-        if f.w > 100 and f.h > 100 then  -- Don't make windows too small
-            win:setFrame({
-                x = f.x + 25,
-                y = f.y + 25,
-                w = f.w - 50,
-                h = f.h - 50
-            })
-        end
-    end, false)()
-end
-
-local function nextScreen()
-    return windowOperation(function(win) win:moveToScreen(win:screen():next()) end, false)()
-end
-
-local function prevScreen()
-    return windowOperation(function(win) win:moveToScreen(win:screen():previous()) end, false)()
-end
-
--- App window cycling (simplified)
-local function cycleAppWindows()
-    local win = hs.window.focusedWindow()
-    if not win then
-        hs.alert.show("No focused window")
-        return true
     end
+end)
+
+local nextScreen = windowOperation(function(win)
+    win:moveToScreen(win:screen():next())
+end)
+
+local prevScreen = windowOperation(function(win)
+    win:moveToScreen(win:screen():previous())
+end)
+
+-- App window cycling - optimized by removing redundant checks and alerts
+local function cycleAppWindows()
+    local win = hs_window.focusedWindow()
+    if not win then return true end
     
     local app = win:application()
-    if not app then
-        hs.alert.show("No application found")
-        return true
-    end
+    if not app then return true end
     
     local windows = app:allWindows()
-    if #windows <= 1 then
-        hs.alert.show("Only one window for this app")
-        return true
-    end
+    local numWindows = #windows
+    if numWindows <= 1 then return true end
     
-    -- Focus next window in the app
-    for i, w in ipairs(windows) do
-        if w:id() == win:id() and i < #windows then
-            if windows[i+1]:isMinimized() then
-                windows[i+1]:unminimize()
-            end
-            windows[i+1]:focus()
+    local currentId = win:id()
+    
+    -- Find current window index and next window more efficiently
+    for i = 1, numWindows do
+        if windows[i]:id() == currentId then
+            local nextIdx = i < numWindows and i + 1 or 1
+            local nextWin = windows[nextIdx]
+            if nextWin:isMinimized() then nextWin:unminimize() end
+            nextWin:focus()
             return true
         end
     end
     
-    -- Wrap around to first window
-    if windows[1]:isMinimized() then
-        windows[1]:unminimize()
-    end
-    windows[1]:focus()
+    -- Fallback: focus first window if current not found
+    local firstWin = windows[1]
+    if firstWin:isMinimized() then firstWin:unminimize() end
+    firstWin:focus()
     return true
 end
 
--- Mouse warping
+-- Mouse warping - simplified
 local function mouseToWindow()
-    local win = hs.window.focusedWindow()
-    if not win then
-        hs.alert.show("No focused window")
-        return true
-    end
+    local win = hs_window.focusedWindow()
+    if not win then return true end
     
-    local frame = win:frame()
-    hs.mouse.absolutePosition({
-        x = frame.x + frame.w/2,
-        y = frame.y + frame.h/2
-    })
-    
+    local f = win:frame()
+    hs_mouse.absolutePosition({x = f.x + f.w/2, y = f.y + f.h/2})
     return true
 end
 
--- Grid selector
+-- Grid selector - simplified
 local function toggleGridSelector()
-    local win = hs.window.focusedWindow()
-    if not win then
-        hs.alert.show("No focused window")
-        return true
-    end
-    
-    hs.grid.show(win)
+    local win = hs_window.focusedWindow()
+    if win then hs_grid.show(win) end
     return true
 end
 
--- Number overlay window focus (simplified)
+-- Constants for overlay handling
+local OVERLAY_SIZE = 70
+local OVERLAY_HALF_SIZE = 35
+local OVERLAY_MAX_COUNT = 9
+local OVERLAY_AUTO_HIDE_TIME = 5
+local OVERLAY_TEXT_Y_POS = 45
+
+-- More efficient overlay cleanup
 local function hideWindowOverlays()
     for _, overlay in pairs(windowOverlays) do
-        if overlay and overlay.canvas then 
-            overlay.canvas:delete() 
-        end
-        if overlay and overlay.hotkey then 
-            overlay.hotkey:delete() 
+        if overlay then
+            if overlay.canvas then overlay.canvas:delete() end
+            if overlay.hotkey then overlay.hotkey:delete() end
         end
     end
     
-    if windowOverlays.escape then
-        windowOverlays.escape:delete()
-    end
+    if windowOverlays.escape then windowOverlays.escape:delete() end
     
     windowOverlays = {}
     showingOverlays = false
 end
 
+-- Optimized window overlay function
 local function showWindowOverlays()
     if showingOverlays then
         hideWindowOverlays()
         return true
     end
     
-    -- Performance optimization: Get only visible application windows
-    local visibleApps = {}
+    -- Collect windows with a single iteration over visible windows
     local allWindows = {}
+    local appCache = {}
     
-    -- First collect all visible applications (much faster than processing all running apps)
-    for _, win in ipairs(hs.window.allWindows()) do
-        local app = win:application()
-        if app and not visibleApps[app:pid()] then
-            visibleApps[app:pid()] = app
-        end
-    end
-    
-    -- Then get all windows including minimized ones from visible applications only
-    for _, app in pairs(visibleApps) do
-        for _, win in ipairs(app:allWindows()) do
-            if win:isStandard() then
-                table.insert(allWindows, win)
+    for _, win in ipairs(hs_window.allWindows()) do
+        if win:isStandard() then
+            table.insert(allWindows, win)
+            
+            -- Cache application names to avoid repeated calls
+            local appId = win:application():pid()
+            if not appCache[appId] then
+                appCache[appId] = win:application():name() or "Unknown"
             end
         end
     end
     
-    if #allWindows == 0 then
-        hs.alert.show("No windows found")
-        return true
-    end
+    if #allWindows == 0 then return true end
     
-    -- Simplified sorting: visible first, then by app name
+    -- Optimized sort with cached app names
     table.sort(allWindows, function(a, b)
-        -- First prioritize visibility
-        if a:isVisible() and not b:isVisible() then return true end
-        if not a:isVisible() and b:isVisible() then return false end
+        local aVisible = a:isVisible()
+        local bVisible = b:isVisible()
         
-        -- Then by app name
-        local appA = a:application():name() or ""
-        local appB = b:application():name() or ""
-        return appA < appB
+        if aVisible ~= bVisible then return aVisible end
+        
+        local aAppId = a:application():pid()
+        local bAppId = b:application():pid()
+        return (appCache[aAppId] or "") < (appCache[bAppId] or "")
     end)
     
+    -- Reuse canvas elements for all overlays
+    local canvasElements = {
+        {
+            type = "rectangle",
+            action = "fill",
+            strokeColor = {white = 1, alpha = 0.9},
+            strokeWidth = 2,
+            roundedRectRadii = {xRadius = 10, yRadius = 10}
+        },
+        {
+            type = "text",
+            textSize = 48,
+            textColor = {white = 1, alpha = 1},
+            textAlignment = "center"
+        },
+        {
+            type = "text",
+            textSize = 10,
+            textColor = {white = 1, alpha = 0.9},
+            textAlignment = "center",
+            frame = {x = 0, y = OVERLAY_TEXT_Y_POS, w = OVERLAY_SIZE, h = 20}
+        }
+    }
+    
     -- Create overlays (maximum of 9)
-    local count = math.min(#allWindows, 9)
+    local count = math.min(#allWindows, OVERLAY_MAX_COUNT)
     for i = 1, count do
         local win = allWindows[i]
         local frame = win:frame()
         if frame then
-            local isMinimized = win:isMinimized()
-            local appName = win:application():name() or "Unknown"
-            
-            -- Simplified canvas creation with fewer elements
-            local canvas = hs.canvas.new({
-                x = frame.x + frame.w/2 - 35,
-                y = frame.y + frame.h/2 - 35,
-                w = 70,
-                h = 70
+            local canvas = hs_canvas.new({
+                x = frame.x + frame.w/2 - OVERLAY_HALF_SIZE,
+                y = frame.y + frame.h/2 - OVERLAY_HALF_SIZE,
+                w = OVERLAY_SIZE, h = OVERLAY_SIZE
             })
             
-            canvas:appendElements({
-                {
-                    type = "rectangle",
-                    action = "fill",
-                    fillColor = isMinimized 
-                        and {red = 0.3, green = 0.3, blue = 0.3, alpha = 0.8}
-                        or {red = 0, green = 0, blue = 0, alpha = 0.8},
-                    strokeColor = {white = 1, alpha = 0.9},
-                    strokeWidth = 2,
-                    roundedRectRadii = {xRadius = 10, yRadius = 10}
-                },
-                {
-                    type = "text",
-                    text = tostring(i),
-                    textSize = 48,
-                    textColor = {white = 1, alpha = 1},
-                    textAlignment = "center"
-                },
-                {
-                    type = "text",
-                    text = appName,
-                    textSize = 10,
-                    textColor = {white = 1, alpha = 0.9},
-                    textAlignment = "center",
-                    frame = {x = 0, y = 45, w = 70, h = 20}
-                }
-            })
+            -- Clone the template elements
+            local elements = {table.unpack(canvasElements)}
             
+            -- Update dynamic properties
+            elements[1].fillColor = win:isMinimized() 
+                and {red = 0.3, green = 0.3, blue = 0.3, alpha = 0.8}
+                or {red = 0, green = 0, blue = 0, alpha = 0.8}
+            
+            elements[2].text = tostring(i)
+            elements[3].text = appCache[win:application():pid()] or "Unknown"
+            
+            canvas:appendElements(elements)
             canvas:show()
             
-            -- Store the actual window object to avoid issues with window IDs
+            -- Create hotkey once with direct reference
             windowOverlays[i] = {
                 canvas = canvas,
-                window = win
-            }
-            
-            -- Create hotkey right away with direct reference to the window (closure)
-            local capturedWin = win
-            windowOverlays[i].hotkey = hs.hotkey.bind({}, tostring(i), function()
-                hideWindowOverlays()
-                if capturedWin then
-                    if capturedWin:isMinimized() then
-                        capturedWin:unminimize()
-                        -- Brief delay to ensure window is fully unminimized before focusing
-                        hs.timer.doAfter(0.1, function()
-                            capturedWin:focus()
-                        end)
+                window = win,
+                hotkey = hs_hotkey.bind({}, tostring(i), function()
+                    hideWindowOverlays()
+                    if win:isMinimized() then
+                        win:unminimize()
+                        hs_timer.doAfter(0.1, function() win:focus() end)
                     else
-                        capturedWin:focus()
+                        win:focus()
                     end
-                end
-            end)
+                end)
+            }
         end
     end
     
-    windowOverlays.escape = hs.hotkey.bind({}, "escape", hideWindowOverlays)
+    windowOverlays.escape = hs_hotkey.bind({}, "escape", hideWindowOverlays)
     showingOverlays = true
     
-    hs.timer.doAfter(5, function()
+    -- Auto-hide overlays after 5 seconds
+    hs_timer.doAfter(OVERLAY_AUTO_HIDE_TIME, function()
         if showingOverlays then hideWindowOverlays() end
     end)
     
     return true
 end
 
--- Define window management mappings
+-- Define window management mappings with the most optimized functions
 local windowMappings = {
     -- Main positions
-    h = { action = moveWindowLeft, desc = "Left Half" },
-    j = { action = moveWindowBottom, desc = "Bottom Half" },
-    k = { action = moveWindowTop, desc = "Top Half" },
-    l = { action = moveWindowRight, desc = "Right Half" },
+    h = { action = moveWindowFunctions.left, desc = "Left Half" },
+    j = { action = moveWindowFunctions.bottom, desc = "Bottom Half" },
+    k = { action = moveWindowFunctions.top, desc = "Top Half" },
+    l = { action = moveWindowFunctions.right, desc = "Right Half" },
     
     -- Corners
-    u = { action = moveWindowTopLeft, desc = "Top Left Quarter" },
-    i = { action = moveWindowTopRight, desc = "Top Right Quarter" },
-    n = { action = moveWindowBottomLeft, desc = "Bottom Left Quarter" },
-    m = { action = moveWindowBottomRight, desc = "Bottom Right Quarter" },
+    u = { action = moveWindowFunctions.topLeft, desc = "Top Left Quarter" },
+    i = { action = moveWindowFunctions.topRight, desc = "Top Right Quarter" },
+    n = { action = moveWindowFunctions.bottomLeft, desc = "Bottom Left Quarter" },
+    m = { action = moveWindowFunctions.bottomRight, desc = "Bottom Right Quarter" },
     
     -- Thirds
-    ["1"] = { action = moveWindowLeftThird, desc = "Left Third" },
-    ["2"] = { action = moveWindowMiddleThird, desc = "Middle Third" },
-    ["3"] = { action = moveWindowRightThird, desc = "Right Third" },
+    ["1"] = { action = moveWindowFunctions.leftThird, desc = "Left Third" },
+    ["2"] = { action = moveWindowFunctions.middleThird, desc = "Middle Third" },
+    ["3"] = { action = moveWindowFunctions.rightThird, desc = "Right Third" },
     
     -- Full screen and center
-    f = { action = fullScreenWindow, desc = "Full Screen" },
+    f = { action = moveWindowFunctions.fullScreen, desc = "Full Screen" },
     c = { action = centerWindow, desc = "Center Window" },
     
     -- Resize
@@ -415,12 +338,10 @@ local windowMappings = {
 -- Store the mappings in the modal definition
 windowModal.mappings = windowMappings
 
--- Create the modal module
-local modal = modals.createModalModule(
+-- Create and return the modal module
+return modals.createModalModule(
     windowMappings,
     windowModal.title,
     windowModal,
     "window"
-)
-
-return modal 
+) 
