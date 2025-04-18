@@ -17,6 +17,19 @@ local hs_canvas = hs.canvas
 local hs_hotkey = hs.hotkey
 local hs_timer = hs.timer
 local hs_alert = hs.alert
+local hs_geometry = hs.geometry
+
+-- Constants for window operations
+local RESIZE_DELTA = 25
+local RESIZE_DELTA_2X = 50
+local MIN_WINDOW_SIZE = 100
+
+-- Constants for overlay handling
+local OVERLAY_SIZE = 70
+local OVERLAY_HALF_SIZE = 35
+local OVERLAY_MAX_COUNT = 9
+local OVERLAY_AUTO_HIDE_TIME = 5
+local OVERLAY_TEXT_Y_POS = 45
 
 -- Helper function to create window operations - optimized for performance
 local function windowOperation(fn)
@@ -30,30 +43,30 @@ local function windowOperation(fn)
     end
 end
 
--- Optimized predefined window position operations using a table-based approach
+-- Pre-calculated window position units using hs.geometry for better performance
 local windowPositions = {
     -- Basic positions
-    left = {0, 0, 0.5, 1},
-    right = {0.5, 0, 0.5, 1},
-    top = {0, 0, 1, 0.5},
-    bottom = {0, 0.5, 1, 0.5},
+    left = hs_geometry.rect(0, 0, 0.5, 1),
+    right = hs_geometry.rect(0.5, 0, 0.5, 1),
+    top = hs_geometry.rect(0, 0, 1, 0.5),
+    bottom = hs_geometry.rect(0, 0.5, 1, 0.5),
     
     -- Corners
-    topLeft = {0, 0, 0.5, 0.5},
-    topRight = {0.5, 0, 0.5, 0.5},
-    bottomLeft = {0, 0.5, 0.5, 0.5},
-    bottomRight = {0.5, 0.5, 0.5, 0.5},
+    topLeft = hs_geometry.rect(0, 0, 0.5, 0.5),
+    topRight = hs_geometry.rect(0.5, 0, 0.5, 0.5),
+    bottomLeft = hs_geometry.rect(0, 0.5, 0.5, 0.5),
+    bottomRight = hs_geometry.rect(0.5, 0.5, 0.5, 0.5),
     
     -- Thirds
-    leftThird = {0, 0, 1/3, 1},
-    middleThird = {1/3, 0, 1/3, 1},
-    rightThird = {2/3, 0, 1/3, 1},
+    leftThird = hs_geometry.rect(0, 0, 1/3, 1),
+    middleThird = hs_geometry.rect(1/3, 0, 1/3, 1),
+    rightThird = hs_geometry.rect(2/3, 0, 1/3, 1),
     
     -- Full screen
-    fullScreen = {0, 0, 1, 1}
+    fullScreen = hs_geometry.rect(0, 0, 1, 1)
 }
 
--- Factory function for creating move functions - optimized by pre-compiling the window unit
+-- Factory function for creating move functions - using pre-calculated geometry objects
 local moveWindowFunctions = {}
 for name, pos in pairs(windowPositions) do
     moveWindowFunctions[name] = windowOperation(function(win) win:moveToUnit(pos) end)
@@ -69,20 +82,17 @@ local centerWindow = windowOperation(function(win)
     })
 end)
 
--- Cache the resize delta values
-local RESIZE_DELTA = 25
-local RESIZE_DELTA_2X = 50
-local MIN_WINDOW_SIZE = 100
-
 local largerWindow = windowOperation(function(win)
     local f = win:frame()
     local screen = win:screen():frame()
-    win:setFrame({
-        x = math.max(f.x - RESIZE_DELTA, screen.x),
-        y = math.max(f.y - RESIZE_DELTA, screen.y),
-        w = math.min(f.w + RESIZE_DELTA_2X, screen.w - (f.x - screen.x)),
-        h = math.min(f.h + RESIZE_DELTA_2X, screen.h - (f.y - screen.y))
-    })
+    
+    -- Pre-calculate all values at once
+    local newX = math.max(f.x - RESIZE_DELTA, screen.x)
+    local newY = math.max(f.y - RESIZE_DELTA, screen.y)
+    local newW = math.min(f.w + RESIZE_DELTA_2X, screen.w - (newX - screen.x))
+    local newH = math.min(f.h + RESIZE_DELTA_2X, screen.h - (newY - screen.y))
+    
+    win:setFrame({x = newX, y = newY, w = newW, h = newH})
 end)
 
 local smallerWindow = windowOperation(function(win)
@@ -105,7 +115,7 @@ local prevScreen = windowOperation(function(win)
     win:moveToScreen(win:screen():previous())
 end)
 
--- App window cycling - optimized by removing redundant checks and alerts
+-- App window cycling - optimized with direct lookup
 local function cycleAppWindows()
     local win = hs_window.focusedWindow()
     if not win then return true end
@@ -119,7 +129,7 @@ local function cycleAppWindows()
     
     local currentId = win:id()
     
-    -- Find current window index and next window more efficiently
+    -- Find current window index and next window with direct lookup
     for i = 1, numWindows do
         if windows[i]:id() == currentId then
             local nextIdx = i < numWindows and i + 1 or 1
@@ -137,7 +147,7 @@ local function cycleAppWindows()
     return true
 end
 
--- Mouse warping - simplified
+-- Mouse warping - pre-calculate center coordinates once
 local function mouseToWindow()
     local win = hs_window.focusedWindow()
     if not win then return true end
@@ -154,14 +164,31 @@ local function toggleGridSelector()
     return true
 end
 
--- Constants for overlay handling
-local OVERLAY_SIZE = 70
-local OVERLAY_HALF_SIZE = 35
-local OVERLAY_MAX_COUNT = 9
-local OVERLAY_AUTO_HIDE_TIME = 5
-local OVERLAY_TEXT_Y_POS = 45
+-- Template for canvas elements to reuse in overlays
+local canvasElementsTemplate = {
+    {
+        type = "rectangle",
+        action = "fill",
+        strokeColor = {white = 1, alpha = 0.9},
+        strokeWidth = 2,
+        roundedRectRadii = {xRadius = 10, yRadius = 10}
+    },
+    {
+        type = "text",
+        textSize = 48,
+        textColor = {white = 1, alpha = 1},
+        textAlignment = "center"
+    },
+    {
+        type = "text",
+        textSize = 10,
+        textColor = {white = 1, alpha = 0.9},
+        textAlignment = "center",
+        frame = {x = 0, y = OVERLAY_TEXT_Y_POS, w = OVERLAY_SIZE, h = 20}
+    }
+}
 
--- More efficient overlay cleanup
+-- Efficient overlay cleanup
 local function hideWindowOverlays()
     for _, overlay in pairs(windowOverlays) do
         if overlay then
@@ -176,6 +203,25 @@ local function hideWindowOverlays()
     showingOverlays = false
 end
 
+-- Deep clone function for canvas elements
+local function cloneCanvasElements()
+    local result = {}
+    for i, element in ipairs(canvasElementsTemplate) do
+        result[i] = {}
+        for k, v in pairs(element) do
+            if type(v) == "table" then
+                result[i][k] = {}
+                for k2, v2 in pairs(v) do
+                    result[i][k][k2] = v2
+                end
+            else
+                result[i][k] = v
+            end
+        end
+    end
+    return result
+end
+
 -- Optimized window overlay function
 local function showWindowOverlays()
     if showingOverlays then
@@ -183,7 +229,7 @@ local function showWindowOverlays()
         return true
     end
     
-    -- Collect windows with a single iteration over visible windows
+    -- Collect visible windows
     local allWindows = {}
     local appCache = {}
     
@@ -191,10 +237,11 @@ local function showWindowOverlays()
         if win:isStandard() then
             table.insert(allWindows, win)
             
-            -- Cache application names to avoid repeated calls
-            local appId = win:application():pid()
+            -- Cache application names
+            local app = win:application()
+            local appId = app:pid()
             if not appCache[appId] then
-                appCache[appId] = win:application():name() or "Unknown"
+                appCache[appId] = app:name() or "Unknown"
             end
         end
     end
@@ -206,74 +253,67 @@ local function showWindowOverlays()
         local aVisible = a:isVisible()
         local bVisible = b:isVisible()
         
-        if aVisible ~= bVisible then return aVisible end
+        if aVisible ~= bVisible then 
+            return aVisible 
+        end
         
         local aAppId = a:application():pid()
         local bAppId = b:application():pid()
         return (appCache[aAppId] or "") < (appCache[bAppId] or "")
     end)
     
-    -- Reuse canvas elements for all overlays
-    local canvasElements = {
-        {
-            type = "rectangle",
-            action = "fill",
-            strokeColor = {white = 1, alpha = 0.9},
-            strokeWidth = 2,
-            roundedRectRadii = {xRadius = 10, yRadius = 10}
-        },
-        {
-            type = "text",
-            textSize = 48,
-            textColor = {white = 1, alpha = 1},
-            textAlignment = "center"
-        },
-        {
-            type = "text",
-            textSize = 10,
-            textColor = {white = 1, alpha = 0.9},
-            textAlignment = "center",
-            frame = {x = 0, y = OVERLAY_TEXT_Y_POS, w = OVERLAY_SIZE, h = 20}
-        }
-    }
-    
     -- Create overlays (maximum of 9)
     local count = math.min(#allWindows, OVERLAY_MAX_COUNT)
+    
+    -- Single auto-hide timer for all overlays
+    local autoHideTimer
+    
     for i = 1, count do
         local win = allWindows[i]
         local frame = win:frame()
         if frame then
+            -- Calculate position once
+            local canvasX = frame.x + frame.w/2 - OVERLAY_HALF_SIZE
+            local canvasY = frame.y + frame.h/2 - OVERLAY_HALF_SIZE
+            
             local canvas = hs_canvas.new({
-                x = frame.x + frame.w/2 - OVERLAY_HALF_SIZE,
-                y = frame.y + frame.h/2 - OVERLAY_HALF_SIZE,
+                x = canvasX, y = canvasY,
                 w = OVERLAY_SIZE, h = OVERLAY_SIZE
             })
             
             -- Clone the template elements
-            local elements = {table.unpack(canvasElements)}
+            local elements = cloneCanvasElements()
             
             -- Update dynamic properties
-            elements[1].fillColor = win:isMinimized() 
+            local isMinimized = win:isMinimized()
+            elements[1].fillColor = isMinimized
                 and {red = 0.3, green = 0.3, blue = 0.3, alpha = 0.8}
                 or {red = 0, green = 0, blue = 0, alpha = 0.8}
             
             elements[2].text = tostring(i)
-            elements[3].text = appCache[win:application():pid()] or "Unknown"
             
+            local appId = win:application():pid()
+            elements[3].text = appCache[appId] or "Unknown"
+            
+            -- Add all elements at once
             canvas:appendElements(elements)
             canvas:show()
             
-            -- Create hotkey once with direct reference
+            -- Create hotkey with direct window reference to avoid closure issues
+            local windowRef = win
             windowOverlays[i] = {
                 canvas = canvas,
-                window = win,
+                window = windowRef,
                 hotkey = hs_hotkey.bind({}, tostring(i), function()
                     hideWindowOverlays()
-                    if win:isMinimized() then
-                        win:unminimize()
-                        hs_timer.doAfter(0.1, function() win:focus() end)
+                    
+                    if windowRef:isMinimized() then
+                        windowRef:unminimize()
+                        hs_timer.doAfter(0.1, function() 
+                            windowRef:focus() 
+                        end)
                     else
-                        win:focus()
+                        windowRef:focus()
                     end
                 end)
             }
@@ -283,9 +323,14 @@ local function showWindowOverlays()
     windowOverlays.escape = hs_hotkey.bind({}, "escape", hideWindowOverlays)
     showingOverlays = true
     
-    -- Auto-hide overlays after 5 seconds
-    hs_timer.doAfter(OVERLAY_AUTO_HIDE_TIME, function()
+    -- Auto-hide overlays after delay
+    if autoHideTimer then
+        autoHideTimer:stop()
+    end
+    
+    autoHideTimer = hs_timer.doAfter(OVERLAY_AUTO_HIDE_TIME, function()
         if showingOverlays then hideWindowOverlays() end
+        autoHideTimer = nil
     end)
     
     return true
