@@ -46,80 +46,70 @@ if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then
     eval "$(ssh-agent -s)" > /dev/null
   fi
   
-  # Smart caching with minimal I/O - single read/write
-  SSH_CACHE_FILE="/tmp/ssh_loaded_keys_$USER"
-  SSH_CACHE_MAX_AGE=3600  # Cache valid for 1 hour
-  
   # Simple platform detection for macOS-specific features
   _IS_MACOS=0
   [[ "$OSTYPE" == darwin* ]] && _IS_MACOS=1
   
-  # Load cached fingerprints if fresh enough
-  if [[ -f "$SSH_CACHE_FILE" ]]; then
-    # Fast cache age check - avoid complex calculations
-    if [[ -n "$(find "$SSH_CACHE_FILE" -mmin -60 2>/dev/null)" ]]; then
-      loaded_keys=$(cat "$SSH_CACHE_FILE")
-    else
-      loaded_keys=$(ssh-add -l 2>/dev/null | awk '{print $2}')
-      echo "$loaded_keys" > "$SSH_CACHE_FILE" 2>/dev/null
-    fi
-  else
+  # Get currently loaded keys directly from ssh-add
+  # The agent status code will help us determine if keys are loaded
+  # 0 = keys loaded, 1 = no keys loaded, 2 = agent not running
+  ssh-add -l &>/dev/null
+  KEYS_STATUS=$?
+  
+  # Only proceed if agent is running (status code 0 or 1)
+  if [[ $KEYS_STATUS -lt 2 ]]; then
+    # Get list of currently loaded fingerprints
     loaded_keys=$(ssh-add -l 2>/dev/null | awk '{print $2}')
-    echo "$loaded_keys" > "$SSH_CACHE_FILE" 2>/dev/null
+    
+    # Key validation function - reused for each key
+    validate_key() {
+      local key="$1"
+      [[ ! -f "$key" || ! -r "$key" ]] && return 1
+      # Content check first, fallback to fingerprint
+      grep -q -E "BEGIN .* PRIVATE KEY" "$key" 2>/dev/null && return 0
+      ssh-keygen -lf "$key" &>/dev/null
+      return $?
+    }
+    
+    # Pattern matching for exclusions
+    should_exclude() {
+      local filename="$1"
+      for pattern in $SSH_EXCLUDED_PATTERNS; do
+        [[ "$filename" == $~pattern ]] && return 0
+      done
+      return 1
+    }
+    
+    # Add keys
+    success_count=0
+    for key in "$SSH_KEY_DIR"/*; do
+      filename="$(basename "$key")"    
+      should_exclude "$filename" && continue
+      
+      # Only validate keys that pass exclusion filter
+      validate_key "$key" || continue
+      
+      # Get fingerprint and check if already loaded
+      fingerprint=$(ssh-keygen -lf "$key" 2>/dev/null | awk '{print $2}')
+      [[ -z "$fingerprint" ]] && continue
+      
+      # Skip if fingerprint is already in loaded_keys
+      [[ -n "$loaded_keys" && "$loaded_keys" == *"$fingerprint"* ]] && continue
+      
+      # Add key with platform-specific options
+      if [[ $_IS_MACOS -eq 1 && $SSH_USE_KEYCHAIN -eq 1 ]]; then
+        ssh-add --apple-use-keychain "$key" 2>/dev/null && ((success_count++))
+      else
+        ssh-add "$key" 2>/dev/null && ((success_count++))
+      fi
+    done
+    
+    # Cleanup all temp variables
+    unset -f validate_key should_exclude
+    unset loaded_keys fingerprint success_count KEYS_STATUS
   fi
   
-  # Key validation function - reused for each key
-  validate_key() {
-    local key="$1"
-    [[ ! -f "$key" || ! -r "$key" ]] && return 1
-    # Content check first, fallback to fingerprint
-    grep -q -E "BEGIN .* PRIVATE KEY" "$key" 2>/dev/null && return 0
-    ssh-keygen -lf "$key" &>/dev/null
-    return $?
-  }
-  
-  # Pattern matching for exclusions
-  should_exclude() {
-    local filename="$1"
-    for pattern in $SSH_EXCLUDED_PATTERNS; do
-      [[ "$filename" == $~pattern ]] && return 0
-    done
-    return 1
-  }
-  
-  # Add keys
-  success_count=0
-  for key in "$SSH_KEY_DIR"/*; do
-    filename="$(basename "$key")"    
-    should_exclude "$filename" && continue
-    
-    # Only validate keys that pass exclusion filter
-    validate_key "$key" || continue
-    
-    # Get fingerprint and check if already loaded
-    fingerprint=$(ssh-keygen -lf "$key" 2>/dev/null | awk '{print $2}')
-    [[ -z "$fingerprint" || "$loaded_keys" == *"$fingerprint"* ]] && continue
-    
-    # Add key with platform-specific options
-    if [[ $_IS_MACOS -eq 1 && $SSH_USE_KEYCHAIN -eq 1 ]]; then
-      ssh-add --apple-use-keychain "$key" 2>/dev/null && {
-        loaded_keys="$loaded_keys $fingerprint"
-        ((success_count++))
-      }
-    else
-      ssh-add "$key" 2>/dev/null && {
-        loaded_keys="$loaded_keys $fingerprint"
-        ((success_count++))
-      }
-    fi
-  done
-  
-  # Only update cache if we added keys
-  [[ $success_count -gt 0 ]] && echo "$loaded_keys" > "$SSH_CACHE_FILE" 2>/dev/null
-  
-  # Cleanup all temp variables
-  unset -f ssh_agent_running validate_key should_exclude
-  unset loaded_keys fingerprint SSH_CACHE_FILE SSH_CACHE_MAX_AGE 
+  unset -f ssh_agent_running
   unset SSH_KEY_DIR SSH_USE_KEYCHAIN SSH_EXCLUDED_PATTERNS
-  unset _HAVE_SSH_AGENT _HAVE_SSH_ADD _IS_MACOS success_count
+  unset _HAVE_SSH_AGENT _HAVE_SSH_ADD _IS_MACOS
 fi
