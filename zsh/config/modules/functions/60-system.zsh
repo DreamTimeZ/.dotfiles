@@ -47,8 +47,8 @@ update_all() {
   # 3. Check and install macOS system updates
   echo -e "\n\033[1;32m◆ Checking for macOS system updates...\033[0m"
   if sudo softwareupdate --list-full-installers &>/dev/null; then
-    if sudo softwareupdate -i -a; then
-      echo "✓ System updates installed successfully."
+    if sudo softwareupdate -i -a --restart; then
+      echo "✓ System updates installed successfully and will restart when ready."
     else
       success=false
       errors+=("System update failed")
@@ -58,20 +58,11 @@ update_all() {
     echo "✓ No system updates available."
   fi
 
-  # 4. Check for Hammerspoon configuration changes if installed
-  if [[ -d "$HOME/.hammerspoon" ]]; then
-    echo -e "\n\033[1;32m◆ Reloading Hammerspoon configuration...\033[0m"
-    if osascript -e 'tell application "Hammerspoon" to reload config'; then
-      echo "✓ Hammerspoon configuration reloaded."
-    else
-      echo -e "\033[1;33m⚠ Could not reload Hammerspoon configuration.\033[0m"
-    fi
-  fi
-
   # Summary
   echo -e "\n\033[1;34m╔═══════════════════════════════════════════════════════╗"
   if $success; then
     echo -e "║          System update process completed!             ║"
+    echo -e "║     System will restart if updates were installed     ║"
   else
     echo -e "║      Update process completed with some errors:       ║"
     for error in "${errors[@]}"; do
