@@ -6,7 +6,7 @@ local config = {}
 
 -- Paths configuration
 config.paths = {
-    localModulesBase = "modules.hotkeys.local.",  -- Base path for local modules
+    localModulesBase = "modules.hotkeys.config.local.",  -- Base path for local modules
 }
 
 -- Modifier keys configuration
