@@ -15,8 +15,8 @@ tmux/sessions
 hammerspoon/Spoons
 
 # Exclude local config directory contents but keep README
-hammerspoon/modules/hotkeys/local/*
-!hammerspoon/modules/hotkeys/local/README.md
+hammerspoon/modules/hotkeys/config/local/*
+!hammerspoon/modules/hotkeys/config/local/README.md
 
 # ZSH local configurations - exclude everything in the local directory
 zsh/config/modules/local/*
