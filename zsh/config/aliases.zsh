@@ -172,3 +172,40 @@ fi
 if command -v ollama &>/dev/null; then
     alias ollama-up='pgrep -x ollama >/dev/null || (ollama serve > /dev/null 2>&1 &)'
 fi
+
+# Poetry
+if command -v poetry &>/dev/null; then
+
+  # Core commands
+  alias pi="poetry install"                         # Install dependencies + venv
+  alias pu="poetry update"                          # Update dependencies
+  alias pl="poetry lock"                            # Lock current dependencies
+  alias pa="poetry add"                             # Add runtime dependency
+  alias pad="poetry add --dev"                      # Add dev dependency
+  alias pr="poetry remove"                          # Remove dependency
+
+  # Run things
+  alias prun="poetry run"                           # Run any tool via poetry
+  alias prp="poetry run python"                     # Run Python
+  alias ptest="poetry run pytest"                   # Run tests
+  alias pblack="poetry run black ."                 # Format code
+  alias pisort="poetry run isort ."                 # Sort imports
+  alias pmypy="poetry run mypy src"                 # Type check
+
+  # Environment info
+  alias pv="poetry env use"                         # Show venv path
+  alias pvinfo="poetry env info"                    # List all venvs
+  alias pvremove="poetry env remove python"         # Remove the current venv
+
+  # Dependency info
+  alias pshow="poetry show"                         # Show installed packages
+  alias ptree="poetry show --tree"                  # Show dependency tree
+  alias poutdated="poetry show --outdated"          # Show outdated deps
+  alias pcheck="poetry check"                       # Validate pyproject.toml
+
+  # Build & export
+  alias pbuild="poetry build"                       # Build sdist + wheel
+  alias ppub="poetry publish --build"               # Publish to PyPI
+  alias pexport="poetry export -f requirements.txt --without-hashes"
+
+fi
