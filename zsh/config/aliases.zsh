@@ -185,7 +185,7 @@ if command -v poetry &>/dev/null; then
   alias pr="poetry remove"                          # Remove dependency
 
   # Run things
-  alias prun="poetry run"                           # Run any tool via poetry
+  alias pr="poetry run"                           # Run any tool via poetry
   alias prp="poetry run python"                     # Run Python
   alias ptest="poetry run pytest"                   # Run tests
   alias pblack="poetry run black ."                 # Format code
@@ -193,9 +193,8 @@ if command -v poetry &>/dev/null; then
   alias pmypy="poetry run mypy src"                 # Type check
 
   # Environment info
-  alias pv="poetry env use"                         # Show venv path
-  alias pvinfo="poetry env info"                    # List all venvs
-  alias pvremove="poetry env remove python"         # Remove the current venv
+  alias pv="poetry env use python"                  # Show venv path
+  alias pvi="poetry env info"                    # List all venvs
 
   # Dependency info
   alias pshow="poetry show"                         # Show installed packages
@@ -205,7 +204,4 @@ if command -v poetry &>/dev/null; then
 
   # Build & export
   alias pbuild="poetry build"                       # Build sdist + wheel
-  alias ppub="poetry publish --build"               # Publish to PyPI
-  alias pexport="poetry export -f requirements.txt --without-hashes"
-
 fi
