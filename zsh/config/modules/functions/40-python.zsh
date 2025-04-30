@@ -112,4 +112,132 @@ venv() {
   else
     echo "Virtual environment already activated ($VIRTUAL_ENV)."
   fi
-} 
+}
+
+pcheck() {
+  local python_path=""
+  local jupyter=false
+  local fix=false
+  local missing_tools=()
+  local tools_common=(black isort mypy ruff bandit pytest)
+  local tools_jupyter=(nbqa)
+  local results=()
+
+  # Parse arguments
+  for arg in "$@"; do
+    case $arg in
+      --python=*)
+        python_path="${arg#*=}"
+        ;;
+      --jupyter)
+        jupyter=true
+        ;;
+      --fix)
+        fix=true
+        ;;
+    esac
+  done
+
+  if [[ -n "$python_path" ]]; then
+    echo "⚙️  Using Python: $python_path"
+    poetry config virtualenvs.in-project true
+    poetry env use "$python_path" || {
+      echo "❌ Failed to use interpreter: $python_path"
+      return 1
+    }
+  fi
+
+  echo "📦 Installing project dependencies..."
+  poetry install --no-root || {
+    echo "❌ poetry install --no-root failed"
+    return 1
+  }
+
+  echo "🔍 Checking for required tools..."
+  for tool in "${tools_common[@]}"; do
+    poetry show "$tool" &>/dev/null || missing_tools+=("$tool")
+  done
+  if $jupyter; then
+    for tool in "${tools_jupyter[@]}"; do
+      poetry show "$tool" &>/dev/null || missing_tools+=("$tool")
+    done
+  fi
+
+  if [[ ${#missing_tools[@]} -gt 0 ]]; then
+    echo "🚨 Missing tools: ${missing_tools[*]}"
+    read "REPLY?Install them as dev dependencies? [y/N]: "
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      poetry add --dev "${missing_tools[@]}" || {
+        echo "❌ Failed to install missing tools"
+        return 1
+      }
+    else
+      echo "⚠️ Skipping install. Some checks may fail."
+    fi
+  fi
+
+  # Determine scan path
+  local scan_path="."
+  [[ -d src ]] && scan_path="src"
+
+  run_check() {
+    local name="$1"
+    local cmd="$2"
+    echo "🔧 $name"
+    if eval "$cmd"; then
+      results+=("$name: ✅ Passed")
+    else
+      results+=("$name: ❌ Failed")
+    fi
+  }
+
+  echo "🧪 Running code quality checks..."
+
+  run_check "mypy" "poetry run mypy ."
+
+  if $fix; then
+    run_check "black (fix)" "poetry run black ."
+    run_check "isort (fix)" "poetry run isort ."
+    run_check "ruff (fix)" "poetry run ruff check --fix ."
+  else
+    run_check "black" "poetry run black --check ."
+    run_check "isort" "poetry run isort --check ."
+    run_check "ruff" "poetry run ruff check ."
+  fi
+
+  run_check "bandit" "poetry run bandit -r $scan_path"
+
+  if [[ -d tests || -n $(find . -name 'test_*.py' -o -name '*_test.py' 2>/dev/null) ]]; then
+    run_check "pytest" "poetry run pytest"
+  else
+    echo "⚠️ No test files found. Skipping pytest."
+    results+=("pytest: ⚠️ Skipped (no tests)")
+  fi
+
+  if $jupyter; then
+    echo "📓 Running notebook checks"
+    if $fix; then
+      run_check "nbqa black (fix)" "poetry run nbqa black . --nbqa-mutate"
+      run_check "nbqa isort (fix)" "poetry run nbqa isort . --nbqa-mutate"
+      run_check "nbqa ruff (fix)" "poetry run nbqa ruff . --nbqa-mutate --fix"
+    else
+      run_check "nbqa black" "poetry run nbqa black ."
+      run_check "nbqa isort" "poetry run nbqa isort ."
+      run_check "nbqa ruff" "poetry run nbqa ruff ."
+    fi
+    run_check "nbqa mypy" "poetry run nbqa mypy ."
+  fi
+
+  echo
+  echo "📊 === SUMMARY ==="
+  for result in "${results[@]}"; do
+    if [[ $result == *"✅"* ]]; then
+      echo -e "\033[1;32m$result\033[0m"
+    elif [[ $result == *"⚠️"* ]]; then
+      echo -e "\033[1;33m$result\033[0m"
+    else
+      echo -e "\033[1;31m$result\033[0m"
+    fi
+  done
+  echo "🏁 All checks done."
+}

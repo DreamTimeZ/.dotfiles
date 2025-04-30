@@ -182,25 +182,25 @@ if command -v poetry &>/dev/null; then
   alias pl="poetry lock"                            # Lock current dependencies
   alias pa="poetry add"                             # Add runtime dependency
   alias pad="poetry add --dev"                      # Add dev dependency
-  alias pr="poetry remove"                          # Remove dependency
+  alias prm="poetry remove"                          # Remove dependency
 
   # Run things
-  alias pr="poetry run"                           # Run any tool via poetry
+  alias pr="poetry run"                             # Run any tool via poetry
   alias prp="poetry run python"                     # Run Python
   alias ptest="poetry run pytest"                   # Run tests
   alias pblack="poetry run black ."                 # Format code
   alias pisort="poetry run isort ."                 # Sort imports
-  alias pmypy="poetry run mypy src"                 # Type check
+  alias pmypy="poetry run mypy ."                   # Type check
 
   # Environment info
   alias pv="poetry env use python"                  # Show venv path
-  alias pvi="poetry env info"                    # List all venvs
+  alias pvi="poetry env info"                       # List all venvs
 
   # Dependency info
   alias pshow="poetry show"                         # Show installed packages
   alias ptree="poetry show --tree"                  # Show dependency tree
   alias poutdated="poetry show --outdated"          # Show outdated deps
-  alias pcheck="poetry check"                       # Validate pyproject.toml
+  alias pch="poetry check"                       # Validate pyproject.toml
 
   # Build & export
   alias pbuild="poetry build"                       # Build sdist + wheel
