@@ -21,12 +21,43 @@ end
 function M.openFinderFolder(path)
     if not validation.validate(path, {name = "path"}) then return false end
     
-    if hs.fs.attributes(path) then
-        hs.execute("open " .. path)
-        return true
-    else
+    -- Expand path if it contains a tilde
+    if path:find("^~") then
+        path = path:gsub("^~", os.getenv("HOME"))
+    end
+    
+    if not hs.fs.attributes(path) then
         return validation.handleError("Path does not exist: " .. path, true)
     end
+    
+    -- Escape path for use in scripts and commands
+    local escapedPath = path:gsub('"', '\\"')
+    
+    -- Check if Finder is running and frontmost
+    local finder = hs.application.get("Finder")
+    local finderActive = finder and finder:isFrontmost()
+    
+    if finderActive then
+        -- Use a single AppleScript to check window count and take appropriate action
+        local script = string.format([[
+            tell application "Finder"
+                if (count of windows) > 0 then
+                    set target of front window to (POSIX file "%s")
+                else
+                    make new Finder window
+                    set target of front window to (POSIX file "%s")
+                end ifn
+                activate
+            end tell
+        ]], escapedPath, escapedPath)
+        
+        hs.osascript.applescript(script)
+    else
+        -- Finder isn't frontmost or isn't running - use open command
+        hs.execute(string.format('open "%s"', escapedPath))
+    end
+    
+    return true
 end
 
 function M.openURL(url)

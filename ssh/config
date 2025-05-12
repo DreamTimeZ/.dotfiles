@@ -16,6 +16,12 @@ Host github
   IdentityFile ~/.ssh/github
   PreferredAuthentications publickey
 
+Host github-lars
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github-lars
+  PreferredAuthentications publickey
+
 # GitLab Hochschule Stralsund
 Host gitlab-host
   HostName gitlab.hochschule-stralsund.de
