@@ -123,6 +123,25 @@ zdotfiles_is_linux() {
   return $?
 }
 
+# ----- Lazy Loading Helpers -----
+
+# Create a lazy-loaded command that initializes on first use
+# Usage: zdotfiles_lazy_load command "initialization_command"
+# Example: zdotfiles_lazy_load direnv 'eval "$(direnv hook zsh)"'
+# Returns: Always returns 0
+zdotfiles_lazy_load() {
+  local cmd="$1"
+  local init_cmd="$2"
+  
+  eval "function $cmd() {
+    unfunction $cmd
+    $init_cmd
+    $cmd \"\$@\"
+  }"
+  
+  return 0
+}
+
 # ----- Function Export -----
 # Export functions without displaying their definitions
 {
@@ -137,6 +156,7 @@ zdotfiles_is_linux() {
     zdotfiles_detect_platform
     zdotfiles_is_macos
     zdotfiles_is_linux
+    zdotfiles_lazy_load
   )
   
   # Export each function

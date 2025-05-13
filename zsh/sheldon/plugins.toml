@@ -33,51 +33,27 @@ local = "~/.dotfiles/zsh/sheldon"
 use = ["pyenv.zsh"]
 apply = ["source"]
 
-# Directory navigation with immediate loading
+# Other lazy-loaded tools
+[plugins.direnv]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["direnv.zsh"]
+apply = ["source"]
+
 [plugins.zoxide]
-github = "ajeetdsouza/zoxide"
-hooks.post = '''
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh --hook prompt)" >/dev/null 2>&1
-fi
-'''
+local = "~/.dotfiles/zsh/sheldon"
+use = ["zoxide.zsh"]
+apply = ["source"]
+
+[plugins.thefuck]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["thefuck.zsh"]
+apply = ["source"]
 
 # Terminal appearance and behavior
 [plugins.terminal-title]
 local = "~/.dotfiles/zsh/sheldon"
 use = ["terminal-title.zsh"]
 apply = ["source"]
-
-# Tools with deferred loading
-[plugins.direnv]
-inline = '''
-if command -v direnv >/dev/null 2>&1; then
-  # Silence direnv during startup
-  export DIRENV_LOG_FORMAT=""
-  
-  # Initialize direnv silently
-  eval "$(direnv hook zsh)"
-  
-  # Define a function to re-enable direnv logging after first prompt
-  function _direnv_enable_logging() {
-    # Run only once
-    precmd_functions=(${precmd_functions:#_direnv_enable_logging})
-    
-    # Restore standard logging format
-    export DIRENV_LOG_FORMAT="direnv: %s"
-  }
-  
-  # Add to precmd hooks to run after first prompt
-  precmd_functions+=(_direnv_enable_logging)
-fi
-'''
-
-[plugins.thefuck]
-inline = '''
-if command -v thefuck >/dev/null 2>&1; then
-  eval "$(thefuck --alias f)" >/dev/null 2>&1
-fi
-'''
 
 # FZF and related plugins (load in correct order)
 [plugins.fzf]
@@ -109,11 +85,9 @@ apply = ["source"]
 github = "zsh-users/zsh-autosuggestions"
 apply = ["source"]
 
-
 [plugins.zsh-syntax-highlighting]
 github = "zsh-users/zsh-syntax-highlighting"
 apply = ["source"]
-
 
 # Optional iTerm integration (commented out by default)
 # [plugins.iterm]
