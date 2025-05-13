@@ -52,7 +52,23 @@ apply = ["source"]
 [plugins.direnv]
 inline = '''
 if command -v direnv >/dev/null 2>&1; then
-  eval "$(direnv hook zsh)" >/dev/null 2>&1
+  # Silence direnv during startup
+  export DIRENV_LOG_FORMAT=""
+  
+  # Initialize direnv silently
+  eval "$(direnv hook zsh)"
+  
+  # Define a function to re-enable direnv logging after first prompt
+  function _direnv_enable_logging() {
+    # Run only once
+    precmd_functions=(${precmd_functions:#_direnv_enable_logging})
+    
+    # Restore standard logging format
+    export DIRENV_LOG_FORMAT="direnv: %s"
+  }
+  
+  # Add to precmd hooks to run after first prompt
+  precmd_functions+=(_direnv_enable_logging)
 fi
 '''
 
