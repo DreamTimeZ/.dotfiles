@@ -1,50 +1,73 @@
 # ===============================
 # PYENV CONFIGURATION
 # ===============================
-# Lazy-loading implementation for pyenv
 
-# Set up environment variables for pyenv
+# Set up environment variables for pyenv (required for shims to work)
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 
-# Cache expensive operations for better performance
-function _pyenv_init_cmd() {
-  # Cache the init command
-  if [[ -z "$_PYENV_INIT_CMD_CACHE" ]]; then
-    _PYENV_INIT_CMD_CACHE="$(command pyenv init - --no-rehash 2>/dev/null)"
-  fi
-  echo "$_PYENV_INIT_CMD_CACHE"
-}
-
-# Define a wrapper function for pyenv that will load pyenv only when needed
-function pyenv() {
-  # Remove this wrapper function
-  unfunction pyenv
-  
-  # Add pyenv to the path if it exists
+# Define the pyenv initialization function
+_init_pyenv() {
+  # Initialize pyenv - use --no-rehash for faster loading
   if command -v pyenv >/dev/null 2>&1; then
-    # Initialize pyenv - use --no-rehash for faster loading
-    local init_cmd="$(_pyenv_init_cmd)"
-    [[ -n "$init_cmd" ]] && eval "${init_cmd}" >/dev/null 2>&1
-    
-    # Execute the command that was passed to this function
-    command pyenv "$@"
+    eval "$(pyenv init - --no-rehash)" >/dev/null 2>&1
   else
     echo "pyenv not found. Please install pyenv." >&2
     return 1
   fi
 }
 
-# Add lazy loading for python and pip commands (only if not managed by asdf)
-# First, check if asdf is managing python
-if ! (( $+functions[asdf] )) || ! { asdf which python &>/dev/null || asdf which python3 &>/dev/null }; then
-  for cmd in python python3 pip pip3; do
-    # Only create wrapper if command doesn't exist or is not managed by asdf
-    if ! command -v $cmd >/dev/null 2>&1; then
-      eval "function $cmd() { unfunction $cmd; pyenv; command $cmd \"\$@\"; }"
-    fi
-  done
-fi
+# Check if asdf might be managing Python without invoking 'asdf' function
+function _is_python_managed_by_asdf() {
+  # Check if ASDF_DIR is set and Python shims exist
+  if [[ -n "$ASDF_DIR" && -f "$ASDF_DIR/shims/python" ]]; then
+    return 0
+  fi
+  
+  # Check common asdf shim locations if ASDF_DIR isn't set
+  if [[ -f "$HOME/.asdf/shims/python" || -f "$HOME/.asdf/shims/python3" ]]; then
+    return 0
+  fi
+  
+  # Check brew-installed asdf location (without invoking brew)
+  local brew_prefix="/opt/homebrew"
+  [[ -d "/usr/local/opt/asdf" ]] && brew_prefix="/usr/local"
+  if [[ -f "$brew_prefix/opt/asdf/shims/python" || -f "$brew_prefix/opt/asdf/shims/python3" ]]; then
+    return 0
+  fi
+  
+  return 1
+}
 
-# Cache variable for init command
-typeset -g _PYENV_INIT_CMD_CACHE="" 
+# Set up lazy loading for pyenv
+if typeset -f zdotfiles_lazy_load > /dev/null; then
+  # Use the central helper function
+  zdotfiles_lazy_load pyenv '_init_pyenv'
+  
+  # Add lazy loading for python commands (only if not managed by asdf)
+  if ! _is_python_managed_by_asdf; then
+    for cmd in python python3 pip pip3; do
+      # Only create wrapper if the command doesn't already exist in PATH
+      if ! command -v $cmd >/dev/null 2>&1; then
+        zdotfiles_lazy_load $cmd '_init_pyenv'
+      fi
+    done
+  fi
+else
+  # Fallback to original implementation if helper isn't available
+  function pyenv() {
+    unfunction pyenv
+    _init_pyenv
+    command pyenv "$@"
+  }
+  
+  # Add lazy loading for python and pip commands (only if not managed by asdf)
+  if ! _is_python_managed_by_asdf; then
+    for cmd in python python3 pip pip3; do
+      # Only create wrapper if the command doesn't already exist in PATH
+      if ! command -v $cmd >/dev/null 2>&1; then
+        eval "function $cmd() { unfunction $cmd; _init_pyenv; command $cmd \"\$@\"; }"
+      fi
+    done
+  fi
+fi 
