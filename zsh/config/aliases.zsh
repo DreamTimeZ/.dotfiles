@@ -6,6 +6,11 @@
 if command -v git &>/dev/null; then
     alias ga='git add . && git status'
     alias gs='git status'
+    alias gst='git stash'
+    alias gstp='git stash pop'
+    alias grmc='git rm --cached'          # Unstage file
+    alias grao='git remote add origin'
+    alias gi='git init'
     alias gsw='git switch'                # Switch to another branch
     alias gswc='git switch -c'            # Create and switch to new branch
     alias gb='git branch'                 # List branches
@@ -15,7 +20,7 @@ if command -v git &>/dev/null; then
     alias gc='git commit'                 # Commit
     alias gcm='git commit -m'             # Commit with message
     alias gca='git commit --amend'        # Amend last commit
-    alias gundo='git reset --soft HEAD~1'
+    alias gcundo='git reset --soft HEAD~1'
     alias gpl='git pull'
     alias gps='git push'
     alias gpsf='git push --force-with-lease' # Safe force push
