@@ -20,7 +20,7 @@ if command -v git &>/dev/null; then
     alias gc='git commit'                 # Commit
     alias gcm='git commit -m'             # Commit with message
     alias gca='git commit --amend'        # Amend last commit
-    alias gcundo='git reset --soft HEAD~1'
+    alias gcqundo='git reset --soft HEAD~1'
     alias gpl='git pull'
     alias gps='git push'
     alias gpsf='git push --force-with-lease' # Safe force push

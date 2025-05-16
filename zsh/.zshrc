@@ -63,6 +63,3 @@ else
   PROMPT='%F{blue}%n@%m:%~%f$ '
   zdotfiles_warn "p10k configuration not found, using fallback prompt"
 fi
-
-# Cleanup temporary variables
-unset _CONFIG_FILES _config_file _full_path
