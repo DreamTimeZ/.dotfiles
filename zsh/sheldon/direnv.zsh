@@ -2,6 +2,9 @@
 # DIRENV
 # ===============================
 
+# Silence normal direnv messages, but keep warnings and errors
+export DIRENV_LOG_FORMAT=""
+
 # Always initialize direnv during shell startup
 if command -v direnv >/dev/null 2>&1; then
   eval "$(command direnv hook zsh)"
