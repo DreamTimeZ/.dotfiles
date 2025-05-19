@@ -166,7 +166,9 @@ config.modals = {
             d = { pref = "x-apple.systempreferences:com.apple.preference.displays",           desc = "Displays" },
             p = { pref = "x-apple.systempreferences:com.apple.preference.security",           desc = "Privacy/Accessibility" },
             w = { pref = "x-apple.systempreferences:com.apple.preference.network",            desc = "Wi‑Fi" },
-            b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" }
+            b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" },
+            k = { pref = "x-apple.systempreferences:com.apple.preference.keyboard",           desc = "Keyboard" },
+            s = { pref = "x-apple.systempreferences:com.apple.preference.printfax",           desc = "Printers & Scanners" }
         }
     },
     
