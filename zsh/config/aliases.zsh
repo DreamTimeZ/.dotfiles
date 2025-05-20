@@ -192,6 +192,7 @@ if command -v poetry &>/dev/null; then
   # Run things
   alias pr="poetry run"                             # Run any tool via poetry
   alias prp="poetry run python"                     # Run Python
+  alias prt="poetry run task"                       # Run tasks
   alias ptest="poetry run pytest"                   # Run tests
   alias pblack="poetry run black ."                 # Format code
   alias pisort="poetry run isort ."                 # Sort imports
