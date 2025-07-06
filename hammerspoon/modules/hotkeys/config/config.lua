@@ -202,6 +202,16 @@ config.globalShortcuts = {
             action = "launchOrFocus"
         },
         mapping = { app = "iTerm", desc = "Launch iTerm" }
+    },
+    
+    -- Auto-clicker toggle
+    { 
+        key = "m", 
+        fn = function()
+            local autoClicker = require("modules.hotkeys.macros.auto-clicker")
+            autoClicker.toggle()
+        end,
+        desc = "Toggle Auto-Clicker"
     }
 }
 
