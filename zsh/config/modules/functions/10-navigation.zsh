@@ -2,9 +2,9 @@
 # FILE & DIRECTORY NAVIGATION FUNCTIONS
 # ===============================
 
-# Create a directory and navigate to it
+# Create a directory and navigate to it (use z for zoxide tracking)
 mkcd() {
-    mkdir -p "$1" && cd "$1"
+    mkdir -p "$1" && z "$1"
 }
 
 # Show disk usage for top 10 largest directories/files
@@ -18,7 +18,7 @@ ffind() {
 }
 
 # Fuzzy directory finder
-fd() {
+fdir() {
     local dir
     dir=$(find . -type d 2>/dev/null | fzf +m) && cd "$dir"
 } 
