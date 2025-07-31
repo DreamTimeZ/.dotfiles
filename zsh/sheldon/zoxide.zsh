@@ -3,9 +3,12 @@
   # Early exit if zoxide not available
   command -v zoxide >/dev/null || return 0
   
-  # Placeholder completion to prevent errors before lazy-load
+  # Basic completion to prevent errors before lazy-load
   [[ -o zle ]] && {
-    __zoxide_z_complete() { return 1 }  # No completion until loaded
+    __zoxide_z_complete() { 
+      # Provide basic directory completion until zoxide loads
+      [[ "${#words[@]}" -eq "${CURRENT}" ]] && _files -/
+    }
     (( ${+functions[compdef]} )) && compdef __zoxide_z_complete z
   }
   
