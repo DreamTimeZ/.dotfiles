@@ -72,13 +72,13 @@ if command -v tmux &>/dev/null; then
 fi
 
 # Navigation using zoxide
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
+alias ..='builtin cd ..'
+alias ...='builtin cd ../..' 
+alias ....='builtin cd ../../..'
 if command -v zoxide &>/dev/null; then
     alias cd='z'
     alias cdi='zoxide query --interactive'
-    alias cdf='cd "$(zoxide query --interactive)" || return' # Consider switching to 'z --interactive'
+    alias cdf='builtin cd "$(zoxide query --interactive)" || return'  # Use builtin cd
 fi
 
 # File listing using eza (if installed)
