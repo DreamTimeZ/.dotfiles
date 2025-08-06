@@ -10,11 +10,45 @@ local validation = require("modules.hotkeys.core.validation")
 function M.launchOrFocus(appName)
     if not validation.validate(appName, {name = "app name"}) then return false end
     
-    hs.application.launchOrFocus(appName)
-    hs.timer.doAfter(config.delays.appActivation, function()
-        local app = hs.application.get(appName)
-        if app then app:activate() end
-    end)
+    -- Check if appName is a full path (contains .app extension)
+    if appName:match("%.app$") then
+        -- Use shell command for full paths
+        hs.execute(string.format('open -a "%s"', appName))
+        
+        -- Extract app name from bundle for focusing
+        local extractedName = appName:match("([^/]+)%.app$")
+        if extractedName then
+            hs.timer.doAfter(config.delays.appActivation, function()
+                local app = hs.application.get(extractedName)
+                if app then app:activate() end
+            end)
+        end
+    else
+        -- Use standard launch method for app names
+        hs.application.launchOrFocus(appName)
+        hs.timer.doAfter(config.delays.appActivation, function()
+            local app = hs.application.get(appName)
+            if app then app:activate() end
+        end)
+    end
+    return true
+end
+
+-- Launch or focus app using full path (for apps not in /Applications)
+function M.launchOrFocusPath(appPath)
+    if not validation.validate(appPath, {name = "app path"}) then return false end
+    
+    -- Use shell command to launch app with full path
+    hs.execute(string.format('open -a "%s"', appPath))
+    
+    -- Extract app name from bundle for focusing
+    local appName = appPath:match("([^/]+)%.app$")
+    if appName then
+        hs.timer.doAfter(config.delays.appActivation, function()
+            local app = hs.application.get(appName)
+            if app then app:activate() end
+        end)
+    end
     return true
 end
 
@@ -113,6 +147,7 @@ end
 -- Map of action handlers for better performance and maintainability
 local ACTION_HANDLERS = {
     launchOrFocus = M.launchOrFocus,
+    launchOrFocusPath = M.launchOrFocusPath,
     openURL = M.openURL,
     openFinderFolder = M.openFinderFolder,
     openSystemPreferencePane = M.openSystemPreferencePane,
