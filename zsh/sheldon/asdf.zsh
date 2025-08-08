@@ -4,8 +4,6 @@
 
 # Define managed tools (customize this list based on what you actually use)
 typeset -ga _asdf_managed_tools=(
-  # JavaScript/Node.js tools
-  node npx pnpm
   # Python tools
   python python3 pip pip3
   # Java tools
