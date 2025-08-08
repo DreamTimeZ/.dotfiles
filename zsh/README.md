@@ -5,8 +5,18 @@ A modular, maintainable, and testable ZSH configuration system designed for effi
 ## Quick Start
 
 ```zsh
-# Install core requirements (macOS example)
-brew install zsh git sheldon fzf
+# macos example with brew
+# Core requirements
+brew install zsh git sheldon fzf nvm
+
+# Essential tools
+brew install zoxide direnv thefuck bat eza glow mas
+
+# Development tools
+brew install asdf pyenv poetry nodemon httpie grc
+
+# Optional but useful
+brew install ripgrep tldr tmux kubectl ollama docker
 
 # Clone repository
 git clone https://github.com/username/dotfiles.git ~/.dotfiles
