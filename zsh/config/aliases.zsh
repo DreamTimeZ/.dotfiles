@@ -2,6 +2,8 @@
 # ALIASES
 # ===============================
 
+alias sudo=' HISTIGNORE="*" sudo'
+
 # VCS (Git)
 if command -v git &>/dev/null; then
     alias ga='git add . && git status'
