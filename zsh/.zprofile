@@ -7,10 +7,16 @@
 export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 
-# ------ Minimal Path Management ------
+# ------ Path Management ------
 # Add essential paths for non-interactive shells
 zdotfiles_path_prepend() {
-  [[ -d "$1" && ":$PATH:" != *":$1:"* ]] && export PATH="$1:$PATH"
+  [[ ! -d "$1" ]] && return 1
+  
+  local dir="$1"
+  # Remove existing occurrence first (prevent duplicates)
+  PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
+  
+  export PATH="$dir:$PATH"
 }
 
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"

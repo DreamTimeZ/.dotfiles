@@ -10,6 +10,7 @@ typeset -g ZDOTFILES_STARTUP_SILENT=${ZDOTFILES_STARTUP_SILENT:-1}  # 1=suppress
 
 # Cache for frequently used values
 typeset -g ZDOTFILES_PLATFORM=""  # Will be set on first use
+typeset -gA ZDOTFILES_CMD_CACHE   # Command existence cache
 
 # ----- Logging Helpers -----
 
@@ -49,13 +50,12 @@ zdotfiles_error() {
 zdotfiles_path_append() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
   
-  # Path check
-  case ":$PATH:" in
-    *":$1:"*) return 0 ;;
-  esac
+  local dir="$1"
+  # Remove existing occurrence first (prevent duplicates)
+  PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
   
-  export PATH="$PATH:$1"
-  zdotfiles_info "Added to PATH: $1"
+  export PATH="$PATH:$dir"
+  zdotfiles_info "Added to PATH: $dir"
   return 0
 }
 
@@ -65,25 +65,37 @@ zdotfiles_path_append() {
 zdotfiles_path_prepend() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
   
-  # Path check
-  case ":$PATH:" in
-    *":$1:"*) return 0 ;;
-  esac
+  local dir="$1"
+  # Remove existing occurrence first (prevent duplicates)
+  PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
   
-  export PATH="$1:$PATH"
-  zdotfiles_info "Prepended to PATH: $1"
+  export PATH="$dir:$PATH"
+  zdotfiles_info "Prepended to PATH: $dir"
   return 0
 }
 
 # ----- System Detection Helpers -----
 
-# Check if a command exists in PATH
+# Check if a command exists in PATH with caching
 # Usage: if zdotfiles_has_command git; then ...; fi
 # Returns: 0 if command exists, 1 otherwise
 zdotfiles_has_command() {
   [[ -z "$1" ]] && return 1
-  command -v "$1" &>/dev/null
-  return $?
+  
+  local cmd="$1"
+  # Check cache first
+  if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]}" ]]; then
+    return ${ZDOTFILES_CMD_CACHE[$cmd]}
+  fi
+  
+  # Cache the result
+  if command -v "$cmd" &>/dev/null; then
+    ZDOTFILES_CMD_CACHE[$cmd]=0
+    return 0
+  else
+    ZDOTFILES_CMD_CACHE[$cmd]=1
+    return 1
+  fi
 }
 
 # Detect operating system platform - with caching
