@@ -26,14 +26,22 @@ setopt GLOBSTAR_SHORT         # Enable recursive globbing with **
 # Use custom compdump path in XDG_CACHE_HOME (faster and more organized)
 ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump"
 
+# Ensure cache directory exists
+mkdir -p -- "${ZSH_COMPDUMP%/*}"
+
 # Optional: run ONCE manually if not done yet to silence compaudit forever
 # chmod -R go-w "$(dirname ${fpath[1]})"
 
-autoload -Uz compinit
-compinit -C -d "$ZSH_COMPDUMP" # Uses cache and skips compaudit
+# Only initialize completion in interactive shells
+if [[ -o interactive ]]; then
+  autoload -Uz compinit
+  compinit -C -d "$ZSH_COMPDUMP" # Uses cache and skips compaudit
+fi
 
-# Prevents automatic command execution on paste and 
+# Prevents automatic command execution on paste and
 # ensures proper handling of newlines, empty lines, and special characters in pasted text
-autoload -Uz bracketed-paste-magic
-zle -N bracketed-paste bracketed-paste-magic
+if [[ -o interactive ]]; then
+  autoload -Uz bracketed-paste-magic
+  zle -N bracketed-paste bracketed-paste-magic
+fi
 

@@ -23,6 +23,11 @@ use = ["powerlevel10k.zsh-theme"]
 apply = ["source"]
 
 # Version managers with lazy-loading
+[plugins.nvm]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["nvm.zsh"]
+apply = ["source"]
+
 [plugins.asdf]
 local = "~/.dotfiles/zsh/sheldon"
 use = ["asdf.zsh"]
@@ -74,6 +79,8 @@ hooks.pre = '''
 # Enable caching for better completion performance
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$HOME/.zcompcache"
+# Ensure cache directory exists
+mkdir -p -- "$HOME/.zcompcache"
 '''
 
 # Syntax highlighting and autosuggestions (load last for best performance)
