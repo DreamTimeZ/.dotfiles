@@ -28,14 +28,14 @@ local = "~/.dotfiles/zsh/sheldon"
 use = ["nvm.zsh"]
 apply = ["source"]
 
-[plugins.asdf]
-local = "~/.dotfiles/zsh/sheldon"
-use = ["asdf.zsh"]
-apply = ["source"]
-
 [plugins.pyenv]
 local = "~/.dotfiles/zsh/sheldon"
 use = ["pyenv.zsh"]
+apply = ["source"]
+
+[plugins.asdf]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["asdf.zsh"]
 apply = ["source"]
 
 # Other lazy-loaded tools
