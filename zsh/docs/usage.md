@@ -100,4 +100,4 @@ The configuration is designed for minimal startup time:
 - Modular loading with precise dependencies
 - Exported functions only when needed
 - Add to the start of `.zshrc`: `zmodload zsh/zprof` and on the end `zprof` to analyze performance
-- Restart iTerm and do `hyperfine "zsh -i -c exit"` to check startup time
+- Restart iTerm and do `hyperfine "zsh -i -c exit" --warmup 3` to check startup time
