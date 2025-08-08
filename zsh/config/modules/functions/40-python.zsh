@@ -19,7 +19,7 @@ venv() {
   if command -v brew &>/dev/null; then
     local brew_prefix
     brew_prefix="$(brew --prefix python 2>/dev/null)"
-    if [ -n "$brew_prefix" ] && [ -x "$brew_prefix/bin/python3" ]; then
+    if [[ -n "$brew_prefix" && -x "$brew_prefix/bin/python3" ]]; then
       python_bin="$brew_prefix/bin/python3"
     fi
   fi
@@ -60,7 +60,7 @@ venv() {
 
   # Handle deletion if requested.
   if $delete_flag; then
-    if [ -d "$venv_dir" ]; then
+    if [[ -d "$venv_dir" ]]; then
       echo "Deleting virtual environment '$venv_dir'..."
       rm -rf "$venv_dir"
       echo "Deleted."
@@ -73,7 +73,7 @@ venv() {
     abs_venv_dir="$(absolute_path "$venv_dir")"
 
     # If the deleted venv is currently activated, deactivate it.
-    if [ "$VIRTUAL_ENV" = "$abs_venv_dir" ]; then
+    if [[ "$VIRTUAL_ENV" = "$abs_venv_dir" ]]; then
       if command -v deactivate >/dev/null 2>&1; then
         deactivate
       else
@@ -88,7 +88,7 @@ venv() {
   echo "Using Python: $("$python_bin" --version 2>&1)"
 
   # Create the venv if it doesn't exist.
-  if [ ! -d "$venv_dir" ]; then
+  if [[ ! -d "$venv_dir" ]]; then
     echo "Creating virtual environment '$venv_dir'..."
     if ! "$python_bin" -m venv "$venv_dir"; then
       echo "Error: Failed to create virtual environment '$venv_dir'" >&2
@@ -99,8 +99,8 @@ venv() {
   fi
 
   # Activate the venv if not already active or if the active one is missing.
-  if [ -z "$VIRTUAL_ENV" ] || [ ! -d "$VIRTUAL_ENV" ]; then
-    if [ -f "$venv_dir/bin/activate" ]; then
+  if [[ -z "$VIRTUAL_ENV" || ! -d "$VIRTUAL_ENV" ]]; then
+    if [[ -f "$venv_dir/bin/activate" ]]; then
       source "$venv_dir/bin/activate"
       echo "Activated virtual environment '$venv_dir'."
       echo "Upgrading pip install..."

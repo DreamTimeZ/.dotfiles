@@ -49,8 +49,10 @@ zdotfiles_error() {
 zdotfiles_path_append() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
   
-  # Path check using parameter expansion
-  [[ ":$PATH:" == *":$1:"* ]] && return 0
+  # Path check
+  case ":$PATH:" in
+    *":$1:"*) return 0 ;;
+  esac
   
   export PATH="$PATH:$1"
   zdotfiles_info "Added to PATH: $1"
@@ -63,8 +65,10 @@ zdotfiles_path_append() {
 zdotfiles_path_prepend() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
   
-  # Path check using parameter expansion
-  [[ ":$PATH:" == *":$1:"* ]] && return 0
+  # Path check
+  case ":$PATH:" in
+    *":$1:"*) return 0 ;;
+  esac
   
   export PATH="$1:$PATH"
   zdotfiles_info "Prepended to PATH: $1"
@@ -143,7 +147,7 @@ zdotfiles_lazy_load() {
 }
 
 # ----- Function Export -----
-# Export functions without displaying their definitions
+# Export functions for use in subshells and modules
 {
   # List of public functions to export
   local public_funcs=(
@@ -162,11 +166,8 @@ zdotfiles_lazy_load() {
   # Export each function
   local func
   for func in "${public_funcs[@]}"; do
-    typeset -g -f "$func" &>/dev/null
+    typeset -gf "$func"
   done
-  
-  # Keep internal functions hidden
-  typeset -g +f _zdotfiles_should_suppress_log &>/dev/null
 } &>/dev/null
 
 # Don't export this helper file's local variables

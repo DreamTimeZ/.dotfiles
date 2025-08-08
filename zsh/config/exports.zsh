@@ -3,16 +3,16 @@
 # ===============================
 
 # ----- History Configuration -----
-HISTSIZE=50000                # Maximum number of events in memory
+HISTSIZE=50000                # Maximum number of events in memory per session
 SAVEHIST=2000000              # Maximum number of events saved to history file
 HISTFILE="$HOME/.zsh_history" # History file location
-setopt INC_APPEND_HISTORY     # Append commands as you type them
-setopt APPEND_HISTORY         # Append to history rather than overwrite
-setopt SHARE_HISTORY          # Share history among all sessions
+setopt SHARE_HISTORY          # Share history among all sessions (includes incremental append)
 setopt EXTENDED_HISTORY       # Record timestamp with each command
 setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_IGNORE_ALL_DUPS   # Do not record duplicate entries
 setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space (to avoid logging accidental secrets (e.g., prefix secrets with a space).)
+setopt HIST_SAVE_NO_DUPS      # Do not save duplicate entries
+setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first when trimming history
 
 # ----- Miscellaneous Options -----
 # CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.

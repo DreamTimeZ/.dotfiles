@@ -74,10 +74,10 @@ if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then
     # Pattern matching for exclusions
     should_exclude() {
       local filename="$1"
-      for pattern in $SSH_EXCLUDED_PATTERNS; do
-        [[ "$filename" == $~pattern ]] && return 0
-      done
-      return 1
+      case "$filename" in
+        *.pub|config*|known_hosts*|authorized_keys*) return 0 ;;
+        *) return 1 ;;
+      esac
     }
     
     # Add keys
