@@ -72,6 +72,11 @@ if zdotfiles_has_command nvim; then
     alias vim='nvim'
 fi
 
+# Cursor
+if zdotfiles_has_command cursor; then
+    alias c='cursor'
+fi
+
 # Enhanced search with ripgrep
 if zdotfiles_has_command rg; then
     alias rg='rg --smart-case --follow --hidden'
@@ -96,10 +101,14 @@ fi
 # NAVIGATION AND FILE OPERATIONS
 # ===============================
 
-# Directory navigation - safe defaults
+# Directory navigation
 alias ..='builtin cd ..'
 alias ...='builtin cd ../..'
 alias ....='builtin cd ../../..'
+alias .....='builtin cd ../../../..'
+alias ......='builtin cd ../../../../..'
+alias .......='builtin cd ../../../../../..'
+alias ........='builtin cd ../../../../../../..'
 
 # Zoxide integration - enabled by default (non-breaking)
 if zdotfiles_has_command zoxide; then
