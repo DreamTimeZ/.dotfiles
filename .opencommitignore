@@ -1,0 +1,62 @@
+# System and temporary files
+.DS_Store*
+._*
+.Spotlight-V100
+.Trashes
+[Tt]humbs.db
+*.tmp
+*.temp
+*.sw[po]
+*~
+.#*
+
+# Third-party plugins and lock files
+nvim/lazy-lock.json
+tmux/plugins/tpm/**
+!tmux/plugins/tpm/tpm
+hammerspoon/Spoons/**
+
+# Local and machine-specific configs
+**/*.local
+**/local/**
+!**/local/README.md
+!**/local/*.template
+!**/local/example.*
+
+# Runtime state and cache
+tmux/sessions/**
+.zsh_history
+.zsh_sessions/**
+.zcompcache/**
+
+# Development environment
+.vscode/**
+.idea/**
+*.code-workspace
+**/*.{bak,backup,orig}
+
+# Secrets and environment
+.env*
+!.env.example
+!.env.template
+
+# Personal notes and logs
+**/TODO.md
+**/NOTES.md
+**/SCRATCH.md
+**/CLAUDE.md
+*.log
+logs/**
+*.debug
+debug/**
+
+# Assets and binaries
+*.{jpg,jpeg,png,gif,svg,ico,pdf}
+*.{zip,tar,tar.gz,tgz,rar,7z}
+
+# Build artifacts
+coverage/**
+.coverage
+*.lcov
+.github/workflows/artifacts/**
+{build,dist}/**
