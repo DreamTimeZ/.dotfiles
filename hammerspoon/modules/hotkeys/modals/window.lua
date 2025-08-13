@@ -31,6 +31,10 @@ local OVERLAY_MAX_COUNT = 9
 local OVERLAY_AUTO_HIDE_TIME = 5
 local OVERLAY_TEXT_Y_POS = 45
 
+-- Constants for default window sizing (optimized for iTerm2 122x29 characters)
+local DEFAULT_WIDTH_PERCENT = 0.58
+local DEFAULT_HEIGHT_PERCENT = 0.50
+
 -- Helper function to create window operations - optimized for performance
 local function windowOperation(fn)
     return function()
@@ -113,6 +117,22 @@ end)
 
 local prevScreen = windowOperation(function(win)
     win:moveToScreen(win:screen():previous())
+end)
+
+-- Default window size function - sets window to default size (optimized for iTerm2 122x29)
+local defaultWindowSize = windowOperation(function(win)
+    local screen = win:screen():frame()
+    local f = win:frame()
+    
+    -- Calculate default size using constants
+    f.w = screen.w * DEFAULT_WIDTH_PERCENT
+    f.h = screen.h * DEFAULT_HEIGHT_PERCENT
+    
+    -- Center the window
+    f.x = screen.x + (screen.w - f.w) / 2
+    f.y = screen.y + (screen.h - f.h) / 2
+    
+    win:setFrame(f)
 end)
 
 -- App window cycling - optimized with direct lookup
@@ -362,6 +382,7 @@ local windowMappings = {
     -- Resize
     ["´"] = { action = largerWindow, desc = "Larger" },
     ["-"] = { action = smallerWindow, desc = "Smaller" },
+    d = { action = defaultWindowSize, desc = "Default Size" },
     
     -- Move between screens
     ["right"] = { action = nextScreen, desc = "Next Screen" },

@@ -262,6 +262,7 @@ fi
 # ===============================
 # SYSTEM AND UTILITY
 # ===============================
+alias his='history'
 alias cls='clear'
 alias reload='exec zsh'
 alias '?'='echo $?'
