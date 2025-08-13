@@ -28,15 +28,13 @@ setopt HIST_VERIFY            # Show command with history expansion to user befo
 # CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.
 # CORRECT: You want smart correction of just command names, low false positives.
 setopt CORRECT                # Auto-correct minor errors in commands and paths
-setopt PROMPT_SP              # Print a carriage return just before printing a prompt
-
-# Interactive shell enhancements
+# Prompt handling - Global solution for '%' character from incomplete output
+export PROMPT_EOL_MARK=""     # Suppress '%' character for incomplete lines
 setopt INTERACTIVE_COMMENTS   # Allow comments in interactive shell (improves usability)
 
-# Bell configuration - visual feedback only, no audio disruption
-unsetopt BEEP                 # Disable audio bell
-# Note: Configure visual bell in your terminal emulator (iTerm2: Prefs > Profiles > Advanced > Visual Bell)
-# This gives you visual feedback without audio noise
+# ----- Bell Configuration -----
+unsetopt BEEP                 # Disable audio bell in zsh
+# iTerm2: Prefs > Profiles > Terminal > Notifications > Visual Bell
 
 # Glob handling - NULL_GLOB is safer than NO_NOMATCH
 setopt NULL_GLOB              # Remove non-matching patterns instead of erroring or keeping them literal
