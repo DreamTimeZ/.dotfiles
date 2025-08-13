@@ -1,61 +1,95 @@
 # ZSH Configuration System
 
-A modular, maintainable, and testable ZSH configuration system designed for efficiency and easy customization.
+A clean, modular ZSH configuration with modern tools and smart defaults.
 
-## Quick Start
+## 🚀 Quick Start
 
-```zsh
-# macos example with brew
-# Core requirements
-brew install zsh git sheldon fzf nvm
+```bash
+# macOS with Homebrew
+brew install zsh git sheldon fzf zoxide eza ripgrep
 
-# Essential tools
-brew install zoxide direnv thefuck bat eza glow mas
-
-# Development tools
-brew install asdf pyenv poetry nodemon httpie grc
-
-# Optional but useful
-brew install ripgrep tldr tmux kubectl ollama docker
-
-# Clone repository
-git clone https://github.com/username/dotfiles.git ~/.dotfiles
-
-# Create symlinks
+# Clone and link
+git clone <your-repo> ~/.dotfiles
 ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc
 ln -sf ~/.dotfiles/zsh/.zprofile ~/.zprofile
+
+# Reload shell
+exec zsh
 ```
 
-For detailed installation instructions, see [Requirements](docs/requirements.md).
+## ✨ Key Features
 
-## Documentation
+- **🎯 Smart Defaults**: `cd` uses zoxide, `ls` uses eza by default
+- **🔧 Modular Design**: Functions organized in logical modules  
+- **⚡ Fast Startup**: Optimized loading with lazy initialization
+- **🛡️ Non-Breaking**: Modern tools with escape hatches (`oldcd`, `oldls`)
+- **📦 Rich Functions**: 50+ productivity functions included
 
-- [**Features**](docs/features.md) - Complete feature list
-- [**Requirements**](docs/requirements.md) - Installation requirements for all platforms
-- [**Structure**](docs/structure.md) - Directory structure and organization
-- [**Usage Guide**](docs/usage.md) - How to use and customize
-- [**Keybindings**](docs/keybindings.md) - Keyboard shortcuts
+## 📁 Structure
 
-## Key Features
-
-- **Modular Design**: Each component is isolated for easier maintenance
-- **Cross-Platform**: Works on macOS, Linux, and Windows (WSL)
-- **Performance Optimized**: Fast startup time and efficient resource usage
-- **Customizable**: Easy to extend with your own configurations
-
-## Directory Overview
-
-```markdown
+```text
 zsh/
-├── config/           - Core configuration files
-├── sheldon/          - Plugin management
-├── docs/             - Documentation
-├── .zshrc            - Main configuration entry point
-└── .zprofile         - Login shell configuration
+├── config/
+│   ├── aliases.zsh           # Clean aliases only
+│   ├── exports.zsh           # Environment & options
+│   ├── modules/
+│   │   ├── functions/        # Organized by domain
+│   │   │   ├── 10-navigation.zsh  # mkcd, dusage, ffind
+│   │   │   ├── 15-network.zsh     # ip-local, sniff, nscan  
+│   │   │   ├── 20-git.zsh         # fbr, fgf (fuzzy git)
+│   │   │   ├── 30-process.zsh     # fp, fh (process mgmt)
+│   │   │   ├── 40-python.zsh      # venv, pcheck (quality)
+│   │   │   ├── 50-webserver.zsh   # serve (dev server)
+│   │   │   ├── 60-system.zsh      # update_all (macOS)
+│   │   │   ├── 70-services.zsh    # ollama-* (AI tools)
+│   │   │   └── 80-colorization.zsh # grc setup
+│   │   └── local/            # Your customizations
+│   └── plugins.zsh           # Plugin management
+├── sheldon/                  # Plugin configs
+└── docs/                     # Documentation
 ```
 
-See [Structure](docs/structure.md) for a complete layout.
+## 🎮 Highlights
 
-## Customization
+### Smart Navigation
 
-See the [Usage Guide](docs/usage.md) for detailed instructions on customizing your configuration.
+- `cd` → zoxide (frecency-based, learns your patterns)
+- `mkcd dir` → create and enter directory
+- `z proj` → jump to ~/Projects
+- `zi` → interactive directory picker
+
+### Enhanced Listing
+
+- `ls` → eza (colors, icons, git status)
+- `ll` → detailed view with icons
+- `tree` → directory tree view
+
+### Developer Tools
+
+- `ip-local` → network interface overview
+- `serve` → instant dev server (Node.js/Python)
+- `venv` → smart Python environment manager
+- `pcheck` → comprehensive code quality check
+
+## 🔧 Customization
+
+Create `~/.dotfiles/zsh/config/modules/local/personal.zsh`:
+
+```zsh
+# Enable interactive file operations
+use_interactive_file_ops
+
+# Add custom aliases
+alias work='cd ~/Projects'
+alias config='cd ~/.dotfiles'
+
+# Machine-specific paths
+export PATH="$HOME/custom-tools:$PATH"
+```
+
+## 📚 Documentation
+
+- [Structure](docs/structure.md) - Complete directory layout
+- [Features](docs/features.md) - All available functions
+- [Usage](docs/usage.md) - Customization guide
+- [Keybindings](docs/keybindings.md) - Keyboard shortcuts

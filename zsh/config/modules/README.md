@@ -7,17 +7,19 @@ This directory contains the modular components of the ZSH configuration system. 
 ```markdown
 modules/
 ├── functions/  - User-defined shell functions
-│   ├── 00-core.zsh      - Core utility functions needed by others
-│   ├── 10-navigation.zsh - Directory/file navigation functions
-│   ├── 20-git.zsh       - Git-related functions
-│   ├── 30-process.zsh   - Process management functions
-│   ├── 40-python.zsh    - Python environment management
-│   ├── 50-webserver.zsh - Web server functions
-│   └── 60-system.zsh    - System maintenance functions
+│   ├── 00-core.zsh         - Core utility functions (notify, retry)
+│   ├── 10-navigation.zsh   - Navigation functions (mkcd, dusage, ffind, fdir)
+│   ├── 15-network.zsh      - Network functions (ip-local, sniff, nscan)
+│   ├── 20-git.zsh          - Git functions (fbr, fgf - fuzzy git tools)
+│   ├── 30-process.zsh      - Process management (fp, fh - interactive tools)
+│   ├── 40-python.zsh       - Python tools (venv, pcheck - quality checker)
+│   ├── 50-webserver.zsh    - Web server (serve - dev server)
+│   ├── 60-system.zsh       - System maintenance (update_all - macOS)
+│   ├── 70-services.zsh     - Service management (ollama-* functions)
+│   └── 80-colorization.zsh - Output colorization (grc setup)
 │
 └── local/      - Local overrides (optional, user-specific)
-    ├── README.md         - Documentation for local configurations
-    └── example.zsh.template - Template for local configurations
+    └── README.md           - Documentation for local configurations
 ```
 
 ## Numbering Convention
@@ -51,8 +53,8 @@ To add a new module:
 
 For example:
 
-- To add a new networking utility: `35-network.zsh` in the functions directory
-- To add Docker related functions: `25-docker.zsh` in the functions directory
+- To add database functions: `25-database.zsh` in the functions directory
+- To add Docker functions: `35-docker.zsh` in the functions directory
 
 The module will be automatically loaded in the right order - no need to modify any loader files!
 
