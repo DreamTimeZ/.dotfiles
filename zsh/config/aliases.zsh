@@ -124,11 +124,12 @@ fi
 
 # Enhanced file listing - enabled by default (mostly non-breaking)
 if zdotfiles_has_command eza; then
+    alias l='eza -l --icons=auto'
     alias ls='eza --color=auto --group-directories-first'
-    alias ll='eza -l --color=always --group-directories-first --icons'
-    alias lla='eza -la --color=always --group-directories-first --icons'
-    alias la='eza -a --color=always --group-directories-first --icons'
-    alias lh='eza -l --color=always --icons .* 2>/dev/null'
+    alias ll='eza -la --color=always --sort=name --group-directories-first --icons'
+    alias la='eza -a --color=always --sort=name --group-directories-first --icons'
+    alias lh='eza -l --color=always --sort=name --icons .* 2>/dev/null'
+    alias ld='eza -lD --icons=auto' # List directories only
     alias tree='eza --tree --level=2 --icons'
     alias ltree='eza --tree --level=3 --icons'
     
