@@ -1,215 +1,281 @@
 # ===============================
-# ALIASES
+# ALIASES - Clean & Focused
 # ===============================
 
-alias sudo=' HISTIGNORE="*" sudo'
+# Security: Proper sudo history exclusion using leading space
+alias sudo=' sudo'  # Leading space triggers HIST_IGNORE_SPACE
 
-# VCS (Git)
-if command -v git &>/dev/null; then
-    alias ga='git add . && git status'
+# ===============================
+# VERSION CONTROL (Git)
+# ===============================
+if zdotfiles_has_command git; then
+    # Status and staging
     alias gs='git status'
+    alias ga='git add . && git status'
     alias gst='git stash'
     alias gstp='git stash pop'
-    alias grmc='git rm --cached'          # Unstage file
-    alias grao='git remote add origin'
+    alias grmc='git rm --cached'
+    
+    # Repository management
     alias gi='git init'
-    alias gsw='git switch'                # Switch to another branch
-    alias gswc='git switch -c'            # Create and switch to new branch
-    alias gb='git branch'                 # List branches
-    alias gbd='git branch -d'             # Safe delete (warns if not merged)
-    alias gbD='git branch -D'             # Force delete (even if not merged)
-    alias gbrd='git push origin --delete' # Delete remote branch
-    alias gc='git commit'                 # Commit
-    alias gcm='git commit -m'             # Commit with message
-    alias gca='git commit --amend'        # Amend last commit
-    alias gcqundo='git reset --soft HEAD~1'
+    alias gcl='git clone'
+    alias grao='git remote add origin'
+    
+    # Branch management
+    alias gb='git branch'
+    alias gsw='git switch'
+    alias gswc='git switch -c'
+    alias gbd='git branch -d'
+    alias gbD='git branch -D'
+    alias gbrd='git push origin --delete'
+    
+    # Commits
+    alias gc='git commit'
+    alias gcm='git commit -m'
+    alias gca='git commit --amend'
+    alias gundo='git reset --soft HEAD~1'
+    
+    # Push/Pull with safety
     alias gpl='git pull'
     alias gps='git push'
-    alias gpsf='git push --force-with-lease' # Safe force push
-    alias glg='git log --oneline --graph --decorate --all'
+    alias gpsf='git push --force-with-lease'
+    
+    # Logs and history
     alias gl='git log --oneline --decorate'
+    alias glg='git log --oneline --graph --decorate --all'
     alias ghist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
+    alias glast='git log -1 HEAD'
+    
+    # Diffs and changes
     alias gdf='git diff'
-    alias gdc='git diff --cached'       # Show staged changes
-    alias grs='git restore .'           # Restore working directory changes
-    alias grss='git restore --staged .' # Unstage staged files
+    alias gdc='git diff --cached'
+    alias grs='git restore .'
+    alias grss='git restore --staged .'
+    
+    # Advanced operations
     alias grb='git rebase'
     alias grbi='git rebase -i'
-    alias gcl='git clone'
     alias gfa='git fetch --all --prune'
-    alias glast='git log -1 HEAD'
+    
+    # Tags
     alias gtags='git tag -l'
     alias gtagd='git tag -d'
 fi
 
-# tldr (tealdealer)
-if command -v tldr &>/dev/null; then
-    alias tldr="noglob tldr"
-fi
+# ===============================
+# EDITOR AND DEVELOPMENT TOOLS
+# ===============================
 
-# Editor tools
-if command -v nvim &>/dev/null; then
+# Neovim
+if zdotfiles_has_command nvim; then
     alias vi='nvim'
+    alias vim='nvim'
 fi
 
-# Search and Replace
-if command -v rg &>/dev/null; then
-    unalias grep 2>/dev/null
-    alias grep='rg'
+# Enhanced search with ripgrep
+if zdotfiles_has_command rg; then
+    alias rg='rg --smart-case --follow --hidden'
 fi
 
-## Cursor with Profiles
-if command -v cursor &>/dev/null; then
-    alias cu="cursor --profile 'Default'"
-    alias cun="cursor --new-window --profile 'Default'"
-    alias cpy="cursor --profile 'Python'"
-    alias ctr="cursor --profile 'TypeScript React'"
-    alias cs="cursor --profile 'Spring Boot'"
-    alias cxx="cursor --profile 'Cpp'"
+# tldr with proper globbing
+if zdotfiles_has_command tldr; then
+    alias tldr='noglob tldr'
 fi
 
-# Tmux
-if command -v tmux &>/dev/null; then
-    alias t="tmux attach-session -t default 2>/dev/null || tmux new-session -s default"
+# ===============================
+# TERMINAL MULTIPLEXER
+# ===============================
+if zdotfiles_has_command tmux; then
+    alias tmux-default='tmux attach-session -t default 2>/dev/null || tmux new-session -s default'
+    alias t='tmux-default'
+    alias tls='tmux list-sessions'
+    alias tkill='tmux kill-session -t'
 fi
 
-# Navigation using zoxide
+# ===============================
+# NAVIGATION AND FILE OPERATIONS
+# ===============================
+
+# Directory navigation - safe defaults
 alias ..='builtin cd ..'
-alias ...='builtin cd ../..' 
+alias ...='builtin cd ../..'
 alias ....='builtin cd ../../..'
-if command -v zoxide &>/dev/null; then
+
+# Zoxide integration - enabled by default (non-breaking)
+if zdotfiles_has_command zoxide; then
     alias cd='z'
-    alias cdi='zoxide query --interactive'
-    alias cdf='builtin cd "$(zoxide query --interactive)" || return'  # Use builtin cd
+    alias cdi='zi'
+    if zdotfiles_has_command fzf; then
+        cdf() {
+            local dir
+            dir=$(zoxide query --interactive) && builtin cd "$dir"
+        }
+    fi
 fi
 
-# File listing using eza (if installed)
-if command -v eza &>/dev/null; then
+# Enhanced file listing - enabled by default (mostly non-breaking)
+if zdotfiles_has_command eza; then
     alias ls='eza --color=auto --group-directories-first'
     alias ll='eza -l --color=always --group-directories-first --icons'
     alias lla='eza -la --color=always --group-directories-first --icons'
     alias la='eza -a --color=always --group-directories-first --icons'
     alias lh='eza -l --color=always --icons .* 2>/dev/null'
     alias tree='eza --tree --level=2 --icons'
+    alias ltree='eza --tree --level=3 --icons'
+    
+    # Escape hatch for original ls
+    alias oldls='command ls'
 fi
 
 # Core utilities with safe defaults
 alias mkdir='mkdir -pv'
-alias rm='rm -Iv'
-alias rd='rmdir'
-alias cp='cp -iv'
-alias mv='mv -iv'
 alias df='df -h'
 alias du='du -h'
 
-# Networking tools
-alias ports='netstat -tuln'
+# Safe file operations - explicit interactive variants
+alias cpi='cp -iv'      # Interactive copy - asks before overwrite
+alias mvi='mv -iv'      # Interactive move - asks before overwrite
+alias rmi='rm -Iv'      # Interactive remove - asks before delete
 
-if command -v tcpdump &>/dev/null; then
-    alias sniff='sudo tcpdump -i any port'
+# ===============================
+# NETWORKING TOOLS
+# ===============================
+# Platform-aware ports listing (fallbacks)
+if zdotfiles_is_macos; then
+    alias ports='lsof -i -P -n | grep LISTEN'
+else
+    alias ports='ss -tuln || netstat -tuln'
 fi
+alias flushdns='sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder'
 
-if command -v nmap &>/dev/null; then
-    alias nscan='sudo nmap -sS -Pn'
-fi
+# IP address queries
+alias ipv4='curl -s https://ipv4.icanhazip.com'
+alias ipv6='curl -s https://ipv6.icanhazip.com'
 
-# Docker aliases
-if command -v docker &>/dev/null; then
-    # Most essential docker commands
+# ===============================
+# CONTAINERIZATION (Docker)
+# ===============================
+if zdotfiles_has_command docker; then
+    # Essential docker commands
     alias d='docker'
     alias dps='docker ps'
+    alias dpsa='docker ps -a'
     alias di='docker images'
     alias dex='docker exec -it'
     alias dlogs='docker logs -f'
     
-    # Docker compose essentials
-    if command -v docker-compose &>/dev/null || command -v docker &>/dev/null; then
-        alias dc='docker-compose'
-        alias dcup='docker-compose up -d'
-        alias dcdown='docker-compose down'
-    fi
+    # Docker Compose - prefer new syntax
+    alias dc='docker compose'
+    alias dcup='docker compose up -d'
+    alias dcdown='docker compose down'
+    alias dclogs='docker compose logs -f'
     
-    # Clean up
+    # Cleanup operations
     alias dprune='docker system prune'
+    alias dprune-all='docker system prune -a'
 fi
 
-# HTTPie aliases
-if command -v http &>/dev/null; then
-    # Basic http methods
+# ===============================
+# HTTP CLIENT (HTTPie)
+# ===============================
+if zdotfiles_has_command http; then
+    # HTTP methods
     alias hget='http GET'
     alias hpost='http POST'
     alias hput='http PUT'
+    alias hdelete='http DELETE'
+    alias hpatch='http PATCH'
     
-    # Content types
+    # Content types and options
     alias hjson='http --json'
-    
-    # Debug helpers
+    alias hform='http --form'
     alias hverbose='http --verbose'
     alias hheaders='http --headers'
+    alias hdownload='http --download'
 fi
 
-alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
-
-if command -v grc &>/dev/null; then
-  GRC_CMDS=(
-    ip ifconfig ping traceroute dig whois df du mount ps lsof
-  )
-  for cmd in "${GRC_CMDS[@]}"; do
-    alias "$cmd"="grc $cmd"
-  done
-fi
-
-alias ipv4='curl -s https://ipv4.icanhazip.com'
-alias ipv6='curl -s https://ipv6.icanhazip.com'
-
-# Miscellaneous
-alias cls='clear'
-alias reload='source ~/.zshrc' # Reload this configuration
-alias '?'='echo $?'            # Print the exit code of the last command
-
-# Kubernetes shortcuts (if kubectl is installed)
-if command -v kubectl &>/dev/null; then
+# ===============================
+# KUBERNETES
+# ===============================
+if zdotfiles_has_command kubectl; then
     alias k='kubectl'
     alias kgp='kubectl get pods'
-    alias kgs='kubectl get svc'
+    alias kgs='kubectl get services'
     alias kgn='kubectl get nodes'
+    alias kgd='kubectl get deployments'
+    alias kdesc='kubectl describe'
+    alias klogs='kubectl logs -f'
+    alias kexec='kubectl exec -it'
 fi
 
-# Ollama
-if command -v ollama &>/dev/null; then
-    alias ollama-up='pgrep -x ollama >/dev/null || (ollama serve > /dev/null 2>&1 &)'
+# ===============================
+# PYTHON PACKAGE MANAGEMENT (Poetry)
+# ===============================
+if zdotfiles_has_command poetry; then
+    # Core dependency management
+    alias pi='poetry install'
+    alias pu='poetry update'
+    alias pl='poetry lock'
+    alias pa='poetry add'
+    alias padev='poetry add --group dev'
+    alias prm='poetry remove'
+    
+    # Execution
+    alias pr='poetry run'
+    alias prp='poetry run python'
+    alias pshell='poetry shell'
+    
+    # Testing and code quality
+    alias ptest='poetry run pytest'
+    alias ptest-cov='poetry run pytest --cov'
+    alias pblack='poetry run black .'
+    alias pisort='poetry run isort .'
+    alias pmypy='poetry run mypy .'
+    alias pflake='poetry run flake8'
+    
+    # Environment management
+    alias penv='poetry env info'
+    alias penv-list='poetry env list'
+    alias penv-use='poetry env use'
+    
+    # Package information
+    alias pshow='poetry show'
+    alias ptree='poetry show --tree'
+    alias poutdated='poetry show --outdated'
+    alias poecheck='poetry check'
+    
+    # Build and publish
+    alias pbuild='poetry build'
+    alias ppublish='poetry publish'
 fi
 
-# Poetry
-if command -v poetry &>/dev/null; then
+# ===============================
+# SYSTEM AND UTILITY
+# ===============================
+alias cls='clear'
+alias reload='exec zsh'
+alias '?'='echo $?'
+alias path='echo $PATH | tr ":" "\n"'
+alias env-grep='env | grep -i'
 
-  # Core commands
-  alias pi="poetry install"                         # Install dependencies + venv
-  alias pu="poetry update"                          # Update dependencies
-  alias pl="poetry lock"                            # Lock current dependencies
-  alias pa="poetry add"                             # Add runtime dependency
-  alias pad="poetry add --dev"                      # Add dev dependency
-  alias prm="poetry remove"                          # Remove dependency
+# Process management
+alias psg='ps aux | grep -v grep | grep'
+alias ports-listening='lsof -i -P -n | grep LISTEN'
 
-  # Run things
-  alias pr="poetry run"                             # Run any tool via poetry
-  alias prp="poetry run python"                     # Run Python
-  alias prt="poetry run task"                       # Run tasks
-  alias ptest="poetry run pytest"                   # Run tests
-  alias pblack="poetry run black ."                 # Format code
-  alias pisort="poetry run isort ."                 # Sort imports
-  alias pmypy="poetry run mypy ."                   # Type check
+# Disk usage helpers
+alias ducks='du -cks * | sort -rn | head'
+alias biggest='find . -type f -print0 2>/dev/null | xargs -0 stat -f "%z %N" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
 
-  # Environment info
-  alias pv="poetry env use python"                  # Show venv path
-  alias pvi="poetry env info"                       # List all venvs
+# ===============================
+# OVERRIDE FUNCTIONS
+# ===============================
+# These functions allow users to opt-in to command overrides
+# Usage: Call these functions in your local configuration
 
-  # Dependency info
-  alias pshow="poetry show"                         # Show installed packages
-  alias ptree="poetry show --tree"                  # Show dependency tree
-  alias poutdated="poetry show --outdated"          # Show outdated deps
-  alias pch="poetry check"                       # Validate pyproject.toml
-
-  # Build & export
-  alias pbuild="poetry build"                       # Build sdist + wheel
-fi
+use_interactive_file_ops() {
+    alias cp='cp -iv'
+    alias mv='mv -iv' 
+    alias rm='rm -Iv'
+    echo "⚠️  File operations are now interactive by default for the session."
+    echo "💡 Use 'command cp/mv/rm' for original behavior in scripts."
+}

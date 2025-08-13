@@ -8,16 +8,10 @@ export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 
 # ------ Path Management ------
-# Add essential paths for non-interactive shells
-zdotfiles_path_prepend() {
-  [[ ! -d "$1" ]] && return 1
-  
-  local dir="$1"
-  # Remove existing occurrence first (prevent duplicates)
-  PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
-  
-  export PATH="$dir:$PATH"
-}
+# Load helper functions first to use zdotfiles_path_prepend
+if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
+  source "$ZDOTFILES_CONFIG_DIR/helpers.zsh"
+fi
 
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
@@ -77,18 +71,24 @@ if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then
       return $?
     }
     
-    # Pattern matching for exclusions
+    # Pattern matching for exclusions using SSH_EXCLUDED_PATTERNS
     should_exclude() {
       local filename="$1"
-      case "$filename" in
-        *.pub|config*|known_hosts*|authorized_keys*) return 0 ;;
-        *) return 1 ;;
-      esac
+      local -a patterns
+      patterns=(${=SSH_EXCLUDED_PATTERNS})
+      for pat in $patterns; do
+        case "$filename" in
+          $pat) return 0 ;;
+        esac
+      done
+      return 1
     }
     
     # Add keys
     success_count=0
-    for key in "$SSH_KEY_DIR"/*; do
+    local -a keys
+    keys=("$SSH_KEY_DIR"/*(N))
+    for key in $keys; do
       filename="$(basename "$key")"    
       should_exclude "$filename" && continue
       

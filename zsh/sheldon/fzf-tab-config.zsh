@@ -15,11 +15,11 @@ zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 # Force zsh not to show the completion menu, allowing fzf-tab to capture the unambiguous prefix
 zstyle ':completion:*' menu no
 
-# Lazy-load preview commands only when needed
-function _fzf_tab_get_preview_cmds() {
+# Define preview commands based on available tools
+_fzf_tab_get_preview_cmds() {
   # Only set these variables if they're not already set
   if [[ -z "$_FILE_PREVIEW_CMD" ]]; then
-    if command -v bat &>/dev/null; then
+    if zdotfiles_has_command bat; then
       _FILE_PREVIEW_CMD="bat --color=always --style=plain --line-range :100"
     else
       _FILE_PREVIEW_CMD="cat"
@@ -27,7 +27,7 @@ function _fzf_tab_get_preview_cmds() {
   fi
 
   if [[ -z "$_DIR_PREVIEW_CMD" ]]; then
-    if command -v eza &>/dev/null; then
+    if zdotfiles_has_command eza; then
       _DIR_PREVIEW_CMD="eza -1 --color=always"
     else
       _DIR_PREVIEW_CMD="ls -1 --color=always"

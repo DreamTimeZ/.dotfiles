@@ -19,28 +19,21 @@ bindkey '^[[99~' kill-line              # iTerm2: Fn + Cmd + Delete
 bindkey '^K' history-substring-search-up
 bindkey '^J' history-substring-search-down
 
-# Function to display keybindings using glow
-function kb() {
-    local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
-    
-    # Check if glow is installed
-    if command -v glow &> /dev/null; then
-        # Display the keybindings using glow
-        glow "$keybindings_file"
-    else
-        # Fallback to less with color if glow is not available
-        echo "Note: Install glow for better formatting: brew install glow"
-        echo "Displaying with basic formatting...\n"
+# Only define keybindings function if documentation file exists
+if [[ -f "${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md" ]]; then
+    # Function to display keybindings using best available viewer
+    kb() {
+        local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
         
-        # Check if bat is available (better fallback with syntax highlighting)
-        if command -v bat &> /dev/null; then
+        # Use best available markdown viewer
+        if zdotfiles_has_command glow; then
+            glow "$keybindings_file"
+        elif zdotfiles_has_command bat; then
             bat --style=plain --language=markdown "$keybindings_file"
-        # Check if less is available with color support
-        elif command -v less &> /dev/null && less -V | grep -q "color"; then
+        elif zdotfiles_has_command less && less -V 2>/dev/null | grep -q "color"; then
             less -R "$keybindings_file"
-        # Last resort, use cat
         else
             cat "$keybindings_file"
         fi
-    fi
-}
+    }
+fi
