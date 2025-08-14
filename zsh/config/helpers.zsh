@@ -17,7 +17,7 @@ typeset -gA ZDOTFILES_CMD_CACHE   # Command existence cache
 # Check if logging should be suppressed during startup
 # Returns: 0 if should suppress, 1 otherwise
 _zdotfiles_should_suppress_log() {
-  [[ $ZDOTFILES_STARTUP_SILENT -eq 1 && -n "$POWERLEVEL9K_INSTANT_PROMPT" ]] && return 0
+  [[ $ZDOTFILES_STARTUP_SILENT -eq 1 && -n "${POWERLEVEL9K_INSTANT_PROMPT:-}" ]] && return 0
   return 1
 }
 
@@ -84,7 +84,7 @@ zdotfiles_has_command() {
   
   local cmd="$1"
   # Check cache first
-  if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]}" ]]; then
+  if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]:-}" ]]; then
     return ${ZDOTFILES_CMD_CACHE[$cmd]}
   fi
   

@@ -1,0 +1,661 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+# ===============================
+# API KEYS SETUP
+# ===============================
+
+readonly SCRIPT_NAME="${0:t}"
+readonly ZDOTFILES_DIR="${ZDOTFILES_DIR:-${0:A:h:h}}"
+readonly CONFIG_DIR="$ZDOTFILES_DIR/zsh/config"
+readonly CONFIG_FILE="$CONFIG_DIR/modules/local/api-keys.zsh"
+readonly KEYCHAIN_SERVICE="dotfiles-api-keys"
+
+# ===============================
+# SERVICE DEFINITIONS
+# ===============================
+
+# Service metadata arrays
+readonly -A SERVICE_ENV_VARS=(
+  [openai]="OPENAI_API_KEY"
+  [gemini]="GEMINI_API_KEY"
+  [claude]="CLAUDE_API_KEY"
+  [huggingface]="HUGGINGFACE_API_KEY"
+  [replicate]="REPLICATE_API_TOKEN"
+  [aws]="AWS_ACCESS_KEY_ID"
+  [gcp]="GOOGLE_CLOUD_API_KEY"
+  [azure]="AZURE_SUBSCRIPTION_KEY"
+  [github]="GITHUB_TOKEN"
+  [gitlab]="GITLAB_TOKEN"
+  [vercel]="VERCEL_TOKEN"
+  [netlify]="NETLIFY_AUTH_TOKEN"
+  [datadog]="DATADOG_API_KEY"
+  [newrelic]="NEW_RELIC_API_KEY"
+  [sentry]="SENTRY_AUTH_TOKEN"
+  [slack]="SLACK_BOT_TOKEN"
+  [discord]="DISCORD_BOT_TOKEN"
+  [telegram]="TELEGRAM_BOT_TOKEN"
+  [stripe]="STRIPE_SECRET_KEY"
+  [paypal]="PAYPAL_CLIENT_ID"
+  [sendgrid]="SENDGRID_API_KEY"
+  [mailgun]="MAILGUN_API_KEY"
+  [mongodb]="MONGODB_URI"
+  [supabase]="SUPABASE_ANON_KEY"
+  [planetscale]="PLANETSCALE_TOKEN"
+)
+
+readonly -A SERVICE_DESCRIPTIONS=(
+  [openai]="OpenAI GPT APIs"
+  [gemini]="Google Gemini API"
+  [claude]="Anthropic Claude API"
+  [huggingface]="Hugging Face API"
+  [replicate]="Replicate API"
+  [aws]="AWS Access Key"
+  [gcp]="Google Cloud API"
+  [azure]="Azure Cognitive Services"
+  [github]="GitHub Personal Access Token"
+  [gitlab]="GitLab Access Token"
+  [vercel]="Vercel API Token"
+  [netlify]="Netlify Personal Access Token"
+  [datadog]="Datadog API Key"
+  [newrelic]="New Relic API Key"
+  [sentry]="Sentry Auth Token"
+  [slack]="Slack Bot Token"
+  [discord]="Discord Bot Token"
+  [telegram]="Telegram Bot Token"
+  [stripe]="Stripe Secret Key"
+  [paypal]="PayPal Client ID"
+  [sendgrid]="SendGrid API Key"
+  [mailgun]="Mailgun API Key"
+  [mongodb]="MongoDB Connection String"
+  [supabase]="Supabase Anon Key"
+  [planetscale]="PlanetScale API Token"
+)
+
+readonly -A SERVICE_PREFIXES=(
+  [openai]="sk-"
+  [claude]="sk-ant-"
+  [huggingface]="hf_"
+  [replicate]="r8_"
+  [aws]="AKIA"
+  [github]="ghp_"
+  [gitlab]="glpat-"
+  [newrelic]="NRAK-"
+  [slack]="xoxb-"
+  [stripe]="sk_"
+  [sendgrid]="SG."
+  [mailgun]="key-"
+  [mongodb]="mongodb"
+  [supabase]="eyJ"
+)
+
+readonly -A SERVICE_MIN_LENGTHS=(
+  [openai]="20"
+  [gemini]="20"
+  [claude]="39"
+  [huggingface]="20"
+  [replicate]="40"
+  [aws]="20"
+  [gcp]="20"
+  [azure]="32"
+  [github]="40"
+  [gitlab]="20"
+  [vercel]="24"
+  [netlify]="40"
+  [datadog]="32"
+  [newrelic]="40"
+  [sentry]="64"
+  [slack]="50"
+  [discord]="60"
+  [telegram]="45"
+  [stripe]="30"
+  [paypal]="80"
+  [sendgrid]="69"
+  [mailgun]="35"
+  [mongodb]="20"
+  [supabase]="110"
+  [planetscale]="32"
+)
+
+readonly -A SERVICE_CATEGORIES=(
+  [openai]="ai"
+  [gemini]="ai"
+  [claude]="ai"
+  [huggingface]="ai"
+  [replicate]="ai"
+  [aws]="cloud"
+  [gcp]="cloud"
+  [azure]="cloud"
+  [github]="dev"
+  [gitlab]="dev"
+  [vercel]="dev"
+  [netlify]="dev"
+  [datadog]="monitoring"
+  [newrelic]="monitoring"
+  [sentry]="monitoring"
+  [slack]="communication"
+  [discord]="communication"
+  [telegram]="communication"
+  [stripe]="payment"
+  [paypal]="payment"
+  [sendgrid]="email"
+  [mailgun]="email"
+  [mongodb]="database"
+  [supabase]="database"
+  [planetscale]="database"
+)
+
+readonly -A CATEGORY_NAMES=(
+  [ai]="AI/ML Services"
+  [cloud]="Cloud Providers"
+  [dev]="Development Tools"
+  [monitoring]="Monitoring & Analytics"
+  [communication]="Communication"
+  [payment]="Payment & Commerce"
+  [email]="Email Services"
+  [database]="Database Services"
+)
+
+readonly CATEGORY_ORDER=(ai cloud dev monitoring communication payment email database)
+
+# All supported services
+readonly ALL_SERVICES=("${(@k)SERVICE_ENV_VARS}")
+
+# ===============================
+# HELPER FUNCTIONS
+# ===============================
+
+_get_services_by_category() {
+  local category="$1"
+  local services=()
+  
+  for service in "${ALL_SERVICES[@]}"; do
+    if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
+      services+=("$service")
+    fi
+  done
+  
+  echo "${services[@]}"
+}
+
+# ===============================
+# DISPLAY FUNCTIONS
+# ===============================
+
+_list_services() {
+  echo "Available Services"
+  echo "------------------"
+  echo
+  
+  for category in "${CATEGORY_ORDER[@]}"; do
+    local services=()
+    
+    # Get services for this category directly
+    for service in "${ALL_SERVICES[@]}"; do
+      if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
+        services+=("$service")
+      fi
+    done
+    
+    if [[ ${#services[@]} -gt 0 ]]; then
+      echo "${CATEGORY_NAMES[$category]}:"
+      for service in "${services[@]}"; do
+        printf "  • %s\n" "$service"
+      done
+      echo
+    fi
+  done
+}
+
+_show_status() {
+  local found=0 total=${#ALL_SERVICES}
+  
+  echo "API Key Status"
+  echo "--------------"
+  echo
+  
+  for category in "${CATEGORY_ORDER[@]}"; do
+    local services=()
+    
+    # Get services for this category directly
+    for service in "${ALL_SERVICES[@]}"; do
+      if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
+        services+=("$service")
+      fi
+    done
+    
+    if [[ ${#services[@]} -gt 0 ]]; then
+      echo "${CATEGORY_NAMES[$category]}:"
+      for service in "${services[@]}"; do
+        if _keychain_exists "$service"; then
+          printf "  %-15s OK\n" "$service"
+          found=$((found + 1))
+        else
+          printf "  %-15s --\n" "$service"
+        fi
+      done
+      echo
+    fi
+  done
+  
+  echo "Summary: $found/$total configured"
+  
+  if [[ $found -eq $total ]]; then
+    echo "All keys configured"
+  elif [[ $found -gt 0 ]]; then
+    echo "Some keys missing"
+  else
+    echo "No keys configured"
+  fi
+}
+
+# ===============================
+# CORE FUNCTIONS
+# ===============================
+
+_keychain_exists() { 
+  security find-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" &>/dev/null
+}
+
+_keychain_set() { 
+  security delete-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" &>/dev/null || true
+  security add-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" -w "$2" &>/dev/null
+}
+
+_keychain_delete() {
+  security delete-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" &>/dev/null
+}
+
+_remove_key() {
+  local service="$1"
+  local force_mode="${2:-false}"
+  
+  if ! _keychain_exists "$service"; then
+    echo "$service key not found"
+    return 1
+  fi
+  
+  if [[ "$force_mode" == "true" ]]; then
+    echo "Force removing $service key"
+  else
+    echo "$service key found"
+    local response
+    if ! _get_input "Remove? [y/N] " response; then
+      return 1
+    fi
+    if [[ ! "$response" =~ ^[Yy] ]]; then
+      echo "Skipping $service"
+      return 0
+    fi
+  fi
+  
+  if _keychain_delete "$service"; then
+    echo "$service key removed"
+    return 0
+  else
+    echo "Failed to remove $service key" >&2
+    return 1
+  fi
+}
+
+_validate_environment() {
+  [[ "$OSTYPE" == darwin* ]] || { echo "✗ macOS required" >&2; return 1; }
+  command -v security &>/dev/null || { echo "✗ Security framework missing" >&2; return 1; }
+  security list-keychains &>/dev/null || { echo "✗ Keychain access denied" >&2; return 1; }
+  mkdir -p "${CONFIG_FILE%/*}" || { echo "✗ Cannot create config directory" >&2; return 1; }
+}
+
+_validate_key() {
+  local key="$1" service="$2"
+  local min_len="${SERVICE_MIN_LENGTHS[$service]}"
+  local prefix="${SERVICE_PREFIXES[$service]:-}"
+  
+  # Clean the key
+  key=$(echo "$key" | tr -d '[:space:]')
+  
+  # Basic validation
+  if [[ -z "$key" ]]; then
+    echo "✗ Empty key" >&2
+    return 1
+  fi
+  
+  if [[ ${#key} -lt $min_len ]]; then
+    echo "✗ Too short (need $min_len+ chars)" >&2
+    return 1
+  fi
+  
+  # Prefix check
+  if [[ -n "$prefix" && ! "$key" =~ ^${prefix} ]]; then
+    echo "Warning: Expected prefix: $prefix"
+    echo "Continuing anyway..."
+  fi
+  
+  echo "$key"
+  return 0
+}
+
+# ===============================
+# USER INTERACTION
+# ===============================
+
+_get_input() {
+  local prompt="$1" var_name="$2"
+  printf "%s" "$prompt"
+  read -r "$var_name"
+}
+
+_setup_key() {
+  local service="$1"
+  local force_mode="${2:-false}"
+  local description="${SERVICE_DESCRIPTIONS[$service]}"
+  local prefix="${SERVICE_PREFIXES[$service]:-}"
+  local min_len="${SERVICE_MIN_LENGTHS[$service]}"
+  
+  # Check existing
+  if _keychain_exists "$service"; then
+    if [[ "$force_mode" == "true" ]]; then
+      echo "$service key exists - force updating"
+    else
+      echo "$service key exists"
+      local response
+      if ! _get_input "Update? [y/N] " response; then
+        return 1
+      fi
+      if [[ ! "$response" =~ ^[Yy] ]]; then
+        echo "Skipping $service"
+        return 0
+      fi
+    fi
+  fi
+  
+  # Setup new key
+  echo
+  echo "Setting up: $service"
+  echo "Description: $description"
+  if [[ -n "$prefix" ]]; then
+    echo "Format: ${prefix}..."
+  fi
+  echo "Min length: $min_len characters"
+  echo
+  
+  # Get key
+  local api_key
+  if ! _get_input "Enter API key: " api_key; then
+    echo "✗ Input failed" >&2
+    return 1
+  fi
+  
+  # Validate
+  local validated_key
+  if ! validated_key=$(_validate_key "$api_key" "$service"); then
+    return 1
+  fi
+  
+  # Store
+  if _keychain_set "$service" "$validated_key"; then
+    echo "$service key saved"
+    return 0
+  else
+    echo "Failed to save key" >&2
+    return 1
+  fi
+}
+
+# ===============================
+# CONFIGURATION
+# ===============================
+
+_create_config() {
+  local force_mode="${1:-false}"
+  
+  if [[ -f "$CONFIG_FILE" ]]; then
+    if [[ "$force_mode" == "true" ]]; then
+      echo "Force replacing config"
+    else
+      local response
+      if _get_input "Replace config? [y/N] " response; then
+        if [[ ! "$response" =~ ^[Yy] ]]; then
+          echo "Keeping existing config"
+          return 0
+        fi
+      else
+        echo "Keeping existing config"
+        return 0
+      fi
+    fi
+  fi
+  
+  cat > "$CONFIG_FILE" << 'EOF'
+# ===============================
+# API Keys - Secure Integration
+# ===============================
+
+if [[ "$OSTYPE" == darwin* ]] && command -v security &>/dev/null; then
+  local -A _api_keys=(
+EOF
+  
+  # Add mappings
+  for service in "${ALL_SERVICES[@]}"; do
+    local env_var="${SERVICE_ENV_VARS[$service]}"
+    echo "    [$env_var]=$service"
+  done >> "$CONFIG_FILE"
+  
+  cat >> "$CONFIG_FILE" << 'EOF'
+  )
+  
+  local env_var service key
+  for env_var service in "${(@kv)_api_keys}"; do
+    if [[ -z "${(P)env_var:-}" ]]; then
+      if key=$(security find-generic-password -w -s "dotfiles-api-keys" -a "$service" 2>/dev/null); then
+        export "$env_var"="$key"
+      fi
+    fi
+  done
+  
+  unset _api_keys env_var service key
+fi
+EOF
+  
+  echo "Config updated: $CONFIG_FILE"
+  return 0
+}
+
+# ===============================
+# INTERFACE
+# ===============================
+
+_show_help() {
+  cat << EOF
+API Keys Setup
+
+USAGE: $SCRIPT_NAME [OPTIONS] [SERVICES...]
+
+OPTIONS:
+  -s, --status     Show status
+  -l, --list       List services  
+  -c, --config     Update config
+  -r, --remove     Remove keys
+  -f, --force      Force mode (skip all prompts)
+  -h, --help       Show help
+
+EXAMPLES:
+  $SCRIPT_NAME                # Interactive setup
+  $SCRIPT_NAME --status       # Check what's configured
+  $SCRIPT_NAME --list         # See all available services
+  $SCRIPT_NAME openai claude  # Setup specific services
+  $SCRIPT_NAME --remove openai # Remove specific key
+  $SCRIPT_NAME --force openai # Force update without prompts
+
+Keys are stored securely in macOS Keychain.
+Force mode will overwrite existing keys without confirmation.
+EOF
+}
+
+# ===============================
+# MAIN
+# ===============================
+
+main() {
+  local services=() force_mode=false remove_mode=false
+  
+  # Parse args
+  # First pass: check for force mode
+  local args=("$@")
+  for arg in "${args[@]}"; do
+    if [[ "$arg" == "-f" || "$arg" == "--force" ]]; then
+      force_mode=true
+      break
+    fi
+  done
+  
+  while (( $# > 0 )); do
+    case "$1" in
+      -h|--help) _show_help; exit 0 ;;
+      -s|--status) _validate_environment && _show_status; exit $? ;;
+      -l|--list) _list_services; exit 0 ;;
+      -c|--config) _validate_environment && _create_config "$force_mode"; exit $? ;;
+      -r|--remove) remove_mode=true ;;
+      -f|--force) ;; # Already handled in first pass
+      *)
+        if [[ -z "${SERVICE_ENV_VARS[$1]:-}" ]]; then
+          echo "Unknown service: $1" >&2
+          echo "Use --list to see available services" >&2
+          exit 1
+        fi
+        services+=("$1")
+        ;;
+    esac
+    shift
+  done
+  
+  # Interactive mode
+  if [[ ${#services} -eq 0 ]]; then
+    if [[ "$remove_mode" == "true" ]]; then
+      echo "Remove API Keys"
+      echo "---------------"
+      echo
+      echo "Options:"
+      echo "  1. Remove all configured keys"
+      echo "  2. Pick specific keys to remove"
+      echo "  3. Show current status"
+      echo
+    else
+      echo "API Keys Setup"
+      echo "--------------"
+      echo
+      echo "Options:"
+      echo "  1. Setup all services"
+      echo "  2. Pick specific services"
+      echo "  3. Show available services"
+      echo
+    fi
+    
+    local choice
+    if _get_input "Option [1-3]: " choice; then
+      case "$choice" in
+        1) 
+          if [[ "$remove_mode" == "true" ]]; then
+            # Get only configured services
+            services=()
+            for service in "${ALL_SERVICES[@]}"; do
+              if _keychain_exists "$service"; then
+                services+=("$service")
+              fi
+            done
+          else
+            services=("${ALL_SERVICES[@]}")
+          fi
+          ;;
+        2) 
+          if [[ "$remove_mode" == "true" ]]; then
+            _show_status
+          else
+            _list_services
+          fi
+          echo
+          local input
+          if _get_input "Enter services: " input; then
+            IFS=' ' read -A services <<< "$input"
+          else
+            exit 1
+          fi
+          ;;
+        3) 
+          if [[ "$remove_mode" == "true" ]]; then
+            _show_status
+          else
+            _list_services
+          fi
+          exit 0
+          ;;
+        *) echo "Invalid choice" >&2; exit 1 ;;
+      esac
+    else
+      exit 1
+    fi
+  fi
+  
+  # Validate
+  _validate_environment || exit 1
+  
+  # Remove mode
+  if [[ "$remove_mode" == "true" ]]; then
+    echo
+    echo "Removing: ${services[*]}"
+    echo
+    
+    local success=0
+    for service in "${services[@]}"; do
+      if _remove_key "$service" "$force_mode"; then
+        success=$((success + 1))
+      fi
+      echo
+    done
+    
+    # Update config after removals
+    _create_config "$force_mode" || exit 1
+    
+    echo
+    if [[ $success -gt 0 ]]; then
+      echo "Removal complete: $success keys removed"
+      echo "Config updated: $CONFIG_FILE"
+    else
+      echo "No keys were removed"
+    fi
+    exit 0
+  fi
+  
+  # Setup
+  echo
+  echo "Setting up: ${services[*]}"
+  echo
+  
+  local success=0
+  for service in "${services[@]}"; do
+    if _setup_key "$service" "$force_mode"; then
+      success=$((success + 1))
+    fi
+    echo
+  done
+  
+  # Update config
+  _create_config "$force_mode" || exit 1
+  
+  # Done
+  echo
+  if [[ $success -gt 0 ]]; then
+    echo "Setup complete: $success keys configured"
+    echo "Reload: source $CONFIG_FILE"
+    echo "Status: $SCRIPT_NAME --status"
+    
+    # Test if keys are loading
+    echo
+    if ! source "$CONFIG_FILE" 2>/dev/null; then
+      echo "Config may have issues - check syntax"
+    fi
+  else
+    echo "No keys were configured"
+  fi
+}
+
+main "$@"
