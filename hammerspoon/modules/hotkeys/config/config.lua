@@ -18,18 +18,29 @@ config.modifiers = {
 config.logging = {
     -- Log levels
     LEVELS = {
-        ERROR = 1,
-        WARN = 2,
-        INFO = 3,
-        DEBUG = 4
+        ERROR = 1,    -- Production errors that need immediate attention
+        WARN = 2,     -- Warning conditions that should be monitored
+        INFO = 3,     -- General informational messages (disabled in prod)
+        DEBUG = 4     -- Detailed debugging information (disabled in prod)
     },
-    -- Default settings
+    -- Production-grade settings
     enabled = true,
-    level = 1,  -- Default to ERROR only
+    level = 1,              -- Production default: ERROR only
+    maxMessageLength = 500, -- Prevent log spam
+    rateLimiting = {
+        enabled = true,
+        maxPerSecond = 10,  -- Max 10 log messages per second
+        windowMs = 1000
+    },
+    -- Performance optimization
+    asyncLogging = false,   -- Synchronous for reliability in Hammerspoon
+    includeTimestamp = true,
+    includeLevel = true,
+    includeContext = false, -- Disable verbose context in production
     -- Level name lookup
     levelNames = {
         [1] = "ERROR",
-        [2] = "WARN",
+        [2] = "WARN", 
         [3] = "INFO",
         [4] = "DEBUG"
     }
@@ -181,7 +192,20 @@ config.modals = {
         },
         customModule = "modules.hotkeys.modals.system"
         -- mappings defined in system.lua
-    }
+    },
+    
+    -- Macros modal (auto-clicker functionality)
+    macros = {
+        title = "Macros:",
+        handler = {
+            field = "fn",
+            action = "functionCall"
+        },
+        customModule = "modules.hotkeys.modals.macros"
+        -- mappings defined in macros.lua
+    },
+    
+
 }
 
 -- Global shortcuts configuration
@@ -193,6 +217,7 @@ config.globalShortcuts = {
     { key = "d", modal = "system",   desc = "System Modal" },
     { key = "s", modal = "settings", desc = "Settings Modal" },
     { key = "space", modal = "window", desc = "Window Management Modal" },
+    { key = "m", modal = "macros",   desc = "Macros Modal" },
     
     -- Direct app shortcuts
     { 
@@ -204,15 +229,6 @@ config.globalShortcuts = {
         mapping = { app = "iTerm", desc = "Launch iTerm" }
     },
     
-    -- Auto-clicker toggle
-    { 
-        key = "m", 
-        fn = function()
-            local autoClicker = require("modules.hotkeys.macros.auto-clicker")
-            autoClicker.toggle()
-        end,
-        desc = "Toggle Auto-Clicker"
-    }
 }
 
 -- Configuration loading logic
@@ -251,7 +267,7 @@ function config.loadLocalConfigs(forceReload, utils)
     -- Skip if already initialized and not forcing reload
     if configCache.isInitialized and not forceReload then return end
     
-    if utils then utils.info("Loading local configurations" .. (forceReload and " (forced)" or "")) end
+    -- Loading local configurations
     
     -- Load local mappings for all defined modals
     for modalName, modal in pairs(config.modals) do
@@ -263,11 +279,11 @@ function config.loadLocalConfigs(forceReload, utils)
             local localPath = getLocalModulePath(modalName)
             
             -- Load the local mappings
-            local localMappings = safeRequire(localPath, utils and utils.debug)
+            local localMappings = safeRequire(localPath, nil)
             
             -- If local mappings loaded successfully, replace the defaults
             if localMappings and next(localMappings) ~= nil then
-                if utils then utils.info("Using local mappings for " .. modalName) end
+                -- Using local mappings for " .. modalName
                 modal.mappings = localMappings
             end
         end
@@ -278,21 +294,20 @@ function config.loadLocalConfigs(forceReload, utils)
     end
     
     -- Load custom global shortcuts if available
-    local localGlobalShortcuts = safeRequire(getLocalModulePath("global_shortcuts"), 
-                                             utils and utils.debug)
+    local localGlobalShortcuts = safeRequire(getLocalModulePath("global_shortcuts"), nil)
     
     if localGlobalShortcuts and next(localGlobalShortcuts) ~= nil then
-        if utils then utils.info("Using local global shortcuts configuration") end
+        -- Using local global shortcuts configuration
         config.globalShortcuts = localGlobalShortcuts
     end
     
     configCache.isInitialized = true
-    if utils then utils.info("Configuration loading complete") end
+    -- Configuration loading complete
 end
 
 -- Force reload of configuration files
 function config.reloadConfigs(utils)
-    if utils then utils.info("Forcing configuration reload") end
+    -- Forcing configuration reload
     
     -- Clear package.loaded cache for all module mappings
     for modalName, _ in pairs(config.modals) do
@@ -309,7 +324,7 @@ function config.reloadConfigs(utils)
     -- Reload all configurations
     config.loadLocalConfigs(true, utils)
     
-    if utils then utils.info("Configuration reload complete") end
+    -- Configuration reload complete
 end
 
 return config 

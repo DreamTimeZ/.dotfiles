@@ -104,3 +104,42 @@ The Zsh configuration uses a highly modular architecture:
 - **Cross-platform**: Primary macOS focus with Linux/WSL compatibility considerations
 - **Performance**: Optimized loading order and lazy initialization for fast shell startup
 - **Documentation**: Each major component has its own documentation file
+
+## Logging Best Practices
+
+### Production Logging Configuration
+The logging system follows industry standards for production environments:
+
+#### **Log Levels (Default: ERROR only)**
+- `ERROR (1)`: Critical failures requiring immediate attention
+- `WARN (2)`: Warning conditions that should be monitored  
+- `INFO (3)`: General information (disabled in production)
+- `DEBUG (4)`: Detailed debugging (disabled in production)
+
+#### **Security & Performance Features**
+- **Rate Limiting**: Max 10 messages/second to prevent log spam
+- **Message Sanitization**: Removes control characters, limits message length
+- **Input Validation**: Type checking and safe parameter handling
+- **Error Resilience**: Uses `pcall` to prevent logging from crashing app
+
+#### **Configuration Examples**
+```lua
+-- Enable debug logging for development
+logging.setLogLevel("DEBUG")
+
+-- Production settings (default)
+logging.setLogLevel("ERROR")
+logging.setLoggingEnabled(true)
+
+-- Monitor logging stats
+local stats = logging.getLogStats()
+print("Log level: " .. stats.levelName)
+```
+
+#### **Usage Guidelines**
+- Use `ERROR` for critical failures only
+- Use `WARN` for recoverable issues that need monitoring
+- Avoid `INFO`/`DEBUG` in production code
+- Keep log messages concise and actionable
+- Include context for complex operations
+- Never log sensitive information (passwords, keys, etc.)
