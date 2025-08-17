@@ -3,6 +3,7 @@ tmux/sessions
 **/*.bak
 **/TODO.md
 
+.claude/settings.local.json
 *.local
 .vscode
 .DS_Store

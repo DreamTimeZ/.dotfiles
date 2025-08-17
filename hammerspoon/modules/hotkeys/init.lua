@@ -12,7 +12,7 @@ local configUtils = require("modules.hotkeys.utils.config_utils")
 local globalHotkeys = {}
 local modules = {}
 
-logging.info("Initializing hotkeys module")
+-- Initialize hotkeys module
 
 -- Load all config settings from local configurations
 config.loadLocalConfigs(false, {
@@ -140,6 +140,8 @@ local function createKeyBindings()
     
     logging.info("Created " .. validCount .. " global hotkeys")
 end
+
+
 
 -- Initialize the module
 local function initialize()

@@ -9,8 +9,8 @@ local function handleError(message, isFatal)
     -- Log appropriate level based on severity
     if isFatal then
         log.error(message)
-        -- Only show alert for fatal errors to avoid UI clutter
-        hs.alert.show("ERROR: " .. message)
+        -- Show minimal user-facing error for critical issues only
+        hs.alert.show("Hotkeys Error", 2)
         return false
     else
         log.warn(message)
