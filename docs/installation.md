@@ -33,6 +33,9 @@ cd ~/.dotfiles
     mkdir -p ~/.config/sheldon
     ln -sf ~/.dotfiles/zsh/sheldon/plugins.toml ~/.config/sheldon/plugins.toml
     sheldon lock --update
+    
+    # Atuin (shell history) - auto-configured on first shell load
+    # Config will be auto-symlinked from ~/.dotfiles/zsh/config/atuin/config.toml
     ```
 
 3. **Setup Neovim**:

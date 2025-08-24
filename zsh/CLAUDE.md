@@ -15,6 +15,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `source ~/.zshrc` - Reload configuration without restarting shell
 - `ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc` - Link zsh configuration
 
+### Tool Configuration
+- `config/atuin/config.toml` - Atuin shell history configuration (auto-symlinked to `~/.config/atuin/`)
+
 ## Architecture
 
 ### Modular Configuration System
@@ -46,6 +49,7 @@ Organized by numerical prefix for load order:
 - **Lazy loading**: Version managers (nvm, pyenv, asdf) and tools (direnv, zoxide) initialize only when needed
 - **Load order dependencies**: Critical plugins (powerlevel10k) load first, syntax highlighters load last
 - **Custom configurations**: Tool-specific config files in `sheldon/` directory (fzf-tab-config.zsh, etc.)
+- **Auto-configuration**: Tools like atuin automatically setup configuration symlinks on first load
 
 ### Logging and Performance
 - **Configurable logging**: `ZDOTFILES_LOG_LEVEL` controls verbosity (0=silent, 1=error, 2=warn, 3=info)

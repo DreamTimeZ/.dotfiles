@@ -62,6 +62,11 @@ if zdotfiles_has_command git; then
     alias gtagd='git tag -d'
 fi
 
+# LazyGit
+if zdotfiles_has_command lazygit; then
+    alias lg='lazygit'
+fi
+
 # ===============================
 # EDITOR AND DEVELOPMENT TOOLS
 # ===============================
@@ -260,9 +265,22 @@ if zdotfiles_has_command poetry; then
 fi
 
 # ===============================
+# SECURITY & MONITORING TOOLS
+# ===============================
+if zdotfiles_has_command gitleaks; then
+    alias gls='gitleaks detect --verbose'
+    alias glspre='gitleaks protect --staged --verbose'
+fi
+
+if zdotfiles_has_command bandwhich; then
+    alias bw='sudo bandwhich'
+    alias bwp='sudo bandwhich --addresses'
+fi
+
+# ===============================
 # SYSTEM AND UTILITY
 # ===============================
-alias his='history'
+# his='history' - removed, conflicts with atuin
 alias cls='clear'
 alias reload='exec zsh'
 alias '?'='echo $?'

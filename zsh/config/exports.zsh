@@ -10,17 +10,14 @@ HISTSIZE=50000                # Maximum number of events in memory per session
 SAVEHIST=2000000              # Maximum number of events saved to history file
 HISTFILE="$HOME/.zsh_history" # History file location
 
-# History sharing and persistence (SHARE_HISTORY includes INC_APPEND_HISTORY)
+# History settings (Atuin handles most history functionality now)
+# Keep these for compatibility with non-Atuin shells and fallback behavior
 setopt SHARE_HISTORY          # Share history among all sessions (includes incremental append)
 setopt EXTENDED_HISTORY       # Record timestamp with each command
-
-# Duplicate handling
 setopt HIST_IGNORE_ALL_DUPS   # Do not record duplicate entries
 setopt HIST_SAVE_NO_DUPS      # Do not save duplicate entries
 setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first when trimming history
-
-# Content filtering
-setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space
+setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space (Atuin also filters these)
 setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_VERIFY            # Show command with history expansion to user before running it
 

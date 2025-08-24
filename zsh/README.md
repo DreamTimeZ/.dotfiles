@@ -31,6 +31,8 @@ exec zsh
 zsh/
 ├── config/
 │   ├── aliases.zsh           # Clean aliases only
+│   ├── atuin/                # Shell history configuration
+│   │   └── config.toml       # Auto-symlinked to ~/.config/atuin/
 │   ├── exports.zsh           # Environment & options
 │   ├── modules/
 │   │   ├── functions/        # Organized by domain
@@ -70,6 +72,12 @@ zsh/
 - `serve` → instant dev server (Node.js/Python)
 - `venv` → smart Python environment manager
 - `pcheck` → comprehensive code quality check
+
+### Shell History (Atuin)
+
+- Enhanced shell history with sync capabilities
+- Fuzzy search and workspace filtering
+- Configuration auto-managed in `config/atuin/`
 
 ## 🔧 Customization
 
