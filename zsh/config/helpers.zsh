@@ -85,7 +85,7 @@ zdotfiles_has_command() {
   local cmd="$1"
   # Check cache first
   if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]:-}" ]]; then
-    return ${ZDOTFILES_CMD_CACHE[$cmd]}
+    return "${ZDOTFILES_CMD_CACHE[$cmd]}"
   fi
   
   # Cache the result
