@@ -60,11 +60,17 @@ local = "~/.dotfiles/zsh/sheldon"
 use = ["terminal-title.zsh"]
 apply = ["source"]
 
-# FZF and related plugins (load in correct order)
+# Atuin history replacement (load before FZF to prevent key binding conflicts)
+[plugins.atuin]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["atuin.zsh"]
+apply = ["source"]
+
+# FZF and related plugins (load after Atuin to prevent Ctrl+R override)
 [plugins.fzf]
 github = "junegunn/fzf"
 dir = "shell"
-use = ["key-bindings.zsh", "completion.zsh"]
+use = ["completion.zsh"]
 
 # fzf-tab must be loaded after compinit but before plugins that wrap widgets
 [plugins.fzf-tab]
@@ -84,9 +90,6 @@ mkdir -p -- "$HOME/.zcompcache"
 '''
 
 # Syntax highlighting and autosuggestions (load last for best performance)
-[plugins.zsh-history-substring-search]
-github = "zsh-users/zsh-history-substring-search"
-apply = ["source"]
 
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"

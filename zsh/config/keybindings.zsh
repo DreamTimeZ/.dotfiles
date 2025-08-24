@@ -15,9 +15,7 @@ bindkey '^[[3~' delete-char             # Fn+Delete fallback
 bindkey '^[[3;9~' kill-line             # Fn+Cmd+Delete (iterm in Cursor)
 bindkey '^[[99~' kill-line              # iTerm2: Fn + Cmd + Delete
 
-# History substring search
-bindkey '^K' history-substring-search-up
-bindkey '^J' history-substring-search-down
+# Atuin replaces history substring search
 
 # Only define keybindings function if documentation file exists
 if [[ -f "${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md" ]]; then

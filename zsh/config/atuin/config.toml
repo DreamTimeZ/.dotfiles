@@ -1,0 +1,30 @@
+# Atuin Configuration - Production Grade Defaults
+# Security: Never commit session_token or private sync_address
+
+## Core Settings
+auto_sync = true
+update_check = true
+sync_frequency = "5m"
+search_mode = "fuzzy"
+filter_mode = "global"
+style = "compact"
+word_jump_mode = "subl"
+
+## Performance & UX
+workspaces = true
+prefers_reduced_motion = false
+enter_accept = true
+
+## Statistics
+[stats]
+common_subcommands = ["cargo", "go", "npm", "yarn", "pnpm", "git", "docker", "kubectl"]
+
+## Dotfiles Integration
+[dotfiles]
+enabled = true
+
+## Security Note
+# session_token and sync_address should be set via:
+# - Environment variables (ATUIN_SESSION_TOKEN)
+# - Local config override (~/.config/atuin/config.local.toml)
+# - Never commit sensitive data to version control
