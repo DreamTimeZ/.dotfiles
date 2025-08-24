@@ -38,20 +38,61 @@ cd ~/.dotfiles
     # Config will be auto-symlinked from ~/.dotfiles/zsh/config/atuin/config.toml
     ```
 
-3. **Setup Neovim**:
+3. **Setup Shell Tool Configurations**:
+
+    ```bash
+    # Powerlevel10k prompt theme
+    ln -sf ~/.dotfiles/p10k/.p10k.zsh ~/.p10k.zsh
+    
+    # FZF fuzzy finder
+    ln -sf ~/.dotfiles/fzf/.fzf.zsh ~/.fzf.zsh
+    
+    # iTerm2 shell integration
+    ln -sf ~/.dotfiles/iterm2/.iterm2_shell_integration.zsh ~/.iterm2_shell_integration.zsh
+    
+    # Development tools
+    mkdir -p ~/.config/tealdeer && ln -sf ~/.dotfiles/tealdeer/config.toml ~/.config/tealdeer/config.toml
+    mkdir -p ~/.config/direnv && ln -sf ~/.dotfiles/direnv/config.toml ~/.config/direnv/direnv.toml
+    ```
+
+4. **Setup Shell Environment**:
+
+    ```bash
+    # Development tool versions & clean login
+    ln -sf ~/.dotfiles/shell/.tool-versions ~/.tool-versions
+    ln -sf ~/.dotfiles/shell/.hushlogin ~/.hushlogin
+    
+    # Tmux session layouts
+    mkdir -p ~/.config/tmuxinator && ln -sf ~/.dotfiles/tmuxinator/default.yml ~/.config/tmuxinator/default.yml
+    ```
+
+5. **Setup System Customization**:
+
+    ```bash
+    # Karabiner keyboard remapping
+    mkdir -p ~/.config/karabiner && ln -sf ~/.dotfiles/karabiner/karabiner.json ~/.config/karabiner/karabiner.json
+    
+    # Espanso text expansion (setup from templates)
+    cd ~/.dotfiles/espanso/templates && for f in *.template; do cp "$f" "../local/${f%.template}"; done
+    mkdir -p ~/.config/espanso/{config,match}
+    ln -sf ~/.dotfiles/espanso/local/default.yml ~/.config/espanso/config/default.yml
+    ln -sf ~/.dotfiles/espanso/local/base.yml ~/.config/espanso/match/base.yml
+    ```
+
+6. **Setup Neovim**:
 
     ```bash
     mkdir -p ~/.config/nvim
     ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
     ```
 
-4. **Setup Tmux**:
+7. **Setup Tmux**:
 
     ```bash
     ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
     ```
 
-5. **Setup Git**:
+8. **Setup Git**:
 
     ```bash
     ln -sf ~/.dotfiles/git/.gitconfig ~/.gitconfig
@@ -67,7 +108,7 @@ cd ~/.dotfiles
     fi
     ```
 
-6. **Setup SSH**:
+9. **Setup SSH**:
 
     ```bash
     mkdir -p ~/.ssh
@@ -95,7 +136,7 @@ cd ~/.dotfiles
     chmod 600 ~/.ssh/config*
     ```
 
-7. **Setup Hammerspoon**:
+10. **Setup Hammerspoon**:
 
     ```bash
     brew install --cask hammerspoon
@@ -106,7 +147,7 @@ cd ~/.dotfiles
     # rm -rf ~/.hammerspoon && ln -s ~/.dotfiles/hammerspoon ~/.hammerspoon
     ```
 
-8. **Setup LaunchAgents**:
+11. **Setup LaunchAgents**:
 
     ```bash
     mkdir -p ~/Library/LaunchAgents
@@ -117,13 +158,7 @@ cd ~/.dotfiles
     done
     ```
 
-9. **Install iTerm2 Shell Integration** (optional):
-
-    ```bash
-    curl -L https://iterm2.com/shell_integration/zsh -o ~/.iterm2_shell_integration.zsh
-    ```
-
-10. **Secure Important Directories**:
+12. **Secure Important Directories**:
 
     ```bash
     # Restrict write permissions on Zsh function path directory
@@ -133,11 +168,23 @@ cd ~/.dotfiles
     chmod go-w "${XDG_CACHE_HOME:-$HOME/.cache}"
     ```
 
-## Local Customization
+## Local Customization & Security
 
-The configuration supports local overrides through `.local` files:
+The configuration supports local overrides and secure handling of sensitive data:
+
+### Local Override Files (.local)
 
 - `git/.gitconfig.local`: Git user info and machine-specific settings
 - `ssh/config.local`: Machine-specific SSH configurations
+- `zsh/config/modules/local/*.zsh`: Machine-specific shell functions and aliases
 
-These files are ignored by Git to keep sensitive information private.
+### Managed Configuration Files
+
+The dotfiles manage configuration files for various tools:
+
+- **Shell Integration**: Powerlevel10k prompt theme, FZF fuzzy finder, iTerm2 integration
+- **Development Tools**: ASDF (version management), tealdeer (tldr), direnv (environment), tmuxinator (sessions)
+- **Shell Management**: Atuin (shell history), Sheldon (plugin management), hushlogin (clean login)
+- **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
+
+All managed files are symlinked from their respective tool directories in `~/.dotfiles/` to their expected locations.

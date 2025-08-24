@@ -1,0 +1,75 @@
+# espanso base matches
+# Docs: https://espanso.org/docs/
+
+matches:
+  # ──────────────────────────────────────────────────────────────────────────
+  # DATES & TIME (locale-aware, ISO-safe)
+  # ──────────────────────────────────────────────────────────────────────────
+
+  # Today as ISO-8601 (YYYY-MM-DD): great for filenames and logs
+  - trigger: ":date"
+    word: true
+    replace: "{{iso_date}}"
+    vars:
+      - name: iso_date
+        type: date
+        params:
+          format: "%Y-%m-%d"
+
+  # Today as US (MM/DD/YYYY)
+  - trigger: ":dateus"
+    word: true
+    replace: "{{mydate}}"
+    vars:
+      - name: mydate
+        type: date
+        params:
+          format: "%m/%d/%Y"
+
+  # German date with weekday, e.g., Montag, 24.08.2025
+  - trigger: ":datede"
+    word: true
+    replace: "{{de_date}}"
+    vars:
+      - name: de_date
+        type: date
+        params:
+          format: "%A, %d.%m.%Y"
+
+  # Timestamp (ISO-8601 with time, local)
+  - trigger: ":now"
+    word: true
+    replace: "{{iso_now}}"
+    vars:
+      - name: iso_now
+        type: date
+        params:
+          format: "%Y-%m-%d %H:%M:%S"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # SHELL-POWERED (macOS native, fast)
+  # ──────────────────────────────────────────────────────────────────────────
+
+  # Echo (kept from sample; avoids newline)
+  - trigger: ":shell"
+    word: true
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: "printf '%s' 'Hello from your shell'"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # MARKDOWN SCAFFOLDS (frequently typed)
+  # ──────────────────────────────────────────────────────────────────────────
+
+  # Inline TODO with ISO date (no newline at end)
+  - trigger: ":todo"
+    word: true
+    replace: "- [ ] {{iso_date}} — "
+    vars:
+      - name: iso_date
+        type: date
+        params:
+          format: "%Y-%m-%d"

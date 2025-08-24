@@ -1,0 +1,8 @@
+[display]
+use_pager = false
+compact = false
+color_mode = "always"
+theme = "fruity" # iTerm2 color preset overrites it
+
+[updates]
+auto_update = true

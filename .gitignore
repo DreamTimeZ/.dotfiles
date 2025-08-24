@@ -25,3 +25,9 @@ zsh/config/modules/local/*
 # Keep only these specific files
 !zsh/config/modules/local/README.md
 !zsh/config/modules/local/example.zsh.template
+
+# Espanso local configurations - exclude personal text expansions
+espanso/local/*
+
+# Keep only templates and README
+!espanso/local/README.md

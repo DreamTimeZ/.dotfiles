@@ -1,0 +1,18 @@
+# Direnv Configuration
+# https://direnv.net/docs/config.html
+
+# Global settings
+[global]
+# Automatically load .envrc files when entering directories
+strict_env = false
+
+# Disable the loading timeout to prevent issues with large environments
+load_dotenv = true
+
+# Whitelist certain directories to allow .envrc files without prompting
+# whitelist_prefix = ["/path/to/trusted/directory"]
+
+[hooks]
+# Hook to execute when entering a directory
+# pre_hook = "echo 'Entering directory'"
+# post_hook = "echo 'Exited directory'"
