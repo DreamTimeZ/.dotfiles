@@ -2,10 +2,9 @@
 # SYSTEM MAINTENANCE FUNCTIONS
 # ===============================
 
-# Function: update_all
-# Updates Homebrew packages, App Store apps, macOS system updates,
-# and checks for third-party app updates
-update_all() {
+# Function: update
+# Updates: Homebrew, App Store, and macOS
+update() {
   echo -e "\033[1;34m╔═══════════════════════════════════════════════════════╗"
   echo -e "║          Starting update process on macOS...          ║"
   echo -e "╚═══════════════════════════════════════════════════════╝\033[0m"

@@ -48,11 +48,11 @@ for _config_file in "${_CONFIG_FILES[@]}"; do
 done
 
 # ------ Tool-Specific Path Management ------
-# Add PNPM path if directory exists
-if [[ -d "$HOME/Library/pnpm" ]]; then
-  export PNPM_HOME="$HOME/Library/pnpm"
-  zdotfiles_path_prepend "$PNPM_HOME"
-fi
+export PNPM_HOME="/Users/cognix/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
 
 # ------ Prompt Configuration ------
 # Powerlevel10k configuration
