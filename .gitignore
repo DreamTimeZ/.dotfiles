@@ -26,6 +26,10 @@ zsh/config/modules/local/*
 !zsh/config/modules/local/README.md
 !zsh/config/modules/local/example.zsh.template
 
+# ZSH Windows launchers - machine-specific WSL configuration
+zsh/config/modules/functions/65-windows-launchers.zsh
+zsh/docs/windows-paths-cheatsheet.md
+
 # Espanso local configurations - exclude personal text expansions
 espanso/local/*
 
