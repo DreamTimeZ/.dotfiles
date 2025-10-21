@@ -65,8 +65,3 @@
 	side-by-side = true
 	line-numbers = true
 
-
-[feature]
-	manyFiles = true
-[checkout]
-	workers = 8

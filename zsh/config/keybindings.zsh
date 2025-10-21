@@ -3,16 +3,16 @@ bindkey -e
 
 # WSL-specific key bindings for Ctrl + Arrow keys and word deletion
 if [[ "$(uname -r)" == *microsoft* ]] || [[ "$(uname -r)" == *WSL* ]]; then
+    # Ensure plain arrows move by character (standard behavior)
+    bindkey '^[[C' forward-char         # Right arrow
+    bindkey '^[[D' backward-char        # Left arrow
+
     # Word navigation with Ctrl modifier (Windows Terminal / WSL)
     bindkey '^[[1;5C' forward-word      # Ctrl + Right
     bindkey '^[[1;5D' backward-word     # Ctrl + Left
 
     # Word deletion
     bindkey '^[[3;5~' kill-word         # Ctrl + Delete (forward delete word)
-
-    # Alternative sequences some WSL terminals might use
-    bindkey '^[OC' forward-word         # Ctrl + Right (alternative)
-    bindkey '^[OD' backward-word        # Ctrl + Left (alternative)
 fi
 
 # Custom widget: Delete line to left of cursor (Cmd + Delete)
