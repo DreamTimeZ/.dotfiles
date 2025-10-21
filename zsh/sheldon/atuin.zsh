@@ -1,7 +1,7 @@
 # Atuin shell history replacement with config management
 {
   # Early exit if atuin not available
-  command -v atuin >/dev/null || return 0
+  [[ -n $commands[atuin] ]] || return 0
   
   # Setup config symlink if needed
   local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/atuin"

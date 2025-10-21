@@ -6,8 +6,8 @@
 export DIRENV_LOG_FORMAT=""
 
 # Always initialize direnv during shell startup
-if command -v direnv >/dev/null 2>&1; then
-  eval "$(command direnv hook zsh)"
+if [[ -n $commands[direnv] ]]; then
+  eval "$(direnv hook zsh)"
 else
   # Create a placeholder function that will show error when used
   function direnv() {

@@ -161,7 +161,14 @@ if zdotfiles_is_macos; then
 else
     alias ports='ss -tuln || netstat -tuln'
 fi
-alias flushdns='sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder'
+
+# Platform-aware DNS cache flush
+if zdotfiles_is_macos; then
+    alias flushdns='sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder'
+else
+    # Linux/Ubuntu - systemd-resolved
+    alias flushdns='sudo resolvectl flush-caches || sudo systemd-resolve --flush-caches'
+fi
 
 # IP address queries
 alias ipv4='curl -s https://ipv4.icanhazip.com'
@@ -282,7 +289,8 @@ fi
 # ===============================
 # his='history' - removed, conflicts with atuin
 alias cls='clear'
-alias reload='exec zsh'
+alias reload='exec zsh'              # Restart shell (fresh state)
+alias src='source ~/.zshrc'          # Reload config (preserve state)
 alias '?'='echo $?'
 alias path='echo $PATH | tr ":" "\n"'
 alias env-grep='env | grep -i'

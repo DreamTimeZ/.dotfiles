@@ -27,8 +27,8 @@ export EDITOR="${EDITOR:-nvim}"
 # Command availability cache - check once instead of repeatedly
 _HAVE_SSH_AGENT=0
 _HAVE_SSH_ADD=0
-command -v ssh-agent &>/dev/null && _HAVE_SSH_AGENT=1
-command -v ssh-add &>/dev/null && _HAVE_SSH_ADD=1
+[[ -n $commands[ssh-agent] ]] && _HAVE_SSH_AGENT=1
+[[ -n $commands[ssh-add] ]] && _HAVE_SSH_ADD=1
 
 # Only proceed if commands are available
 if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then

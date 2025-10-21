@@ -21,10 +21,24 @@ setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space (Atuin a
 setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_VERIFY            # Show command with history expansion to user before running it
 
+# ----- Terminal Configuration -----
+# Enable true color (24-bit) support - only set if not already configured
+# Modern terminals (iTerm2, Alacritty, WezTerm, Kitty) often set this automatically
+if [[ -z "$COLORTERM" ]]; then
+  export COLORTERM=truecolor
+fi
+
+# Only override TERM if it's not already set to a 256-color or better variant
+# Most modern terminals set this correctly, but some environments (like basic SSH) may need help
+if [[ "$TERM" == "xterm" ]] || [[ "$TERM" == "screen" ]]; then
+  export TERM="${TERM}-256color"
+fi
+
 # ----- Miscellaneous Options -----
 # CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.
 # CORRECT: You want smart correction of just command names, low false positives.
-setopt CORRECT                # Auto-correct minor errors in commands and paths
+# Disabled - use thefuck instead with 'f', 'fk', or 'fuck' commands
+unsetopt CORRECT              # Disable auto-correct prompts
 # Prompt handling - Global solution for '%' character from incomplete output
 export PROMPT_EOL_MARK=""     # Suppress '%' character for incomplete lines
 setopt INTERACTIVE_COMMENTS   # Allow comments in interactive shell (improves usability)
@@ -39,20 +53,17 @@ setopt NO_CASE_GLOB           # Enable case-insensitive globbing
 setopt GLOBSTAR_SHORT         # Enable recursive globbing with **
 
 # ----- Auto-completion -----
-# Use custom compdump path in XDG_CACHE_HOME (faster and more organized)
+# Initialize completion system in interactive shells only
 ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump"
-
-# Ensure cache directory exists
 mkdir -p -- "${ZSH_COMPDUMP%/*}"
 
-# Optional: run ONCE manually if not done yet to silence compaudit forever
-# chmod -R go-w "$(dirname ${fpath[1]})"
-
-# Only initialize completion in interactive shells
 if [[ -o interactive ]]; then
   autoload -Uz compinit
-  compinit -C -d "$ZSH_COMPDUMP" # Uses cache and skips compaudit
+  compinit -C -d "$ZSH_COMPDUMP"  # -C skips security check for faster startup
 fi
+
+# First-time setup (optional): run once to silence compaudit warnings
+# chmod -R go-w "$(dirname ${fpath[1]})"
 
 # Prevents automatic command execution on paste and
 # ensures proper handling of newlines, empty lines, and special characters in pasted text
@@ -61,3 +72,24 @@ if [[ -o interactive ]]; then
   zle -N bracketed-paste bracketed-paste-magic
 fi
 
+# ----- PATH Management -----
+# Order matters: first in PATH = highest priority
+
+# User-specific binaries
+[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+
+# Cargo (Rust package manager)
+[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
+
+# PNPM (Node.js package manager) - Platform-aware
+if [[ -n $commands[pnpm] ]] || [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    export PNPM_HOME="$HOME/Library/pnpm"
+  else
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+  fi
+  case ":$PATH:" in
+    *":$PNPM_HOME:"*) ;;
+    *) export PATH="$PNPM_HOME:$PATH" ;;
+  esac
+fi

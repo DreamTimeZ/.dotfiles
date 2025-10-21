@@ -74,7 +74,7 @@ venv() {
 
     # If the deleted venv is currently activated, deactivate it.
     if [[ "$VIRTUAL_ENV" = "$abs_venv_dir" ]]; then
-      if command -v deactivate >/dev/null 2>&1; then
+      if [[ -n $commands[deactivate] ]]; then
         deactivate
       else
         unset VIRTUAL_ENV
