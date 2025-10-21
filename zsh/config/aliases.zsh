@@ -189,7 +189,9 @@ if zdotfiles_has_command docker; then
     # Docker Compose - prefer new syntax
     alias dc='docker compose'
     alias dcup='docker compose up -d'
+    alias dcupb='docker compose up -d --build'
     alias dcdown='docker compose down'
+    alias dcdownrm='docker compose down --remove-orphans'
     alias dclogs='docker compose logs -f'
     
     # Cleanup operations

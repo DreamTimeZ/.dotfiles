@@ -22,9 +22,30 @@ require("lazy").setup({{
 
 -- 🌈 Enable Treesitter Syntax Highlighting
 require("nvim-treesitter.configs").setup {
-    ensure_installed = "all",
+    -- Install only parsers you actually use
+    ensure_installed = {
+        "lua", "vim", "vimdoc", "query", "regex",  -- Nvim essentials
+        "bash", "fish",  -- Shells (zsh not available in treesitter)
+        "python", "javascript", "typescript", "java", "c", "cpp", "go", "rust",  -- Common languages
+        "json", "yaml", "toml", "xml", "ini",  -- Config formats
+        "markdown", "markdown_inline", "comment",  -- Documentation
+        "git_config", "git_rebase", "gitcommit", "gitignore", "diff",  -- Git
+        "html", "css", "scss", "dockerfile",  -- Web/DevOps
+        "sql", "graphql",  -- Query languages
+        "make", "cmake"  -- Build tools
+    },
+    -- Auto-install parsers when opening new file types
+    auto_install = true,
     highlight = {
-        enable = true
+        enable = true,
+        -- Disable for very large files (performance)
+        disable = function(lang, buf)
+            local max_filesize = 100 * 1024 -- 100 KB
+            local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
+            if ok and stats and stats.size > max_filesize then
+                return true
+            end
+        end,
     }
 }
 
