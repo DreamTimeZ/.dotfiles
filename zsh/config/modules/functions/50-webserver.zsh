@@ -83,7 +83,7 @@ serve() {
 
   # Choose mode if set to auto.
   if [[ "$mode" == "auto" ]]; then
-    if command -v nodemon >/dev/null; then
+    if [[ -n $commands[nodemon] ]]; then
       mode="node"
     else
       mode="python"
@@ -110,13 +110,13 @@ serve() {
 
   # Start serving with the chosen method.
   if [[ "$mode" == "node" ]]; then
-    if ! command -v nodemon >/dev/null; then
+    if [[ ! -n $commands[nodemon] ]]; then
       echo "Error: nodemon is not installed."; return 1
     fi
     local cmd=(npx serve "$directory" -l "$port" ${extra_opts[@]})
     nodemon --watch "$directory" -e js,html,css --exec "${cmd[@]}"
   elif [[ "$mode" == "python" ]]; then
-    if ! command -v python3 >/dev/null; then
+    if [[ ! -n $commands[python3] ]]; then
       echo "Error: python3 is not installed."; return 1
     fi
     python3 -m http.server "$port" --directory "$directory" ${extra_opts[@]} 2>&1 | _format_logs

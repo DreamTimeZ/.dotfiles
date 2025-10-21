@@ -59,20 +59,20 @@ ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
 ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
 ```
 
-See the [Installation Guide](installation.md) for complete step-by-step instructions.
+See the [Installation Guide](docs/installation.md) for complete step-by-step instructions.
 
 ## 📚 Documentation
 
 For detailed information on each component:
 
-- [Installation Guide](installation.md) - Detailed setup instructions
-- [Shell Configuration](shell.md) - Zsh and Sheldon setup
+- [Installation Guide](docs/installation.md) - Detailed setup instructions
+- [Shell Configuration](docs/shell.md) - Zsh and Sheldon setup
 - [Neovim Configuration](nvim/neovim.md) - Editor setup
 - [Tmux Configuration](tmux/tmux.md) - Terminal multiplexer setup
-- [Hammerspoon Configuration](hammerspoon/hammerspoon.md) - macOS automation
+- [Hammerspoon Configuration](hammerspoon/README.md) - macOS automation
 - [LaunchAgents](launchagents/launchagents.md) - System service management
-- [iTerm2 Configuration](iterm2.md) - Terminal emulator setup
-- [Repository Structure](structure.md) - Understanding the organization
+- [iTerm2 Configuration](docs/iterm2.md) - Terminal emulator setup
+- [Repository Structure](docs/structure.md) - Understanding the organization
 
 ## 📋 Requirements
 
@@ -93,7 +93,7 @@ For detailed information on each component:
 #### Linux
 
 - Required packages: zsh, git, curl, fzf
-- Installation method varies by distribution (see [Installation Guide](installation.md))
+- Installation method varies by distribution (see [Installation Guide](docs/installation.md))
 
 #### Windows (WSL)
 

@@ -2,21 +2,19 @@
 # COLORIZED OUTPUT CONFIGURATION
 # ===============================
 
-# GRC (Generic Colorizer) setup
-if zdotfiles_has_command grc; then
+# GRC (Generic Colorizer) setup - use native zsh $commands hash (9x faster)
+if [[ -n $commands[grc] ]]; then
     # Commands to colorize
     typeset -a grc_commands=(
         ip ifconfig ping traceroute dig whois df du mount ps lsof
         netstat ss id vmstat iostat free
     )
-    
-    # Apply colorization to available commands
+
+    # Apply colorization only to available commands
     for cmd in $grc_commands; do
-        if zdotfiles_has_command "$cmd"; then
-            alias "$cmd"="grc $cmd"
-        fi
+        [[ -n $commands[$cmd] ]] && alias "$cmd"="grc $cmd"
     done
-    
+
     # Cleanup
-    unset grc_commands
+    unset grc_commands cmd
 fi

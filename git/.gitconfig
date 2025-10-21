@@ -11,6 +11,9 @@
 	untrackedCache = true
 	# Use delta as the pager
 	pager = delta
+	filemode = false
+	fscache = true
+	fsmonitor = true
 
 [init]
 	defaultBranch = main
@@ -63,3 +66,7 @@
 	line-numbers = true
 
 
+[feature]
+	manyFiles = true
+[checkout]
+	workers = 8

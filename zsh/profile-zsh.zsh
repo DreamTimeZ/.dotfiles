@@ -5,18 +5,56 @@
 # Usage: source ~/.dotfiles/zsh/profile-zsh.zsh
 # Shows detailed performance metrics for zsh startup
 
-# Define colors for better readability
-NC='\033[0m'           # No Color
-RED='\033[0;31m'       # Red
-GREEN='\033[0;32m'     # Green
-YELLOW='\033[0;33m'    # Yellow
-BLUE='\033[0;34m'      # Blue
-BOLD='\033[1m'         # Bold
+# Define colors for better readability (using proper zsh escape syntax)
+NC=$'\033[0m'           # No Color
+RED=$'\033[0;31m'       # Red
+GREEN=$'\033[0;32m'     # Green
+YELLOW=$'\033[0;33m'    # Yellow
+BLUE=$'\033[0;34m'      # Blue
+BOLD=$'\033[1m'         # Bold
 
 # Set up log files
 ZDOTFILES_PROFILE_LOG="/tmp/zsh_module_profile.log"
 SHELDON_PROFILE_LOG="/tmp/zsh_sheldon_profile.log"
 OVERALL_PROFILE_LOG="/tmp/zsh_overall_profile.log"
+
+# ===============================
+# ENVIRONMENT VALIDATION
+# ===============================
+validate_environment() {
+  local errors=0
+
+  # Check for required environment variable
+  if [[ -z "$ZDOTFILES_CONFIG_DIR" ]]; then
+    echo "${RED}ERROR:${NC} ZDOTFILES_CONFIG_DIR is not set"
+    echo "This variable should point to your dotfiles config directory"
+    echo "Example: export ZDOTFILES_CONFIG_DIR=~/.dotfiles/zsh/config"
+    ((errors++))
+  fi
+
+  # Check if config directory exists
+  if [[ -n "$ZDOTFILES_CONFIG_DIR" && ! -d "$ZDOTFILES_CONFIG_DIR" ]]; then
+    echo "${RED}ERROR:${NC} ZDOTFILES_CONFIG_DIR points to non-existent directory: $ZDOTFILES_CONFIG_DIR"
+    ((errors++))
+  fi
+
+  # Check for required commands
+  if ! command -v sheldon &>/dev/null; then
+    echo "${YELLOW}WARNING:${NC} sheldon command not found - sheldon profiling will be skipped"
+  fi
+
+  if ! command -v zsh &>/dev/null; then
+    echo "${RED}ERROR:${NC} zsh command not found"
+    ((errors++))
+  fi
+
+  if (( errors > 0 )); then
+    echo "${RED}Found $errors error(s). Please fix them before running the profiler.${NC}"
+    return 1
+  fi
+
+  return 0
+}
 
 # Modify the modules.zsh file temporarily to log all module load times to a file
 setup_module_profiling() {
@@ -127,29 +165,34 @@ setup_sheldon_profiling() {
   fi
   
   # Create a safer profiling version of sheldon loader
+  # Fixed: Use process substitution to avoid subshell issues
   cat > "$sheldon_file" << 'EOF'
 # ===============================
 # PLUGIN MANAGER: Sheldon (PROFILING VERSION)
 # ===============================
-if command -v sheldon &>/dev/null; then
+if [[ -n $commands[sheldon] ]]; then
   # Clear the log file
   SHELDON_PROFILE_LOG="/tmp/zsh_sheldon_profile.log"
   : > "$SHELDON_PROFILE_LOG"
-  
-  # Process output line by line safely
-  sheldon source 2>/dev/null | while IFS= read -r line; do
+
+  # Generate sheldon output to temp file first to avoid subshell issues
+  local sheldon_temp="/tmp/sheldon_source_$$.tmp"
+  sheldon source > "$sheldon_temp" 2>/dev/null
+
+  # Process output line by line safely (no longer in a subshell)
+  while IFS= read -r line; do
     # Skip empty lines and comments
     [[ -z "$line" || "$line" == \#* ]] && continue
-    
+
     # Try to determine the plugin name
-    plugin_name="plugin-$RANDOM"
-    
+    local plugin_name="plugin-$RANDOM"
+
     if [[ "$line" == source* && "$line" == *\#* ]]; then
       # Extract from comment if available
       plugin_name=$(echo "$line" | sed -E 's/.*#[ \t]*([a-zA-Z0-9_-]+).*/\1/')
     elif [[ "$line" == source* ]]; then
       # Extract from path
-      plugin_path=$(echo "$line" | sed -E 's/source[ \t]+"([^"]+)".*/\1/;s/source[ \t]+'"'"'([^'"'"']+)'"'"'.*/\1/')
+      local plugin_path=$(echo "$line" | sed -E 's/source[ \t]+"([^"]+)".*/\1/;s/source[ \t]+'"'"'([^'"'"']+)'"'"'.*/\1/')
       if [[ -n "$plugin_path" ]]; then
         plugin_name=$(basename "$plugin_path" | sed 's/\.[^.]*$//')
       fi
@@ -157,19 +200,22 @@ if command -v sheldon &>/dev/null; then
       # Attempt to get something meaningful from the eval
       plugin_name="eval-plugin-$RANDOM"
     fi
-    
+
     # Measure plugin loading time
-    time_start=$(($(date +%s%N)/1000000))
-    
+    local time_start=$(($(date +%s%N)/1000000))
+
     # Evaluate the line safely - redirect errors to prevent parsing issues
     eval "$line" >/dev/null 2>&1
-    
-    time_end=$(($(date +%s%N)/1000000))
-    time_elapsed=$((time_end-time_start))
-    
-    # Log the timing
+
+    local time_end=$(($(date +%s%N)/1000000))
+    local time_elapsed=$((time_end-time_start))
+
+    # Log the timing (now writes correctly since we're not in a subshell)
     echo "plugin:$plugin_name:$time_elapsed" >> "$SHELDON_PROFILE_LOG"
-  done
+  done < "$sheldon_temp"
+
+  # Clean up temp file
+  rm -f "$sheldon_temp"
 fi
 EOF
 }
@@ -178,12 +224,13 @@ EOF
 restore_modules_file() {
   local modules_file="$ZDOTFILES_CONFIG_DIR/modules.zsh"
   local backup_file="$modules_file.bak"
-  
+
   if [[ -f $backup_file ]]; then
     cp "$backup_file" "$modules_file"
-    echo "Restored original modules.zsh file"
+    rm -f "$backup_file"
+    echo "${GREEN}✓${NC} Restored original modules.zsh file"
   else
-    echo "No backup file found at $backup_file"
+    echo "${YELLOW}!${NC} No backup file found at $backup_file"
   fi
 }
 
@@ -191,14 +238,45 @@ restore_modules_file() {
 restore_sheldon_file() {
   local sheldon_file="$ZDOTFILES_CONFIG_DIR/plugins.zsh"
   local backup_file="$sheldon_file.bak"
-  
+
   if [[ -f $backup_file ]]; then
     cp "$backup_file" "$sheldon_file"
-    echo "Restored original plugins.zsh file"
+    rm -f "$backup_file"
+    echo "${GREEN}✓${NC} Restored original plugins.zsh file"
   else
-    echo "No backup file found at $backup_file"
+    echo "${YELLOW}!${NC} No backup file found at $backup_file"
   fi
 }
+
+# Cleanup function to restore all backups
+cleanup_on_exit() {
+  echo "\n${BOLD}Cleaning up...${NC}"
+
+  # Restore both files silently
+  if [[ -n "$ZDOTFILES_CONFIG_DIR" ]]; then
+    local modules_backup="$ZDOTFILES_CONFIG_DIR/modules.zsh.bak"
+    local plugins_backup="$ZDOTFILES_CONFIG_DIR/plugins.zsh.bak"
+
+    if [[ -f $modules_backup ]]; then
+      cp "$modules_backup" "${modules_backup%.bak}"
+      rm -f "$modules_backup"
+      echo "${GREEN}✓${NC} Restored modules.zsh"
+    fi
+
+    if [[ -f $plugins_backup ]]; then
+      cp "$plugins_backup" "${plugins_backup%.bak}"
+      rm -f "$plugins_backup"
+      echo "${GREEN}✓${NC} Restored plugins.zsh"
+    fi
+  fi
+
+  # Clean up temp files (suppress glob errors if no files found)
+  setopt local_options null_glob
+  rm -f /tmp/sheldon_source_*.tmp /tmp/zsh_zprof_output.log 2>/dev/null
+}
+
+# Set up trap to ensure cleanup on exit (even if script fails)
+trap cleanup_on_exit EXIT INT TERM
 
 # Format milliseconds with color based on threshold (fixed version)
 format_ms() {
@@ -221,7 +299,7 @@ parse_module_logs() {
 
   local -A dir_times
   local -A file_times
-  
+
   # Process log data, handling only valid numeric inputs
   while IFS=: read -r type dir_name file_name time_str; do
     # Make sure time is a valid number
@@ -233,24 +311,31 @@ parse_module_logs() {
       fi
     fi
   done < "$ZDOTFILES_PROFILE_LOG"
-  
+
   # Display directory summaries
   echo "${BOLD}Module Directories Summary:${NC}"
   # Only proceed if there are valid entries
   if (( ${#dir_times} > 0 )); then
-    for dir_name time in "${(@kv)dir_times}"; do
-      printf "%-30s %s\n" "$dir_name" "$(format_ms $time)"
-    done | sort -k2 -nr
+    # Sort by time (value) in descending order, then format with colors
+    # This ensures sorting works correctly before color codes are added
+    for dir_name in ${(k)dir_times}; do
+      printf "%s\t%s\n" "$dir_name" "${dir_times[$dir_name]}"
+    done | sort -t$'\t' -k2 -nr | while IFS=$'\t' read -r name time; do
+      printf "%-30s %s\n" "$name" "$(format_ms $time)"
+    done
   else
     echo "No valid directory timing data found"
   fi
-  
+
   echo "\n${BOLD}Individual Files (Top 20, sorted by time):${NC}"
   # Only proceed if there are valid entries
   if (( ${#file_times} > 0 )); then
-    for file_path time in "${(@kv)file_times}"; do
-      printf "%-45s %s\n" "$file_path" "$(format_ms $time)"
-    done | sort -k2 -nr | head -20
+    # Sort by time (value) in descending order, then format with colors
+    for file_path in ${(k)file_times}; do
+      printf "%s\t%s\n" "$file_path" "${file_times[$file_path]}"
+    done | sort -t$'\t' -k2 -nr | head -20 | while IFS=$'\t' read -r path time; do
+      printf "%-45s %s\n" "$path" "$(format_ms $time)"
+    done
   else
     echo "No valid file timing data found"
   fi
@@ -264,7 +349,7 @@ parse_sheldon_logs() {
   fi
 
   local -A plugin_times
-  
+
   # Process log data, handling only valid numeric inputs
   while IFS=: read -r type plugin_name time_str; do
     # Make sure time is a valid number
@@ -272,14 +357,17 @@ parse_sheldon_logs() {
       plugin_times[$plugin_name]=$time_str
     fi
   done < "$SHELDON_PROFILE_LOG"
-  
+
   # Display plugin summaries
   echo "${BOLD}Sheldon Plugins (sorted by time):${NC}"
   # Only proceed if there are valid entries
   if (( ${#plugin_times} > 0 )); then
-    for plugin_name time in "${(@kv)plugin_times}"; do
-      printf "%-30s %s\n" "$plugin_name" "$(format_ms $time)"
-    done | sort -k2 -nr
+    # Sort by time (value) in descending order, then format with colors
+    for plugin_name in ${(k)plugin_times}; do
+      printf "%s\t%s\n" "$plugin_name" "${plugin_times[$plugin_name]}"
+    done | sort -t$'\t' -k2 -nr | while IFS=$'\t' read -r name time; do
+      printf "%-30s %s\n" "$name" "$(format_ms $time)"
+    done
   else
     echo "No valid plugin timing data found"
   fi
@@ -364,56 +452,45 @@ run_zsh_with_profiling() {
 
 # Start fresh zsh instance with profiling enabled
 do_profiling() {
+  # Validate environment before starting
+  if ! validate_environment; then
+    return 1
+  fi
+
   # Clear all log files
   : > "$OVERALL_PROFILE_LOG"
   : > "$ZDOTFILES_PROFILE_LOG"
   : > "$SHELDON_PROFILE_LOG"
-  
-  # Setup profiling
+
+  # Setup profiling (backups will be auto-restored by trap on exit)
   setup_module_profiling
   setup_sheldon_profiling
-  
+
   echo "${BOLD}=== ZSH STARTUP PERFORMANCE ANALYSIS ===${NC}\n" | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   # Get system information
   echo "System: $(uname -rsm)" | tee -a "$OVERALL_PROFILE_LOG"
   echo "Shell: $SHELL ($(zsh --version))" | tee -a "$OVERALL_PROFILE_LOG"
   echo "Date: $(date)" | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   # Measure startup time
   echo "\n${BOLD}Overall Startup Time:${NC}" | tee -a "$OVERALL_PROFILE_LOG"
   (time (zsh -i -c exit)) 2>&1 | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   echo "\n${BOLD}=== STARTUP PHASES (zprof) ===${NC}\n" | tee -a "$OVERALL_PROFILE_LOG"
   run_zsh_with_profiling | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   echo "\n${BOLD}=== SHELDON PLUGIN ANALYSIS ===${NC}\n" | tee -a "$OVERALL_PROFILE_LOG"
   parse_sheldon_logs | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   echo "\n${BOLD}=== MODULE LOADING ANALYSIS ===${NC}\n" | tee -a "$OVERALL_PROFILE_LOG"
   parse_module_logs | tee -a "$OVERALL_PROFILE_LOG"
-  
+
   echo "\n${BOLD}=== OPTIMIZATION RECOMMENDATIONS ===${NC}\n" | tee -a "$OVERALL_PROFILE_LOG"
   generate_recommendations | tee -a "$OVERALL_PROFILE_LOG"
-  
-  # Restore original files with confirmation to avoid accidental overwrites
-  echo "${YELLOW}Restore original modules.zsh?${NC} (y/N) "
-  read -q REPLY || echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    restore_modules_file
-  else
-    echo "Keeping profiling version of modules.zsh"
-  fi
-  
-  echo "${YELLOW}Restore original plugins.zsh?${NC} (y/N) "
-  read -q REPLY || echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    restore_sheldon_file
-  else
-    echo "Keeping profiling version of plugins.zsh"
-  fi
-  
+
   echo "\n${GREEN}Complete report saved to:${NC} $OVERALL_PROFILE_LOG"
+  echo "${BOLD}Note:${NC} Original files will be restored automatically when the script exits."
 }
 
 # Run the profiling

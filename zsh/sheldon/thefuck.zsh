@@ -1,31 +1,33 @@
 # ===============================
-# THE FUCK
+# THEFUCK - Command Corrector
 # ===============================
 
-# Check if helper function is available
-if ! typeset -f zdotfiles_lazy_load > /dev/null; then
-  # If helper isn't available, use inline implementation
-  function f() {
-    unfunction f fuck
-    if command -v thefuck >/dev/null 2>&1; then
-      eval "$(thefuck --alias)" >/dev/null 2>&1
-      f "$@"
+# NOTE: Currently broken on Python 3.12 (missing 'imp' module)
+# See: https://github.com/nvbn/thefuck/issues/1496
+# Will show error message when used until thefuck releases a fix
+# Fix: pipx inject thefuck setuptools (partial) or wait for upstream update
+
+# Disabled by default, only works when explicitly called
+if [[ -n $commands[thefuck] ]]; then
+  _thefuck_init_and_run() {
+    # Try to initialize thefuck
+    if eval "$(thefuck --alias 2>&1)"; then
+      # Success - remove wrapper functions and create aliases
+      unfunction fuck fk f _thefuck_init_and_run 2>/dev/null
+      alias fk='fuck'
+      alias f='fuck'
+
+      # Now call the real thefuck function
+      fuck "$@"
     else
-      echo "Error: thefuck not found. Please install thefuck." >&2
+      # Initialization failed - show error
+      echo "Error: thefuck failed to initialize. It may be incompatible with your Python version." >&2
+      echo "Try: pip install --upgrade thefuck" >&2
       return 1
     fi
   }
-  
-  # Alias 'fuck' to work exactly like 'f'
-  function fuck() {
-    f "$@"
-  }
-else
-  # Use the central helper function
-  zdotfiles_lazy_load f 'eval "$(thefuck --alias)" >/dev/null 2>&1'
-  
-  # Alias 'fuck' to work exactly like 'f'
-  function fuck() {
-    f "$@"
-  }
+
+  # Create wrapper functions for all aliases
+  fuck() { _thefuck_init_and_run "$@" }
+  f() { _thefuck_init_and_run "$@" }
 fi
