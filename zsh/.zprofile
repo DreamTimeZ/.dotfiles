@@ -32,18 +32,49 @@ _HAVE_SSH_ADD=0
 
 # Only proceed if commands are available
 if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then
-  # Robust agent detection - check both SSH_AGENT_PID and processes
-  ssh_agent_running() {
-    if [[ -n "$SSH_AGENT_PID" ]]; then
-      kill -0 "$SSH_AGENT_PID" &>/dev/null && return 0
+  # Detect WSL environment
+  _IS_WSL=0
+  if [[ -f /proc/version ]] && grep -qiE '(microsoft|wsl)' /proc/version 2>/dev/null; then
+    _IS_WSL=1
+  fi
+
+  # WSL-specific agent socket persistence
+  if [[ $_IS_WSL -eq 1 ]]; then
+    SSH_AGENT_ENV="$HOME/.ssh/agent-env"
+
+    # Try to reuse existing agent
+    if [[ -f "$SSH_AGENT_ENV" ]]; then
+      source "$SSH_AGENT_ENV" > /dev/null
+      # Verify agent is still running
+      if ! kill -0 "$SSH_AGENT_PID" &>/dev/null 2>&1; then
+        # Agent died, start new one
+        eval "$(ssh-agent -s)" > /dev/null
+        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > "$SSH_AGENT_ENV"
+        echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> "$SSH_AGENT_ENV"
+      fi
+    else
+      # No existing agent, start new one
+      eval "$(ssh-agent -s)" > /dev/null
+      echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > "$SSH_AGENT_ENV"
+      echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> "$SSH_AGENT_ENV"
     fi
-    pgrep -x ssh-agent &>/dev/null
-    return $?
-  }
-  
-  # Start SSH agent if not running
-  if ! ssh_agent_running; then
-    eval "$(ssh-agent -s)" > /dev/null
+    unset SSH_AGENT_ENV
+  else
+    # Non-WSL: original behavior
+    ssh_agent_running() {
+      if [[ -n "$SSH_AGENT_PID" ]]; then
+        kill -0 "$SSH_AGENT_PID" &>/dev/null && return 0
+      fi
+      pgrep -x ssh-agent &>/dev/null
+      return $?
+    }
+
+    # Start SSH agent if not running
+    if ! ssh_agent_running; then
+      eval "$(ssh-agent -s)" > /dev/null
+    fi
+
+    unset -f ssh_agent_running
   fi
   
   # Simple platform detection for macOS-specific features
@@ -115,7 +146,6 @@ if [[ $_HAVE_SSH_AGENT -eq 1 && $_HAVE_SSH_ADD -eq 1 ]]; then
     unset loaded_keys fingerprint success_count KEYS_STATUS
   fi
   
-  unset -f ssh_agent_running
   unset SSH_KEY_DIR SSH_USE_KEYCHAIN SSH_EXCLUDED_PATTERNS
-  unset _HAVE_SSH_AGENT _HAVE_SSH_ADD _IS_MACOS
+  unset _HAVE_SSH_AGENT _HAVE_SSH_ADD _IS_MACOS _IS_WSL
 fi

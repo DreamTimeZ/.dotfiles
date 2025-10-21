@@ -10,7 +10,7 @@ Host *
   ServerAliveCountMax 3   # Prevent excessive retries
 
 # GitHub
-Host github
+Host github.com
   HostName github.com
   User git
   IdentityFile ~/.ssh/github
