@@ -3,11 +3,12 @@ tmux/sessions
 **/*.bak
 **/TODO.md
 
-.claude/settings.local.json
+.claude/
 *.local
 .vscode
+.cursor/
 .DS_Store
-.idea
+.idea/
 .env
 .env.local
 .env.development.local
@@ -26,12 +27,16 @@ zsh/config/modules/local/*
 !zsh/config/modules/local/README.md
 !zsh/config/modules/local/example.zsh.template
 
-# ZSH Windows launchers - machine-specific WSL configuration
-zsh/config/modules/functions/65-windows-launchers.zsh
-zsh/docs/windows-paths-cheatsheet.md
+# ZSH docs local folder - machine-specific documentation
+zsh/docs/local/*
+
+# Git local configurations - machine-specific git settings
+git/local/*
+
+# SSH local configurations - machine-specific SSH settings
+ssh/local/*
 
 # Espanso local configurations - exclude personal text expansions
-espanso/local/*
-
 # Keep only templates and README
+espanso/local/*
 !espanso/local/README.md

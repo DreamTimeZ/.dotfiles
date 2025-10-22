@@ -21,7 +21,6 @@ zsh/
 │       └── local/     - User-specific overrides (optional)
 ├── sheldon/           - Sheldon plugin manager configurations
 │   ├── plugins.toml   - Plugin declarations
-│   ├── asdf.zsh       - ASDF version manager config
 │   ├── fzf-tab-config.zsh - FZF tab completion config
 │   ├── iterm.zsh      - iTerm2 integration
 │   ├── pyenv.zsh      - Python environment manager
