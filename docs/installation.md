@@ -58,10 +58,9 @@ cd ~/.dotfiles
 4. **Setup Shell Environment**:
 
     ```bash
-    # Development tool versions & clean login
-    ln -sf ~/.dotfiles/shell/.tool-versions ~/.tool-versions
+    # Clean login
     ln -sf ~/.dotfiles/shell/.hushlogin ~/.hushlogin
-    
+
     # Tmux session layouts
     mkdir -p ~/.config/tmuxinator && ln -sf ~/.dotfiles/tmuxinator/default.yml ~/.config/tmuxinator/default.yml
     ```
@@ -115,8 +114,8 @@ cd ~/.dotfiles
     ln -sf ~/.dotfiles/ssh/config ~/.ssh/config
 
     # Create local SSH config (if not exists)
-    if [ ! -f ~/.dotfiles/ssh/config.local ]; then
-      cat > ~/.dotfiles/ssh/config.local <<EOL
+    if [ ! -f ~/.dotfiles/ssh/local/config.local ]; then
+      cat > ~/.dotfiles/ssh/local/config.local <<EOL
     # Local SSH configurations - Example private server
     Host myserver
         HostName server.example.com
@@ -174,8 +173,8 @@ The configuration supports local overrides and secure handling of sensitive data
 
 ### Local Override Files (.local)
 
-- `git/.gitconfig.local`: Git user info and machine-specific settings
-- `ssh/config.local`: Machine-specific SSH configurations
+- `git/local/.gitconfig.local`: Git user info and machine-specific settings
+- `ssh/local/config.local`: Machine-specific SSH configurations
 - `zsh/config/modules/local/*.zsh`: Machine-specific shell functions and aliases
 
 ### Managed Configuration Files
@@ -183,7 +182,7 @@ The configuration supports local overrides and secure handling of sensitive data
 The dotfiles manage configuration files for various tools:
 
 - **Shell Integration**: Powerlevel10k prompt theme, FZF fuzzy finder, iTerm2 integration
-- **Development Tools**: ASDF (version management), tealdeer (tldr), direnv (environment), tmuxinator (sessions)
+- **Development Tools**: tealdeer (tldr), direnv (environment), tmuxinator (sessions)
 - **Shell Management**: Atuin (shell history), Sheldon (plugin management), hushlogin (clean login)
 - **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
 

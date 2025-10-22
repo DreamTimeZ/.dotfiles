@@ -76,5 +76,4 @@ chsh -s $(which zsh)
 - **eza/exa**: Modern replacement for `ls`
 - **glow**: Markdown terminal viewer
 - **pyenv**: Python version manager
-- **asdf**: General version manager
 - **Powerlevel10k**: ZSH theme (installed automatically via Sheldon)

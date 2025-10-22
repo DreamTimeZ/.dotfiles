@@ -46,7 +46,7 @@ Organized by numerical prefix for load order:
 - **Namespace protection**: All internal functions prefixed with `zdotfiles_` to avoid conflicts
 
 ### Plugin Architecture
-- **Lazy loading**: Version managers (nvm, pyenv, asdf) and tools (direnv, zoxide) initialize only when needed
+- **Lazy loading**: Version managers (nvm, pyenv) and tools (direnv, zoxide) initialize only when needed
 - **Load order dependencies**: Critical plugins (powerlevel10k) load first, syntax highlighters load last
 - **Custom configurations**: Tool-specific config files in `sheldon/` directory (fzf-tab-config.zsh, etc.)
 - **Auto-configuration**: Tools like atuin automatically setup configuration symlinks on first load
