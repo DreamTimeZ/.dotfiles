@@ -79,6 +79,12 @@ The Zsh configuration uses a highly modular architecture:
 - `ssh/local/config.local` for machine-specific overrides
 - Designed for easy deployment across multiple machines
 
+### Private Repository Integration
+- Private repo at `~/.dotfiles-private` maintains sensitive and machine-specific files
+- Private repo is the source of truth for all `local/` configuration files
+- Files are symlinked from `~/.dotfiles-private` to `~/.dotfiles/*/local/`
+- This separation ensures sensitive data never enters the public repository
+
 ## Development Workflow
 
 ### Adding New Zsh Functionality

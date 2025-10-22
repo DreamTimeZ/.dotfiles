@@ -38,6 +38,7 @@ A carefully curated collection of dotfiles optimized for:
 
 - **Customization**:
   - Local overrides for machine-specific settings
+  - Private repository integration for sensitive configurations
   - Support for platform-specific configurations
   - Documented customization points
 
