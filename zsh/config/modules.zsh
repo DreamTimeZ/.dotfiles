@@ -30,7 +30,7 @@ zdotfiles_load_dir() {
   fi
   
   # First load all numerically-prefixed files in order (00-99)
-  for module in "$dir"/[0-9][0-9]-*.zsh(N.on); do
+  for module in "$dir"/[0-9][0-9]-*.zsh(N-on); do
     source "$module" 2>/dev/null
   done
   
