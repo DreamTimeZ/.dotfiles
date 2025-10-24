@@ -81,6 +81,9 @@ fi
 # Cargo (Rust package manager)
 [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
 
+# Snap binaries (Ubuntu/Debian package manager)
+[[ -d "/snap/bin" ]] && export PATH="/snap/bin:$PATH"
+
 # PNPM (Node.js package manager) - Platform-aware
 if [[ -n $commands[pnpm] ]] || [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
   if [[ "$OSTYPE" == "darwin"* ]]; then
