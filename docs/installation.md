@@ -80,19 +80,20 @@ cd ~/.dotfiles
     ESPANSO_PATH="$HOME/.config/espanso"
     mkdir -p "$ESPANSO_PATH"/{config,match}
 
-    # Remove default base.yml 
-    if it exists (we'll symlink our own)
+    # Remove default base.yml if it exists (we'll use our own from local/match/)
     [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
 
-    # Symlink config files (base.yml, default.yml, etc.)
-    for f in ~/.dotfiles/espanso/local/*.yml; do
-      [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
-    done
+    # Symlink config files from local/config/ (default.yml, etc.)
+    if [[ -d ~/.dotfiles/espanso/local/config ]]; then
+      for f in ~/.dotfiles/espanso/local/config/*.yml; do
+        [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+      done
+    fi
 
-    # Symlink match files if they exist in local/match/
+    # Symlink match files from local/match/ (both .yml and .md files)
     if [[ -d ~/.dotfiles/espanso/local/match ]]; then
-      for f in ~/.dotfiles/espanso/local/match/*.yml; do
-        [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+      for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
+        [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
       done
     fi
 
@@ -100,18 +101,20 @@ cd ~/.dotfiles
     # ESPANSO_PATH="$APPDATA/espanso"
     # mkdir -p "$ESPANSO_PATH"/{config,match}
     #
-    # # Remove default base.yml if it exists (we'll symlink our own)
+    # # Remove default base.yml if it exists (we'll use our own from local/match/)
     # [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
     #
-    # # Symlink config files (base.yml, default.yml, etc.)
-    # for f in ~/.dotfiles/espanso/local/*.yml; do
-    #   [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
-    # done
+    # # Symlink config files from local/config/ (default.yml, etc.)
+    # if [[ -d ~/.dotfiles/espanso/local/config ]]; then
+    #   for f in ~/.dotfiles/espanso/local/config/*.yml; do
+    #     [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+    #   done
+    # fi
     #
-    # # Symlink match files if they exist in local/match/
+    # # Symlink match files from local/match/ (both .yml and .md files)
     # if [[ -d ~/.dotfiles/espanso/local/match ]]; then
-    #   for f in ~/.dotfiles/espanso/local/match/*.yml; do
-    #     [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+    #   for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
+    #     [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
     #   done
     # fi
     ```
