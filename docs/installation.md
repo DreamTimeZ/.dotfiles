@@ -98,13 +98,17 @@ cd ~/.dotfiles
     ln -sf ~/.dotfiles/git/.gitignore_global ~/.gitignore_global
 
     # Create local Git config (if not exists)
-    if [ ! -f ~/.dotfiles/git/.gitconfig.local ]; then
-      cat > ~/.dotfiles/git/.gitconfig.local <<EOL
+    mkdir -p ~/.dotfiles/git/local
+    if [ ! -f ~/.dotfiles/git/local/.gitconfig.local ]; then
+      cat > ~/.dotfiles/git/local/.gitconfig.local <<EOL
     [user]
         name = Your Name
         email = your.email@example.com
     EOL
     fi
+
+    # Link local config to home directory
+    ln -sf ~/.dotfiles/git/local/.gitconfig.local ~/.gitconfig.local
     ```
 
 9. **Setup SSH**:
@@ -114,6 +118,7 @@ cd ~/.dotfiles
     ln -sf ~/.dotfiles/ssh/config ~/.ssh/config
 
     # Create local SSH config (if not exists)
+    mkdir -p ~/.dotfiles/ssh/local
     if [ ! -f ~/.dotfiles/ssh/local/config.local ]; then
       cat > ~/.dotfiles/ssh/local/config.local <<EOL
     # Local SSH configurations - Example private server
@@ -129,7 +134,10 @@ cd ~/.dotfiles
         ServerAliveCountMax 10
     EOL
     fi
-    
+
+    # Link local config to SSH directory
+    ln -sf ~/.dotfiles/ssh/local/config.local ~/.ssh/config.local
+
     # Set proper permissions for SSH files
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/config*
@@ -171,11 +179,12 @@ cd ~/.dotfiles
 
 The configuration supports local overrides and secure handling of sensitive data:
 
-### Local Override Files (.local)
+### Local Override Files
 
-- `git/local/.gitconfig.local`: Git user info and machine-specific settings
-- `ssh/local/config.local`: Machine-specific SSH configurations
+- `git/local/.gitconfig.local`: Git user info and machine-specific settings (symlinked to `~/.gitconfig.local`)
+- `ssh/local/config.local`: Machine-specific SSH configurations (symlinked to `~/.ssh/config.local`)
 - `zsh/config/modules/local/*.zsh`: Machine-specific shell functions and aliases
+- `hammerspoon/modules/hotkeys/config/local/*`: Machine-specific Hammerspoon hotkey configurations
 
 ### Managed Configuration Files
 
