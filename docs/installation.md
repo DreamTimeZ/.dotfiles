@@ -68,14 +68,52 @@ cd ~/.dotfiles
 5. **Setup System Customization**:
 
     ```bash
-    # Karabiner keyboard remapping
+    # Karabiner keyboard remapping (macOS only)
     mkdir -p ~/.config/karabiner && ln -sf ~/.dotfiles/karabiner/karabiner.json ~/.config/karabiner/karabiner.json
-    
+
     # Espanso text expansion (setup from templates)
     cd ~/.dotfiles/espanso/templates && for f in *.template; do cp "$f" "../local/${f%.template}"; done
-    mkdir -p ~/.config/espanso/{config,match}
-    ln -sf ~/.dotfiles/espanso/local/default.yml ~/.config/espanso/config/default.yml
-    ln -sf ~/.dotfiles/espanso/local/base.yml ~/.config/espanso/match/base.yml
+
+    # Choose based on your OS:
+
+    # Linux/macOS:
+    ESPANSO_PATH="$HOME/.config/espanso"
+    mkdir -p "$ESPANSO_PATH"/{config,match}
+
+    # Remove default base.yml 
+    if it exists (we'll symlink our own)
+    [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
+
+    # Symlink config files (base.yml, default.yml, etc.)
+    for f in ~/.dotfiles/espanso/local/*.yml; do
+      [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+    done
+
+    # Symlink match files if they exist in local/match/
+    if [[ -d ~/.dotfiles/espanso/local/match ]]; then
+      for f in ~/.dotfiles/espanso/local/match/*.yml; do
+        [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+      done
+    fi
+
+    # Windows (WSL - use Windows path):
+    # ESPANSO_PATH="$APPDATA/espanso"
+    # mkdir -p "$ESPANSO_PATH"/{config,match}
+    #
+    # # Remove default base.yml if it exists (we'll symlink our own)
+    # [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
+    #
+    # # Symlink config files (base.yml, default.yml, etc.)
+    # for f in ~/.dotfiles/espanso/local/*.yml; do
+    #   [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+    # done
+    #
+    # # Symlink match files if they exist in local/match/
+    # if [[ -d ~/.dotfiles/espanso/local/match ]]; then
+    #   for f in ~/.dotfiles/espanso/local/match/*.yml; do
+    #     [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+    #   done
+    # fi
     ```
 
 6. **Setup Neovim**:
