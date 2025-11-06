@@ -4,40 +4,26 @@
 # Central place for helper functions used throughout the zsh configuration system
 
 # ----- Constants and Defaults -----
-# Define these at the top for easy configuration
-typeset -g ZDOTFILES_LOG_LEVEL=${ZDOTFILES_LOG_LEVEL:-1}  # 0=silent, 1=error, 2=warn, 3=info
-typeset -g ZDOTFILES_STARTUP_SILENT=${ZDOTFILES_STARTUP_SILENT:-1}  # 1=suppress logs during startup
-
 # Cache for frequently used values
 typeset -g ZDOTFILES_PLATFORM=""  # Will be set on first use
 typeset -gA ZDOTFILES_CMD_CACHE   # Command existence cache
 
 # ----- Logging Helpers -----
 
-# Check if logging should be suppressed during startup
-# Returns: 0 if should suppress, 1 otherwise
-_zdotfiles_should_suppress_log() {
-  [[ $ZDOTFILES_STARTUP_SILENT -eq 1 && -n "${POWERLEVEL9K_INSTANT_PROMPT:-}" ]] && return 0
-  return 1
-}
-
 # Print informational message (blue) - only if log level is info or higher
-zdotfiles_info() { 
-  _zdotfiles_should_suppress_log && return 0
+zdotfiles_info() {
   [[ $ZDOTFILES_LOG_LEVEL -ge 3 ]] && echo -e "\033[1;34m==>\033[0m \033[1m$*\033[0m"
   return 0
 }
 
 # Print warning message (yellow) - only if log level is warn or higher
-zdotfiles_warn() { 
-  _zdotfiles_should_suppress_log && return 0
+zdotfiles_warn() {
   [[ $ZDOTFILES_LOG_LEVEL -ge 2 ]] && echo -e "\033[1;33m==>\033[0m \033[1m$*\033[0m"
   return 0
 }
 
 # Print error message (red) - only if log level is error or higher
-zdotfiles_error() { 
-  _zdotfiles_should_suppress_log && return 0
+zdotfiles_error() {
   [[ $ZDOTFILES_LOG_LEVEL -ge 1 ]] && echo -e "\033[1;31m==>\033[0m \033[1m$*\033[0m"
   return 0
 }
