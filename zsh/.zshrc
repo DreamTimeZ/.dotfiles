@@ -15,7 +15,7 @@ fi
 export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 export ZDOTFILES_MODULES_DIR="${ZDOTFILES_MODULES_DIR:-$ZDOTFILES_CONFIG_DIR/modules}"
-export ZDOTFILES_LOG_LEVEL="${ZDOTFILES_LOG_LEVEL:-3}"  # 0=silent, 1=error, 2=warn, 3=info
+export ZDOTFILES_LOG_LEVEL=3  # 0=silent, 1=error, 2=warn, 3=info
 
 # ------ Load Core Helper Functions ------
 # Load helpers first to make functions available to other files
