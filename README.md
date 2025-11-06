@@ -1,6 +1,6 @@
-# .dotfiles macOS
+# .dotfiles
 
-Modern, modular dotfiles configuration for a productive macOS development environment with cross-platform compatibility.
+Modern, modular dotfiles configuration for productive development environments on macOS, Linux, and Windows (WSL).
 
 ## 🎯 Overview
 
@@ -14,7 +14,9 @@ A carefully curated collection of dotfiles optimized for:
 - 🌳 Git with split configuration for public/private settings
 - 🔨 Hammerspoon for macOS automation and window management
 - 🚀 LaunchAgents for macOS system service management
-- 🖥️ Cross-platform support (primarily macOS, with Linux and WSL compatibility)
+- ⌨️ Karabiner for keyboard remapping (macOS)
+- 📝 Espanso for text expansion (macOS, Linux, Windows)
+- 🖥️ Cross-platform support for macOS, Linux, and Windows (WSL)
 
 ## ✨ Key Features
 
@@ -32,8 +34,10 @@ A carefully curated collection of dotfiles optimized for:
   - Platform-specific optimizations
 
 - **System Management**:
-  - Hammerspoon for keyboard shortcuts and window management
-  - LaunchAgents for service automation
+  - Hammerspoon for keyboard shortcuts and window management (macOS)
+  - LaunchAgents for service automation (macOS)
+  - Karabiner for keyboard remapping (macOS)
+  - Espanso for text expansion (macOS, Linux, Windows)
   - SSH key management with platform detection
 
 - **Customization**:

@@ -71,11 +71,11 @@ end
 
 -- Load mappings with fallback to defaults
 local function loadMappings()
-    local localPath = "modules.hotkeys.config.local.macros_mappings"
-    local status, localMappings = pcall(require, localPath)
+    local mappingsPath = "modules.hotkeys.config.macros_mappings"
+    local status, mappings = pcall(require, mappingsPath)
     local actionHandlers = createActionHandlers()
-    
-    if not status or not localMappings then
+
+    if not status or not mappings then
         logging.warn("Using default macro mappings")
         return {
             a = { fn = actionHandlers.toggleAutoClicker, desc = "Toggle Auto-Clicker" },
@@ -84,18 +84,18 @@ local function loadMappings()
         }
     end
     
-    -- Convert local mappings
-    local mappings = {}
-    for key, mapping in pairs(localMappings) do
+    -- Convert mappings
+    local convertedMappings = {}
+    for key, mapping in pairs(mappings) do
         if mapping.action and actionHandlers[mapping.action] then
-            mappings[key] = {
+            convertedMappings[key] = {
                 fn = actionHandlers[mapping.action],
                 desc = mapping.desc or mapping.action
             }
         end
     end
-    
-    return mappings
+
+    return convertedMappings
 end
 
 -- Initialize and create modal
