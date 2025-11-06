@@ -1,4 +1,4 @@
--- Local macro mappings (not tracked in git)
+-- Macro mappings configuration
 -- This file defines the hotkey mappings for the macros modal
 -- Access via Hyper + M, then the key below
 

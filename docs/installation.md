@@ -68,14 +68,55 @@ cd ~/.dotfiles
 5. **Setup System Customization**:
 
     ```bash
-    # Karabiner keyboard remapping
+    # Karabiner keyboard remapping (macOS only)
     mkdir -p ~/.config/karabiner && ln -sf ~/.dotfiles/karabiner/karabiner.json ~/.config/karabiner/karabiner.json
-    
+
     # Espanso text expansion (setup from templates)
     cd ~/.dotfiles/espanso/templates && for f in *.template; do cp "$f" "../local/${f%.template}"; done
-    mkdir -p ~/.config/espanso/{config,match}
-    ln -sf ~/.dotfiles/espanso/local/default.yml ~/.config/espanso/config/default.yml
-    ln -sf ~/.dotfiles/espanso/local/base.yml ~/.config/espanso/match/base.yml
+
+    # Choose based on your OS:
+
+    # Linux/macOS:
+    ESPANSO_PATH="$HOME/.config/espanso"
+    mkdir -p "$ESPANSO_PATH"/{config,match}
+
+    # Remove default base.yml if it exists (we'll use our own from local/match/)
+    [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
+
+    # Symlink config files from local/config/ (default.yml, etc.)
+    if [[ -d ~/.dotfiles/espanso/local/config ]]; then
+      for f in ~/.dotfiles/espanso/local/config/*.yml; do
+        [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+      done
+    fi
+
+    # Symlink match files from local/match/ (both .yml and .md files)
+    if [[ -d ~/.dotfiles/espanso/local/match ]]; then
+      for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
+        [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+      done
+    fi
+
+    # Windows (WSL - use Windows path):
+    # ESPANSO_PATH="$APPDATA/espanso"
+    # mkdir -p "$ESPANSO_PATH"/{config,match}
+    #
+    # # Remove default base.yml if it exists (we'll use our own from local/match/)
+    # [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
+    #
+    # # Symlink config files from local/config/ (default.yml, etc.)
+    # if [[ -d ~/.dotfiles/espanso/local/config ]]; then
+    #   for f in ~/.dotfiles/espanso/local/config/*.yml; do
+    #     [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
+    #   done
+    # fi
+    #
+    # # Symlink match files from local/match/ (both .yml and .md files)
+    # if [[ -d ~/.dotfiles/espanso/local/match ]]; then
+    #   for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
+    #     [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
+    #   done
+    # fi
     ```
 
 6. **Setup Neovim**:
@@ -98,13 +139,17 @@ cd ~/.dotfiles
     ln -sf ~/.dotfiles/git/.gitignore_global ~/.gitignore_global
 
     # Create local Git config (if not exists)
-    if [ ! -f ~/.dotfiles/git/.gitconfig.local ]; then
-      cat > ~/.dotfiles/git/.gitconfig.local <<EOL
+    mkdir -p ~/.dotfiles/git/local
+    if [ ! -f ~/.dotfiles/git/local/.gitconfig.local ]; then
+      cat > ~/.dotfiles/git/local/.gitconfig.local <<EOL
     [user]
         name = Your Name
         email = your.email@example.com
     EOL
     fi
+
+    # Link local config to home directory
+    ln -sf ~/.dotfiles/git/local/.gitconfig.local ~/.gitconfig.local
     ```
 
 9. **Setup SSH**:
@@ -114,6 +159,7 @@ cd ~/.dotfiles
     ln -sf ~/.dotfiles/ssh/config ~/.ssh/config
 
     # Create local SSH config (if not exists)
+    mkdir -p ~/.dotfiles/ssh/local
     if [ ! -f ~/.dotfiles/ssh/local/config.local ]; then
       cat > ~/.dotfiles/ssh/local/config.local <<EOL
     # Local SSH configurations - Example private server
@@ -129,7 +175,10 @@ cd ~/.dotfiles
         ServerAliveCountMax 10
     EOL
     fi
-    
+
+    # Link local config to SSH directory
+    ln -sf ~/.dotfiles/ssh/local/config.local ~/.ssh/config.local
+
     # Set proper permissions for SSH files
     chmod 700 ~/.ssh
     chmod 600 ~/.ssh/config*
@@ -171,11 +220,12 @@ cd ~/.dotfiles
 
 The configuration supports local overrides and secure handling of sensitive data:
 
-### Local Override Files (.local)
+### Local Override Files
 
-- `git/local/.gitconfig.local`: Git user info and machine-specific settings
-- `ssh/local/config.local`: Machine-specific SSH configurations
+- `git/local/.gitconfig.local`: Git user info and machine-specific settings (symlinked to `~/.gitconfig.local`)
+- `ssh/local/config.local`: Machine-specific SSH configurations (symlinked to `~/.ssh/config.local`)
 - `zsh/config/modules/local/*.zsh`: Machine-specific shell functions and aliases
+- `hammerspoon/modules/hotkeys/config/local/*`: Machine-specific Hammerspoon hotkey configurations
 
 ### Managed Configuration Files
 

@@ -28,8 +28,9 @@ The dotfiles use a clean, organized path structure with two repositories:
 └── README.md        # Main documentation
 
 ~/.dotfiles-private/ # Private repository (source of truth for local files)
-├── hammerspoon/config/local/  # Hammerspoon local configs
+├── git/local/                 # Git local configs
 ├── ssh/local/                 # SSH local configs
+├── hammerspoon/config/local/  # Hammerspoon local configs
 ├── zsh/config/modules/local/  # Zsh local configs
 └── ...                        # Other local configurations
 ```
@@ -58,6 +59,7 @@ To keep sensitive and machine-specific configurations secure:
   - Public repo can be safely shared and version-controlled
 
 **Example structure:**
+
 ```bash
 # Private repo contains the actual files
 ~/.dotfiles-private/zsh/config/modules/local/custom.zsh
