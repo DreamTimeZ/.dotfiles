@@ -15,7 +15,7 @@ fi
 export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 export ZDOTFILES_MODULES_DIR="${ZDOTFILES_MODULES_DIR:-$ZDOTFILES_CONFIG_DIR/modules}"
-export ZDOTFILES_LOG_LEVEL="${ZDOTFILES_LOG_LEVEL:-1}"  # 0=silent, 1=error, 2=warn, 3=info
+export ZDOTFILES_LOG_LEVEL="${ZDOTFILES_LOG_LEVEL:-3}"  # 0=silent, 1=error, 2=warn, 3=info
 
 # ------ Load Core Helper Functions ------
 # Load helpers first to make functions available to other files
@@ -36,14 +36,14 @@ _CONFIG_FILES=(
   "aliases.zsh"     # Command aliases
 )
 
-# Load each config file directly
+# Load each config file silently (logging would break p10k instant prompt)
 for _config_file in "${_CONFIG_FILES[@]}"; do
   _full_path="$ZDOTFILES_CONFIG_DIR/$_config_file"
   if [[ -r "$_full_path" ]]; then
-    zdotfiles_info "Loading $_config_file"
     source "$_full_path"
   else
-    zdotfiles_warn "Could not load $_config_file"
+    # Critical errors during startup should still be visible
+    echo "Warning: Could not load $_config_file" >&2
   fi
 done
 
@@ -66,5 +66,5 @@ if [[ -f ~/.p10k.zsh ]]; then
 else
   # Fallback prompt if p10k is not configured
   PROMPT='%F{blue}%n@%m:%~%f$ '
-  zdotfiles_warn "p10k configuration not found, using fallback prompt"
+  echo "Warning: p10k configuration not found, using fallback prompt" >&2
 fi
