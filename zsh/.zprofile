@@ -13,8 +13,21 @@ if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
   source "$ZDOTFILES_CONFIG_DIR/helpers.zsh"
 fi
 
+# Static path entries (login shell only - avoids duplication in subshells)
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
+[[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
+[[ -d "/snap/bin" ]] && zdotfiles_path_prepend "/snap/bin"
+
+# PNPM (Node.js package manager) - Platform-aware
+if [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    export PNPM_HOME="$HOME/Library/pnpm"
+  else
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+  fi
+  [[ -d "$PNPM_HOME" ]] && zdotfiles_path_prepend "$PNPM_HOME"
+fi
 
 # ------ Environment Variables ------
 export EDITOR="${EDITOR:-nvim}"

@@ -73,26 +73,4 @@ if [[ -o interactive ]]; then
 fi
 
 # ----- PATH Management -----
-# Order matters: first in PATH = highest priority
-
-# User-specific binaries
-[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
-
-# Cargo (Rust package manager)
-[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
-
-# Snap binaries (Ubuntu/Debian package manager)
-[[ -d "/snap/bin" ]] && export PATH="/snap/bin:$PATH"
-
-# PNPM (Node.js package manager) - Platform-aware
-if [[ -n $commands[pnpm] ]] || [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    export PNPM_HOME="$HOME/Library/pnpm"
-  else
-    export PNPM_HOME="$HOME/.local/share/pnpm"
-  fi
-  case ":$PATH:" in
-    *":$PNPM_HOME:"*) ;;
-    *) export PATH="$PNPM_HOME:$PATH" ;;
-  esac
-fi
+# NOTE: Static PATH entries are managed in .zprofile to prevent duplication in subshells
