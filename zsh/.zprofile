@@ -7,6 +7,9 @@
 export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 
+# Silent mode for login shells (non-interactive shells should not produce output)
+export ZDOTFILES_LOG_LEVEL=0
+
 # ------ Path Management ------
 # Load helper functions first to use zdotfiles_path_prepend
 if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
@@ -14,6 +17,7 @@ if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
 fi
 
 # Static path entries (login shell only - avoids duplication in subshells)
+[[ -d "/home/linuxbrew/.linuxbrew/bin" ]] && zdotfiles_path_prepend "/home/linuxbrew/.linuxbrew/bin"
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
 [[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
@@ -29,8 +33,35 @@ if [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
   [[ -d "$PNPM_HOME" ]] && zdotfiles_path_prepend "$PNPM_HOME"
 fi
 
+# Pyenv (Python version manager)
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d "$PYENV_ROOT/bin" ]] && zdotfiles_path_prepend "$PYENV_ROOT/bin"
+
+# NVM (Node version manager) - Add default node to PATH
+if [[ -d "$HOME/.nvm/versions/node" ]]; then
+  export NVM_DIR="$HOME/.nvm"
+  _node_path=""
+  if [[ -s "$NVM_DIR/alias/default" ]]; then
+    _nvm_default=$(cat "$NVM_DIR/alias/default")
+    for _try in "v${_nvm_default}" "${_nvm_default}" $(command ls -1d "$NVM_DIR/versions/node"/v${_nvm_default}.* 2>/dev/null | tail -1 | xargs basename 2>/dev/null); do
+      if [[ -d "$NVM_DIR/versions/node/$_try/bin" ]]; then
+        _node_path="$NVM_DIR/versions/node/$_try/bin"
+        break
+      fi
+    done
+  fi
+  # Fallback to latest version
+  if [[ -z "$_node_path" ]]; then
+    _latest=$(command ls -1 "$NVM_DIR/versions/node" 2>/dev/null | tail -1)
+    [[ -n "$_latest" ]] && _node_path="$NVM_DIR/versions/node/$_latest/bin"
+  fi
+  [[ -n "$_node_path" ]] && zdotfiles_path_prepend "$_node_path"
+  unset _nvm_default _node_path _try _latest
+fi
+
 # ------ Environment Variables ------
 export EDITOR="${EDITOR:-nvim}"
+[[ -d "/usr/lib/jvm/temurin-25-jdk-amd64" ]] && export JAVA_HOME="/usr/lib/jvm/temurin-25-jdk-amd64"
 
 # ------ SSH Key Management (Performance-Optimized) ------
 : ${SSH_KEY_DIR:="$HOME/.ssh"}

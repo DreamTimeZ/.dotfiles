@@ -1,9 +1,9 @@
 # ===============================
 # PYENV - Python Version Manager
 # ===============================
+# PATH setup is handled in .zprofile
 
 export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 
 _init_pyenv() {
   [[ -n $commands[pyenv] ]] && eval "$(pyenv init - --no-rehash zsh)"
