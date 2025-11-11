@@ -40,23 +40,31 @@ export PYENV_ROOT="$HOME/.pyenv"
 # NVM (Node version manager) - Add default node to PATH
 if [[ -d "$HOME/.nvm/versions/node" ]]; then
   export NVM_DIR="$HOME/.nvm"
-  _node_path=""
-  if [[ -s "$NVM_DIR/alias/default" ]]; then
-    _nvm_default=$(cat "$NVM_DIR/alias/default")
-    for _try in "v${_nvm_default}" "${_nvm_default}" $(command ls -1d "$NVM_DIR/versions/node"/v${_nvm_default}.* 2>/dev/null | tail -1 | xargs basename 2>/dev/null); do
-      if [[ -d "$NVM_DIR/versions/node/$_try/bin" ]]; then
-        _node_path="$NVM_DIR/versions/node/$_try/bin"
-        break
-      fi
-    done
+
+  _node_version=""
+  # Try to resolve default alias (handles 2-level nesting: default -> lts/* -> lts/krypton)
+  if [[ -f "$NVM_DIR/alias/default" ]]; then
+    _alias=$(cat "$NVM_DIR/alias/default")
+    # If alias points to another alias file, resolve once more
+    [[ -f "$NVM_DIR/alias/$_alias" ]] && _alias=$(cat "$NVM_DIR/alias/$_alias")
+    # Check if resolved value is a valid version directory
+    [[ -d "$NVM_DIR/versions/node/$_alias" ]] && _node_version="$_alias"
   fi
-  # Fallback to latest version
-  if [[ -z "$_node_path" ]]; then
-    _latest=$(command ls -1 "$NVM_DIR/versions/node" 2>/dev/null | tail -1)
-    [[ -n "$_latest" ]] && _node_path="$NVM_DIR/versions/node/$_latest/bin"
+
+  # Fallback to latest installed version (using semantic version sort)
+  if [[ -z "$_node_version" ]]; then
+    # (N) = null_glob, (On) = reverse order + numeric sort, (/) = directories only
+    _versions=("$NVM_DIR/versions/node"/v*(NOn/))
+    [[ ${#_versions[@]} -gt 0 ]] && _node_version="${_versions[1]:t}"
   fi
-  [[ -n "$_node_path" ]] && zdotfiles_path_prepend "$_node_path"
-  unset _nvm_default _node_path _try _latest
+
+  # Add to PATH if node binary exists
+  if [[ -n "$_node_version" ]]; then
+    _node_bin="$NVM_DIR/versions/node/$_node_version/bin"
+    [[ -x "$_node_bin/node" ]] && zdotfiles_path_prepend "$_node_bin"
+  fi
+
+  unset _node_version _alias _versions _node_bin
 fi
 
 # ------ Environment Variables ------
