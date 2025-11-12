@@ -19,6 +19,7 @@ hammerspoon/Spoons
 # Exclude local config directory contents but keep README
 hammerspoon/modules/hotkeys/config/local/*
 !hammerspoon/modules/hotkeys/config/local/README.md
+!hammerspoon/modules/hotkeys/config/local/.gitkeep
 
 # ZSH local configurations - exclude everything in the local directory
 zsh/config/modules/local/*
@@ -26,17 +27,26 @@ zsh/config/modules/local/*
 # Keep only these specific files
 !zsh/config/modules/local/README.md
 !zsh/config/modules/local/example.zsh.template
+!zsh/config/modules/local/.gitkeep
 
 # ZSH docs local folder - machine-specific documentation
 zsh/docs/local/*
+!zsh/docs/local/.gitkeep
 
 # Git local configurations - machine-specific git settings
 git/local/*
+!git/local/.gitkeep
 
 # SSH local configurations - machine-specific SSH settings
 ssh/local/*
+!ssh/local/.gitkeep
 
 # Espanso local configurations - exclude personal text expansions
 # Keep only templates and README
-espanso/local/*
+espanso/local/**
+!espanso/local/
 !espanso/local/README.md
+!espanso/local/config/
+!espanso/local/config/.gitkeep
+!espanso/local/match/
+!espanso/local/match/.gitkeep
