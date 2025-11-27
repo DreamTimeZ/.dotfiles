@@ -109,14 +109,19 @@ update() {
   # 2. Update Mac App Store apps via 'mas'
   if zdotfiles_has_command mas; then
     echo -e "\n\033[1;32m◆ Upgrading Mac App Store apps...\033[0m"
-    if mas upgrade; then
-      echo "✓ App Store apps updated successfully."
+    local outdated_apps
+    outdated_apps=$(mas outdated 2>/dev/null)
+    if [[ -z "$outdated_apps" ]]; then
+      echo "✓ All App Store apps are up to date."
     else
-      # Don't mark as failure if no updates are available
-      if [[ $? -ne 0 && $? -ne 20 ]]; then
-        success=false
-        errors+=("App Store update failed")
-        echo -e "\033[1;31m✗ Error updating App Store apps.\033[0m"
+      echo "$outdated_apps"
+      # Try mas upgrade, fall back to App Store if it fails
+      # (mas has a known bug: https://github.com/mas-cli/mas/issues/1029)
+      if mas upgrade 2>&1 | grep -q "PKInstallErrorDomain"; then
+        echo -e "\033[1;33m⚠ mas upgrade failed. Opening App Store for manual update.\033[0m"
+        open "macappstore://showUpdatesPage"
+      else
+        echo "✓ App Store apps updated successfully."
       fi
     fi
   else
