@@ -83,9 +83,8 @@ if zdotfiles_has_command cursor; then
 fi
 
 # Enhanced search with ripgrep
-if zdotfiles_has_command rg; then
-    alias rg='rg --smart-case --follow --hidden'
-fi
+# Note: Keeping rg as standard command (no default flags) for predictable behavior
+# Use 'rg -S --follow --hidden' manually when needed
 
 # tldr with proper globbing
 if zdotfiles_has_command tldr; then
@@ -117,7 +116,6 @@ alias ........='builtin cd ../../../../../../..'
 
 # Zoxide integration - enabled by default (non-breaking)
 if zdotfiles_has_command zoxide; then
-    alias cd='z'
     alias cdi='zi'
     if zdotfiles_has_command fzf; then
         cdf() {
@@ -142,10 +140,8 @@ if zdotfiles_has_command eza; then
     alias oldls='command ls'
 fi
 
-# Core utilities with safe defaults
-alias mkdir='mkdir -pv'
-alias df='df -h'
-alias du='du -h'
+# Core utilities - keeping standard behavior for predictable output
+# Use 'mkdir -pv', 'df -h', 'du -h' manually when needed
 
 # Safe file operations - explicit interactive variants
 alias cpi='cp -iv'      # Interactive copy - asks before overwrite
