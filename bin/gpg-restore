@@ -1,0 +1,634 @@
+#!/usr/bin/env zsh
+# ===============================
+# GPG RESTORE SCRIPT
+# ===============================
+# Restores GPG keys from encrypted archive created by gpg-backup
+# Verifies checksums and signatures before restoration
+# Usage: gpg-restore [OPTIONS] <backup-file.tar.gz.gpg>
+
+# Internal: Log message with level and color
+_gpg_log() {
+  typeset level=$1 message=$2
+
+  # All log messages go to stderr to avoid corrupting stdout data returns
+  case $level in
+    INFO)    echo "${fg[blue]}ℹ${reset_color} ${message}" >&2 ;;
+    SUCCESS) echo "${fg[green]}✓${reset_color} ${message}" >&2 ;;
+    WARN)    echo "${fg[yellow]}⚠${reset_color} ${message}" >&2 ;;
+    ERROR)   echo "${fg[red]}✗${reset_color} ${message}" >&2 ;;
+  esac
+
+  return 0
+}
+
+# Internal: Exit function with error message
+_gpg_die() {
+  _gpg_log ERROR "$1"
+  return 1
+}
+
+# Internal: Show help and exit
+_gpg_show_help() {
+  cat << 'EOF'
+GPG Restore Script
+
+USAGE:
+  gpg-restore [OPTIONS] <backup-file.tar.gz.gpg>
+  RESTORE_PASSPHRASE="mypass" gpg-restore backup.tar.gz.gpg
+
+DESCRIPTION:
+  Restores GPG keys from encrypted backup created by gpg-backup.
+  Verifies checksums and signatures before importing keys.
+
+OPTIONS:
+  -b, --backup-existing     Backup existing GPG home before restore
+  -f, --force               Skip confirmation prompts
+  -s, --skip-signature      Skip signature verification (not recommended)
+  -d, --dry-run             Show what would be done without executing
+  -v, --verbose             Show detailed output
+  -h, --help                Show this help message
+
+ENVIRONMENT VARIABLES:
+  RESTORE_PASSPHRASE        Passphrase for backup decryption (prompted if not set)
+
+VERIFICATION:
+  The script performs these integrity checks:
+    1. Checksum verification (SHA256) - REQUIRED
+    2. Signature verification (GPG) - Optional if .asc file exists
+    3. Archive decryption test
+
+  All checks must pass before keys are imported to your GPG keyring.
+
+SAFETY:
+  • Warns if keys already exist in GPG keyring
+  • Option to backup existing GPG home (~/.gnupg)
+  • Requires confirmation before importing (unless --force)
+  • Validates all files before making changes
+
+EXAMPLES:
+  gpg-restore gpg-backup-20240115_143022.tar.gz.gpg
+  gpg-restore --verbose backup.tar.gz.gpg
+  gpg-restore --backup-existing --force backup.tar.gz.gpg
+  RESTORE_PASSPHRASE="mypass" gpg-restore backup.tar.gz.gpg
+
+NOTES:
+  • The .sha256 checksum file must exist in the same directory
+  • The .sha256.asc signature file is optional but verified if present
+  • Original backup created by gpg-backup script
+EOF
+  return 0
+}
+
+# Internal: Check required dependencies
+_gpg_check_deps() {
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Checking dependencies..."
+
+  typeset -a deps=(gpg tar shasum openssl)
+  typeset dep
+  for dep in "${deps[@]}"; do
+    if ! command -v "$dep" &>/dev/null; then
+      _gpg_die "Required command not found: $dep"
+      return 1
+    fi
+  done
+
+  _gpg_log SUCCESS "Checking dependencies..."
+  return 0
+}
+
+# Internal: Validate backup file exists and has companion files
+_gpg_validate_files() {
+  typeset archive=$1
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Validating backup files..."
+
+  # Check archive exists
+  if [[ ! -f "$archive" ]]; then
+    _gpg_die "Backup file not found: $archive"
+    return 1
+  fi
+
+  # Check archive is readable and non-empty
+  if [[ ! -r "$archive" ]] || [[ ! -s "$archive" ]]; then
+    _gpg_die "Backup file is not readable or empty: $archive"
+    return 1
+  fi
+
+  # Check for required checksum file
+  typeset checksum="${archive}.sha256"
+  if [[ ! -f "$checksum" ]]; then
+    _gpg_die "Checksum file not found: ${checksum:t}"
+    return 1
+  fi
+
+  # Check for optional signature file
+  typeset signature="${checksum}.asc"
+  if [[ -f "$signature" ]]; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Signature file found: ${signature:t}"
+  else
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Signature file not found (will skip signature verification)"
+  fi
+
+  _gpg_log SUCCESS "Validating backup files..."
+  return 0
+}
+
+# Internal: Verify SHA256 checksum
+_gpg_verify_checksum() {
+  typeset archive=$1
+  typeset checksum="${archive}.sha256"
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Verifying checksum..."
+
+  if ! (cd "${archive:h}" && shasum -a 256 -c "${checksum:t}") &>/dev/null; then
+    _gpg_die "Checksum verification failed - archive may be corrupted or tampered"
+    return 1
+  fi
+
+  _gpg_log SUCCESS "Verifying checksum..."
+  return 0
+}
+
+# Internal: Verify GPG signature
+_gpg_verify_signature() {
+  typeset archive=$1
+  typeset checksum="${archive}.sha256"
+  typeset signature="${checksum}.asc"
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Verifying signature..."
+
+  if [[ ! -f "$signature" ]]; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Signature file not found, skipping"
+    return 0
+  fi
+
+  # Verify signature
+  if ! gpg --verify "$signature" "$checksum" &>/dev/null; then
+    _gpg_die "Signature verification failed - archive may be tampered or signed by untrusted key"
+    return 1
+  fi
+
+  _gpg_log SUCCESS "Verifying signature..."
+  return 0
+}
+
+# Internal: Get passphrase from env or prompt
+_gpg_get_passphrase() {
+  typeset pass
+
+  # Use environment passphrase if provided
+  if [[ -n "${RESTORE_PASSPHRASE:-}" ]]; then
+    echo "$RESTORE_PASSPHRASE"
+    return 0
+  fi
+
+  # Redirect prompt to stderr so it displays (stdout is captured by caller)
+  echo "---" >&2
+  echo "Enter the passphrase to DECRYPT the backup archive." >&2
+  echo "(This is the passphrase you used when creating the backup)" >&2
+  echo "---" >&2
+
+  while true; do
+    echo -n "Backup decryption passphrase: " >&2
+    read -rs pass
+    echo >&2
+
+    # Validate passphrase is not empty
+    if [[ -z "$pass" ]]; then
+      echo "${fg[red]}✗${reset_color} Passphrase cannot be empty" >&2
+      continue
+    fi
+
+    # Valid passphrase
+    break
+  done
+
+  # Return passphrase to stdout (for command substitution)
+  echo "$pass"
+}
+
+# Internal: Decrypt and extract archive to temp directory
+_gpg_decrypt_archive() {
+  typeset archive=$1 passphrase=$2 work_dir=$3
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Decrypting archive..."
+
+  [[ $DRY_RUN -eq 1 ]] && return 0
+
+  # Decrypt using OpenSSL and extract
+  if ! (openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 \
+        -in "$archive" -pass fd:3 2>/dev/null 3< <(printf '%s' "$passphrase") | \
+        tar xzf - -C "$work_dir" 2>/dev/null); then
+    _gpg_die "Failed to decrypt/extract backup (wrong passphrase or corrupted archive)"
+    return 1
+  fi
+
+  # Verify ALL required files were extracted
+  typeset -i missing=0
+
+  if [[ ! -f "${work_dir}/private.asc" ]]; then
+    _gpg_log ERROR "Archive missing: private.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/public.asc" ]]; then
+    _gpg_log ERROR "Archive missing: public.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "Archive missing: ownertrust.txt"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/revocation.rev" ]]; then
+    _gpg_log ERROR "Archive missing: revocation.rev"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "Archive missing: KEY_INFO.txt"
+    ((missing++))
+  fi
+
+  # Verify file sizes (non-empty)
+  if [[ -f "${work_dir}/private.asc" ]] && [[ ! -s "${work_dir}/private.asc" ]]; then
+    _gpg_log ERROR "Archive file is empty: private.asc"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/public.asc" ]] && [[ ! -s "${work_dir}/public.asc" ]]; then
+    _gpg_log ERROR "Archive file is empty: public.asc"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/ownertrust.txt" ]] && [[ ! -s "${work_dir}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "Archive file is empty: ownertrust.txt"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/revocation.rev" ]] && [[ ! -s "${work_dir}/revocation.rev" ]]; then
+    _gpg_log ERROR "Archive file is empty: revocation.rev"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/KEY_INFO.txt" ]] && [[ ! -s "${work_dir}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "Archive file is empty: KEY_INFO.txt"
+    ((missing++))
+  fi
+
+  if [[ $missing -gt 0 ]]; then
+    _gpg_die "Archive extraction incomplete - $missing file(s) missing or empty"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "All expected files found in archive"
+
+  _gpg_log SUCCESS "Decrypting archive..."
+  return 0
+}
+
+# Internal: Check if keys already exist in GPG keyring
+_gpg_check_existing_keys() {
+  typeset work_dir=$1
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Checking for existing keys..."
+
+  # Extract email from public key
+  typeset email=$(gpg --with-colons --show-keys "${work_dir}/public.asc" 2>/dev/null | awk -F: '/^uid:/ {print $10; exit}' | grep -oE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+
+  if [[ -z "$email" ]]; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Could not extract email from public key"
+    return 0
+  fi
+
+  # Check if key already exists in keyring
+  typeset existing_fingerprint=$(gpg --list-secret-keys --with-colons -- "$email" 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}')
+
+  if [[ -n "$existing_fingerprint" ]]; then
+    echo >&2
+    _gpg_log WARN "Key already exists for: $email"
+    echo "Existing key fingerprint: $existing_fingerprint" >&2
+    echo >&2
+
+    # Store email for later use
+    echo "$email"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "No conflicting keys found"
+  echo "$email"
+  return 0
+}
+
+# Internal: Backup existing GPG home
+_gpg_backup_existing() {
+  typeset backup_dir="${HOME}/.gnupg-backup-$(date +%Y%m%d_%H%M%S)"
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Backing up existing GPG home..."
+
+  [[ $DRY_RUN -eq 1 ]] && return 0
+
+  if [[ ! -d "${HOME}/.gnupg" ]]; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "No existing GPG home to backup"
+    return 0
+  fi
+
+  if ! cp -a "${HOME}/.gnupg" "$backup_dir" 2>/dev/null; then
+    _gpg_die "Failed to backup existing GPG home"
+    return 1
+  fi
+
+  chmod 700 "$backup_dir"
+  _gpg_log SUCCESS "Backed up existing GPG home to: ${backup_dir:t}"
+  return 0
+}
+
+# Internal: Import keys to GPG keyring
+_gpg_import_keys() {
+  typeset work_dir=$1
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Importing keys to GPG keyring..."
+
+  [[ $DRY_RUN -eq 1 ]] && return 0
+
+  echo >&2
+  echo "GPG will now prompt for your master key passphrase to import the private key." >&2
+  echo >&2
+
+  # Import private key - allow GPG to show pinentry prompt
+  if ! gpg --import "${work_dir}/private.asc"; then
+    _gpg_die "Failed to import private key"
+    return 1
+  fi
+
+  # Import public key (suppress output since it's redundant)
+  if ! gpg --import "${work_dir}/public.asc" >/dev/null 2>&1; then
+    _gpg_die "Failed to import public key"
+    return 1
+  fi
+
+  # Import ownertrust (suppress output, failure is acceptable)
+  if ! gpg --import-ownertrust "${work_dir}/ownertrust.txt" >/dev/null 2>&1; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Failed to import ownertrust (this may be normal)"
+  fi
+
+  # Restore revocation certificate (required for disaster recovery)
+  typeset fingerprint=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}')
+  if [[ -z "$fingerprint" ]]; then
+    _gpg_die "Cannot restore revocation certificate: No GPG key found after import"
+    return 1
+  fi
+
+  # Verify revocation certificate matches the imported key
+  typeset revoc_fp=$(cat "${work_dir}/revocation.rev" | sed 's/^://' | gpg --list-packets 2>/dev/null | grep "issuer fpr" | awk '{print $NF}' | sed 's/)//')
+  if [[ -z "$revoc_fp" ]]; then
+    _gpg_die "Cannot extract fingerprint from revocation certificate (may be corrupted)"
+    return 1
+  fi
+
+  if [[ "$revoc_fp" != "$fingerprint" ]]; then
+    _gpg_die "Revocation certificate fingerprint mismatch (key: $fingerprint, cert: $revoc_fp)"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Revocation certificate verified (fingerprint matches)"
+
+  typeset revoc_dir="${HOME}/.gnupg/openpgp-revocs.d"
+  if ! mkdir -p "$revoc_dir" 2>/dev/null; then
+    _gpg_die "Failed to create revocation certificate directory: $revoc_dir"
+    return 1
+  fi
+  chmod 700 "$revoc_dir" 2>/dev/null
+
+  typeset revoc_dest="${revoc_dir}/${fingerprint}.rev"
+  if [[ -f "$revoc_dest" ]]; then
+    [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Revocation certificate already exists, not overwriting"
+  else
+    if ! cp "${work_dir}/revocation.rev" "$revoc_dest" 2>/dev/null; then
+      _gpg_die "Failed to restore revocation certificate to: $revoc_dest"
+      return 1
+    fi
+    chmod 600 "$revoc_dest" 2>/dev/null
+    [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "Restored revocation certificate"
+  fi
+
+  _gpg_log SUCCESS "Importing keys to GPG keyring..."
+  return 0
+}
+
+# Internal: Verify keys were imported successfully
+_gpg_verify_import() {
+  typeset email=$1 work_dir=$2
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Verifying key import..."
+
+  [[ $DRY_RUN -eq 1 ]] && return 0
+
+  # Verify ALL keys (primary + subkeys) were imported correctly
+  typeset -a expected_fps=(${(f)"$(gpg --with-colons --show-keys "${work_dir}/public.asc" 2>/dev/null | awk -F: '/^fpr:/ {print $10}')"})
+  typeset -a imported_fps=(${(f)"$(gpg --list-secret-keys --with-colons -- "$email" 2>/dev/null | awk -F: '/^fpr:/ {print $10}')"})
+
+  if [[ ${#expected_fps[@]} -eq 0 ]]; then
+    _gpg_die "Verification failed: could not read fingerprints from backup"
+    return 1
+  fi
+
+  if [[ ${#imported_fps[@]} -eq 0 ]]; then
+    _gpg_die "Verification failed: no keys found after import"
+    return 1
+  fi
+
+  if [[ ${#expected_fps[@]} -ne ${#imported_fps[@]} ]]; then
+    _gpg_die "Verification failed: expected ${#expected_fps[@]} key(s), imported ${#imported_fps[@]} key(s)"
+    return 1
+  fi
+
+  typeset i
+  for i in {1..${#expected_fps[@]}}; do
+    if [[ "${expected_fps[$i]}" != "${imported_fps[$i]}" ]]; then
+      _gpg_die "Verification failed: fingerprint mismatch at position $i"
+      return 1
+    fi
+  done
+
+  _gpg_log SUCCESS "Verifying key import..."
+  [[ $VERBOSE -eq 1 ]] && echo "Verified ${#imported_fps[@]} key(s) successfully" >&2
+  return 0
+}
+
+# Internal: Show summary of restored keys
+_gpg_show_summary() {
+  typeset email=$1 archive=$2 work_dir=$3
+
+  echo
+  echo "${fg[green]}✓ Restore completed successfully!${reset_color}"
+  echo
+  echo "Restored key for: $email"
+  echo "From backup: ${archive:t}"
+
+  # Show backup info if available
+  if [[ -f "${work_dir}/KEY_INFO.txt" ]]; then
+    echo
+    echo "Backup Information:"
+    cat "${work_dir}/KEY_INFO.txt" 2>/dev/null | grep -E '(Email|Fingerprint|Backup Date)' | sed 's/^/  /'
+  fi
+
+  echo
+  echo "Next steps:"
+  echo "  1. Verify key with: gpg --list-secret-keys $email"
+  echo "  2. Test encryption: echo 'test' | gpg --encrypt --armor -r $email"
+  echo "  3. Consider setting key trust: gpg --edit-key $email"
+}
+
+# Main function
+gpg-restore() {
+  # Create local option scope with error handling
+  emulate -L zsh
+  setopt PIPE_FAIL WARN_CREATE_GLOBAL NULL_GLOB
+
+  # Load colors in local scope (needed for log output)
+  autoload -Uz colors && colors
+
+  # Ensure restrictive file permissions (no group/other access)
+  umask 077
+
+  # Initialize local variables
+  typeset -i DRY_RUN=${DRY_RUN:-0} VERBOSE=${VERBOSE:-0} FORCE=0 BACKUP_EXISTING=0 SKIP_SIGNATURE=0
+  typeset archive passphrase work_dir email
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -b|--backup-existing)
+        BACKUP_EXISTING=1
+        shift
+        ;;
+      -f|--force)
+        FORCE=1
+        shift
+        ;;
+      -s|--skip-signature)
+        SKIP_SIGNATURE=1
+        shift
+        ;;
+      -d|--dry-run)
+        DRY_RUN=1
+        shift
+        ;;
+      -v|--verbose)
+        VERBOSE=1
+        shift
+        ;;
+      -h|--help)
+        _gpg_show_help
+        return 0
+        ;;
+      -*)
+        _gpg_die "Unknown option: $1. Use --help for usage."
+        return 1
+        ;;
+      *)
+        # Assume it's the backup file
+        if [[ -n "$archive" ]]; then
+          _gpg_die "Multiple backup files specified. Use --help for usage."
+          return 1
+        fi
+        archive="$1"
+        shift
+        ;;
+    esac
+  done
+
+  # Validate archive argument
+  if [[ -z "$archive" ]]; then
+    _gpg_die "No backup file specified. Use --help for usage."
+    return 1
+  fi
+
+  # Convert to absolute path
+  archive="${archive:a}"
+
+  _gpg_check_deps || return 1
+  _gpg_validate_files "$archive" || return 1
+  _gpg_verify_checksum "$archive" || return 1
+
+  if [[ $SKIP_SIGNATURE -eq 0 ]]; then
+    _gpg_verify_signature "$archive" || return 1
+  else
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Skipping signature verification (not recommended)"
+  fi
+
+  echo
+  passphrase=$(_gpg_get_passphrase) || return 1
+  echo
+
+  # Create working directory with secure permissions
+  work_dir=$(mktemp -d) || { _gpg_die "Failed to create temporary directory"; return 1; }
+  chmod 700 "$work_dir" || { _gpg_die "Failed to set work_dir permissions"; return 1; }
+
+  # Set trap with force flag to ensure cleanup
+  trap "chmod -R u+rwx '$work_dir' 2>/dev/null; rm -rf '$work_dir'" EXIT INT TERM HUP QUIT
+
+  _gpg_decrypt_archive "$archive" "$passphrase" "$work_dir" || return 1
+
+  # Clear passphrase from memory
+  passphrase=""
+
+  # Check for existing keys and get email
+  email=$(_gpg_check_existing_keys "$work_dir")
+  typeset key_exists=$?
+
+  if [[ $key_exists -ne 0 ]] && [[ $FORCE -eq 0 ]]; then
+    echo "The key already exists in your GPG keyring." >&2
+    echo "This will merge the imported key with the existing one." >&2
+    echo >&2
+    echo -n "Continue with restore? [y/N]: " >&2
+
+    typeset response=""
+    read -r response
+
+    # Normalize input (handle common patterns)
+    response="${response#response=}"  # Remove 'response=' prefix if present
+    response="${response%%[[:space:]]*}"  # Remove trailing whitespace
+    response="${(L)response}"  # Convert to lowercase (zsh syntax)
+
+    if [[ "$response" != "y" ]]; then
+      echo >&2
+      _gpg_log INFO "Restore cancelled by user"
+      response=""  # Clear from memory
+      return 0
+    fi
+    response=""  # Clear from memory
+    echo >&2
+  fi
+
+  # Backup existing GPG home if requested
+  if [[ $BACKUP_EXISTING -eq 1 ]]; then
+    _gpg_backup_existing || return 1
+  fi
+
+  # Show what will be imported
+  if [[ $DRY_RUN -eq 1 ]]; then
+    echo "[DRY RUN] Would import keys for: $email"
+    return 0
+  fi
+
+  # Final confirmation
+  if [[ $FORCE -eq 0 ]]; then
+    echo "Ready to import keys for: $email" >&2
+    echo -n "Proceed with import? [y/N]: " >&2
+
+    typeset response=""
+    read -r response
+
+    # Normalize input (handle common patterns)
+    response="${response#response=}"  # Remove 'response=' prefix if present
+    response="${response%%[[:space:]]*}"  # Remove trailing whitespace
+    response="${(L)response}"  # Convert to lowercase (zsh syntax)
+
+    if [[ "$response" != "y" ]]; then
+      echo >&2
+      _gpg_log INFO "Import cancelled by user"
+      response=""  # Clear from memory
+      return 0
+    fi
+    response=""  # Clear from memory
+    echo >&2
+  fi
+
+  _gpg_import_keys "$work_dir" || return 1
+  _gpg_verify_import "$email" "$work_dir" || return 1
+
+  _gpg_show_summary "$email" "$archive" "$work_dir"
+}
+
+# Execute main function when script is run directly (not sourced)
+if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" ]] || [[ "$0" == "${(%):-%x}" ]]; then
+  gpg-restore "$@"
+fi

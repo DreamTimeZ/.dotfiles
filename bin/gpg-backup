@@ -1,0 +1,1012 @@
+#!/usr/bin/env zsh
+# ===============================
+# GPG BACKUP SCRIPT
+# ===============================
+# Exports GPG keys to encrypted archive with AES-256-CBC (OpenSSL) encryption
+# Archive encryption uses OpenSSL to avoid GPG keyring interference
+# Email auto-detected from git config or prompted interactively
+# Usage: gpg-backup [--dry-run] [--verbose]
+
+# Internal: Log message with level and color
+_gpg_log() {
+  typeset level=$1 message=$2
+
+  # All log messages go to stderr to avoid corrupting stdout data returns
+  case $level in
+    INFO)    echo "${fg[blue]}ℹ${reset_color} ${message}" >&2 ;;
+    SUCCESS) echo "${fg[green]}✓${reset_color} ${message}" >&2 ;;
+    WARN)    echo "${fg[yellow]}⚠${reset_color} ${message}" >&2 ;;
+    ERROR)   echo "${fg[red]}✗${reset_color} ${message}" >&2 ;;
+  esac
+
+  return 0
+}
+
+# Internal: Exit function with error message
+_gpg_die() {
+  _gpg_log ERROR "$1"
+  return 1
+}
+
+# Internal: Show help and exit
+_gpg_show_help() {
+  cat << 'EOF'
+GPG Backup Script
+
+USAGE:
+  gpg-backup [OPTIONS]
+  BACKUP_PASSPHRASE="mypass" gpg-backup
+  GPG_BACKUP_DIR="/path/to/dir" gpg-backup
+
+EMAIL DETECTION:
+  The script automatically detects your GPG key email address from:
+    1. Git global config (git config --global user.email)
+    2. Git local config (~/.gitconfig.local)
+    3. Interactive prompt (if not found in git config)
+
+OPTIONS:
+  -o, --output-dir DIR      Backup output directory (default: ~/Downloads)
+  -n, --no-complexity-check Skip passphrase complexity requirements
+  -s, --secure-delete       Securely delete existing backups (standalone mode)
+  -d, --dry-run             Show what would be done without executing
+  -v, --verbose             Show detailed output
+  -h, --help                Show this help message
+
+ENVIRONMENT VARIABLES:
+  BACKUP_PASSPHRASE     Passphrase for backup encryption (prompted if not set)
+  GPG_BACKUP_DIR        Backup directory (default: ~/Downloads)
+
+PASSPHRASE SECURITY:
+  Passphrases are entered interactively (stdin) or via environment variables.
+  NEVER pass passphrases as CLI parameters (--passphrase flag) because:
+    • They are saved in shell history (~/.zsh_history)
+    • They are visible in process listings (ps aux)
+    • They may be logged by system auditing tools
+
+  For automation, use: BACKUP_PASSPHRASE="..." gpg-backup
+
+PASSPHRASE REQUIREMENTS (default):
+  • At least 12 characters
+  • At least 1 lowercase letter
+  • At least 1 uppercase letter
+  • At least 1 number
+  • At least 1 special character
+  (Use --no-complexity-check to bypass)
+
+BACKUP CONTENTS:
+  The encrypted archive contains:
+    • Private key (primary + all subkeys)
+    • Public key (primary + all subkeys)
+    • Ownertrust database (your trust assignments)
+    • Revocation certificate (if exists - critical for disaster recovery)
+    • Key information file (fingerprints, email, backup date - for human verification)
+
+OUTPUTS:
+  Creates 3 files for defense-in-depth security:
+    .tar.gz.gpg            - Encrypted backup (confidentiality)
+    .tar.gz.gpg.sha256     - SHA256 checksum (integrity verification)
+    .tar.gz.gpg.sha256.asc - GPG signature (authenticity proof, prevents tampering)
+
+  All 3 files should be uploaded together to your backup location.
+
+DECRYPTION:
+  To decrypt and restore your backup (will prompt for passphrase):
+    openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 \
+      -in gpg-backup-YYYYMMDD_HHMMSS.tar.gz.gpg | tar xzf -
+
+  Then import the keys:
+    gpg --import private.asc public.asc
+    gpg --import-ownertrust ownertrust.txt
+
+SECURITY BEST PRACTICE:
+  One primary key [C] (stored securely only - never on daily devices)
+  One subkey per device [S][E][A] (for daily use)
+
+  Why: If device stolen, revoke only that device's subkey, not entire identity.
+
+  Check your setup: gpg -K
+    sec#  = primary NOT on device (secure ✓)
+    sec   = primary IS on device (insecure ✗)
+
+EXAMPLES:
+  gpg-backup                                              (auto-detect email from git)
+  gpg-backup --verbose                                    (with verbose output)
+  gpg-backup -o /secure/backups                           (custom output directory)
+  gpg-backup -n                                           (skip passphrase complexity check)
+  gpg-backup --secure-delete                              (delete existing backups)
+
+  # With environment variables
+  BACKUP_PASSPHRASE="mypass" gpg-backup --dry-run
+  GPG_BACKUP_DIR="/secure/location" gpg-backup
+
+  # For multiple GPG keys, run the script multiple times
+  # You'll be prompted for the email each time if not in git config
+EOF
+  return 0
+}
+
+# Internal: Check required dependencies
+_gpg_check_deps() {
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Checking dependencies..."
+
+  typeset -a deps=(gpg tar shasum openssl)
+  typeset dep
+  for dep in "${deps[@]}"; do
+    if ! command -v "$dep" &>/dev/null; then
+      _gpg_die "Required command not found: $dep"
+      return 1
+    fi
+  done
+
+  _gpg_log SUCCESS "Checking dependencies..."
+  return 0
+}
+
+# Internal: Check available disk space
+_gpg_check_disk_space() {
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Checking disk space..."
+
+  # Note: Assumes standard df output format (header + data line)
+  typeset available_mb=$(df -m "$BACKUP_DIR" | awk 'NR==2 {print $4}')
+  if [[ $available_mb -lt $MIN_FREE_SPACE_MB ]]; then
+    _gpg_die "Insufficient disk space: ${available_mb}MB available, ${MIN_FREE_SPACE_MB}MB required"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "Disk space check passed (${available_mb}MB available)"
+  return 0
+}
+
+# Internal: Validate passphrase complexity
+_gpg_validate_passphrase_complexity() {
+  typeset pass=$1
+  typeset -ri MIN_PASSPHRASE_LENGTH=12
+  typeset -a errors=()
+
+  # Check length
+  if [[ ${#pass} -lt $MIN_PASSPHRASE_LENGTH ]]; then
+    errors+=("at least ${MIN_PASSPHRASE_LENGTH} characters")
+  fi
+
+  # Check for lowercase letter
+  if [[ ! "$pass" =~ [a-z] ]]; then
+    errors+=("at least 1 lowercase letter")
+  fi
+
+  # Check for uppercase letter
+  if [[ ! "$pass" =~ [A-Z] ]]; then
+    errors+=("at least 1 uppercase letter")
+  fi
+
+  # Check for number
+  if [[ ! "$pass" =~ [0-9] ]]; then
+    errors+=("at least 1 number")
+  fi
+
+  # Check for special character
+  if [[ ! "$pass" =~ [^a-zA-Z0-9] ]]; then
+    errors+=("at least 1 special character")
+  fi
+
+  # Return error messages if any
+  if [[ ${#errors[@]} -gt 0 ]]; then
+    echo "${(j:, :)errors}"
+    return 1
+  fi
+
+  return 0
+}
+
+# Internal: Get passphrase from env or prompt
+_gpg_get_passphrase() {
+  typeset pass1 pass2
+  typeset -ri MIN_PASSPHRASE_LENGTH=12
+  typeset skip_complexity_check=${1:-0}
+
+  # Validate environment passphrase if provided
+  if [[ -n "${BACKUP_PASSPHRASE:-}" ]]; then
+    # Skip complexity check if requested
+    if [[ $skip_complexity_check -eq 0 ]]; then
+      typeset validation_err
+      validation_err=$(_gpg_validate_passphrase_complexity "$BACKUP_PASSPHRASE")
+      typeset validation_result=$?
+
+      if [[ $validation_result -ne 0 ]]; then
+        _gpg_die "BACKUP_PASSPHRASE is too weak. Must have: ${validation_err}"
+        return 1
+      fi
+    fi
+    echo "$BACKUP_PASSPHRASE"
+    return 0
+  fi
+
+  # Redirect prompts to stderr so they display (stdout is captured by caller)
+  echo "---" >&2
+  echo "Enter a passphrase to ENCRYPT the backup archive." >&2
+  echo "(This is separate from your GPG master key passphrase)" >&2
+
+  if [[ $skip_complexity_check -eq 0 ]]; then
+    echo "" >&2
+    echo "Requirements:" >&2
+    echo "  • At least ${MIN_PASSPHRASE_LENGTH} characters" >&2
+    echo "  • At least 1 lowercase letter" >&2
+    echo "  • At least 1 uppercase letter" >&2
+    echo "  • At least 1 number" >&2
+    echo "  • At least 1 special character" >&2
+  fi
+  echo "---" >&2
+
+  while true; do
+    echo -n "Backup encryption passphrase: " >&2
+    read -rs pass1
+    echo >&2
+
+    # Validate passphrase is not empty
+    if [[ -z "$pass1" ]]; then
+      echo "${fg[red]}✗${reset_color} Passphrase cannot be empty" >&2
+      continue
+    fi
+
+    # Validate passphrase complexity if not skipped
+    if [[ $skip_complexity_check -eq 0 ]]; then
+      typeset validation_err
+      validation_err=$(_gpg_validate_passphrase_complexity "$pass1")
+      typeset validation_result=$?
+
+      if [[ $validation_result -ne 0 ]]; then
+        echo "${fg[red]}✗${reset_color} Passphrase is too weak. Missing: ${validation_err}" >&2
+        continue
+      fi
+    fi
+
+    echo -n "Confirm passphrase: " >&2
+    read -rs pass2
+    echo >&2
+
+    if [[ "$pass1" != "$pass2" ]]; then
+      echo "${fg[red]}✗${reset_color} Passphrases do not match, try again" >&2
+      continue
+    fi
+
+    # Valid passphrase
+    break
+  done
+
+  # Return passphrase to stdout (for command substitution)
+  echo "$pass1"
+}
+
+# Internal: Restart GPG agent to clear cached state
+_gpg_restart_agent() {
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Restarting GPG agent..."
+
+  # Kill existing agent and let GPG start a fresh one
+  if gpgconf --kill gpg-agent 2>/dev/null; then
+    # Wait up to 2 seconds for agent to be ready
+    typeset -i attempts=0
+    while [[ $attempts -lt 20 ]]; do
+      if gpg-connect-agent /bye &>/dev/null; then
+        [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "GPG agent restarted"
+        return 0
+      fi
+      sleep 0.1
+      ((attempts++))
+    done
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "GPG agent slow to respond"
+  else
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Could not restart GPG agent (may not be running)"
+  fi
+}
+
+# Internal: Verify GPG key exists for email
+_gpg_verify_key() {
+  typeset email=$1
+
+  # Basic email validation
+  if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+    _gpg_die "Invalid email format: $email"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Finding GPG key for ${email}..."
+
+  typeset fingerprint=$(gpg --list-secret-keys --with-colons -- "$email" 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}')
+  if [[ -z "$fingerprint" ]]; then
+    _gpg_die "No GPG secret key found for: $email"
+    return 1
+  fi
+
+  typeset keyinfo=$(gpg --list-secret-keys --keyid-format LONG -- "$email" 2>/dev/null | grep -E '(sec|uid)' | head -2)
+  _gpg_log SUCCESS "Finding GPG key..."
+  echo "Key: ${email}" >&2
+  [[ $VERBOSE -eq 1 ]] && echo "$keyinfo" >&2
+
+  # Return fingerprint to stdout (for command substitution)
+  echo "$fingerprint"
+  return 0
+}
+
+# Internal: Export keys and ownertrust to work directory
+_gpg_export_keys() {
+  typeset email=$1 work_dir=$2 fingerprint=$3
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Exporting keys..."
+
+  # Restart GPG agent to clear any cached state (prevents intermittent failures)
+  _gpg_restart_agent
+
+  # Get GPG master key passphrase (redirect prompt to stderr since stdout is captured)
+  typeset gpg_passphrase
+  echo -n "Enter GPG master key passphrase: " >&2
+  read -rs gpg_passphrase
+  echo >&2
+
+  # Validate passphrase is not empty
+  if [[ -z "$gpg_passphrase" ]]; then
+    _gpg_die "GPG master key passphrase cannot be empty"
+    return 1
+  fi
+
+  # Export private key using loopback pinentry mode with passphrase via fd:3
+  typeset gpg_err_file="${work_dir}/.gpg-error.txt"
+  if ! gpg --batch --pinentry-mode loopback --passphrase-fd 3 \
+       --armor --export-secret-keys -- "$email" > "${work_dir}/private.asc" 2>"$gpg_err_file" 3< <(printf '%s' "$gpg_passphrase"); then
+    typeset gpg_err=$(cat "$gpg_err_file" 2>/dev/null)
+    gpg_passphrase=""  # Clear passphrase immediately on failure
+    [[ $VERBOSE -eq 1 ]] && [[ -n "$gpg_err" ]] && echo "GPG error: $gpg_err" >&2
+    _gpg_die "Failed to export private key (wrong passphrase or GPG agent issue)"
+    return 1
+  fi
+
+  if [[ ! -s "${work_dir}/private.asc" ]]; then
+    gpg_passphrase=""  # Clear passphrase on error
+    _gpg_die "Private key export is empty"
+    return 1
+  fi
+
+  if ! gpg --armor --export -- "$email" > "${work_dir}/public.asc" 2>/dev/null; then
+    gpg_passphrase=""  # Clear passphrase on error
+    _gpg_die "Failed to export public key"
+    return 1
+  fi
+
+  if [[ ! -s "${work_dir}/public.asc" ]]; then
+    gpg_passphrase=""  # Clear passphrase on error
+    _gpg_die "Public key export is empty"
+    return 1
+  fi
+
+  if ! gpg --export-ownertrust > "${work_dir}/ownertrust.txt" 2>/dev/null; then
+    gpg_passphrase=""  # Clear passphrase on error
+    _gpg_die "Failed to export ownertrust"
+    return 1
+  fi
+
+  # Export revocation certificate (required for disaster recovery)
+  typeset revoc_cert="${HOME}/.gnupg/openpgp-revocs.d/${fingerprint}.rev"
+  if [[ ! -f "$revoc_cert" ]]; then
+    gpg_passphrase=""
+    _gpg_die "Revocation certificate not found at: ${revoc_cert}\nGenerate with: gpg --gen-revoke $email"
+    return 1
+  fi
+
+  if ! cp "$revoc_cert" "${work_dir}/revocation.rev" 2>/dev/null; then
+    gpg_passphrase=""
+    _gpg_die "Failed to copy revocation certificate"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Included revocation certificate"
+
+  # Export human-readable key info for manual verification
+  {
+    echo "GPG Key Backup Information"
+    echo "=========================="
+    echo ""
+    echo "Email: $email"
+    echo "Fingerprint: $fingerprint"
+    echo "Backup Date: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    echo ""
+    echo "Key Details:"
+    gpg --fingerprint --keyid-format LONG -- "$email" 2>/dev/null
+  } > "${work_dir}/KEY_INFO.txt" 2>/dev/null
+
+  # Note: GPG config files are intentionally NOT included in backup
+  # They often contain machine-specific paths and settings that shouldn't be restored
+  # If you need to backup configs, manage them separately (e.g., in your dotfiles repo)
+
+  chmod 600 "${work_dir}"/*.asc "${work_dir}"/*.txt "${work_dir}"/*.rev 2>/dev/null
+
+  # Verify that all backup files were created
+  typeset -i missing=0
+
+  # Required files
+  if [[ ! -f "${work_dir}/private.asc" ]]; then
+    _gpg_log ERROR "Missing required file: private.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/public.asc" ]]; then
+    _gpg_log ERROR "Missing required file: public.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "Missing required file: ownertrust.txt"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "Missing required file: KEY_INFO.txt"
+    ((missing++))
+  fi
+  if [[ ! -f "${work_dir}/revocation.rev" ]]; then
+    _gpg_log ERROR "Missing required file: revocation.rev"
+    ((missing++))
+  fi
+
+  # Verify file sizes (non-empty for all files)
+  if [[ -f "${work_dir}/private.asc" ]] && [[ ! -s "${work_dir}/private.asc" ]]; then
+    _gpg_log ERROR "private.asc is empty"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/public.asc" ]] && [[ ! -s "${work_dir}/public.asc" ]]; then
+    _gpg_log ERROR "public.asc is empty"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/ownertrust.txt" ]] && [[ ! -s "${work_dir}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "ownertrust.txt is empty"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/revocation.rev" ]] && [[ ! -s "${work_dir}/revocation.rev" ]]; then
+    _gpg_log ERROR "revocation.rev is empty"
+    ((missing++))
+  fi
+  if [[ -f "${work_dir}/KEY_INFO.txt" ]] && [[ ! -s "${work_dir}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "KEY_INFO.txt is empty"
+    ((missing++))
+  fi
+
+  if [[ $missing -gt 0 ]]; then
+    gpg_passphrase=""
+    _gpg_die "Key export verification failed: $missing error(s) found"
+    return 1
+  fi
+
+  _gpg_log SUCCESS "Exporting keys..."
+
+  # Return GPG passphrase to stdout for use in signing (caller must clear it)
+  echo "$gpg_passphrase"
+  return 0
+}
+
+# Internal: Create encrypted archive
+_gpg_create_archive() {
+  typeset work_dir=$1 output_base=$2 passphrase=$3 gpg_passphrase=$4
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Creating encrypted archive..."
+
+  typeset archive="${output_base}.tar.gz.gpg"
+  typeset checksum="${archive}.${CHECKSUM_EXT}"
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    _gpg_log INFO "[DRY RUN] Would create: ${archive:t}"
+    return 0
+  fi
+
+  _gpg_log INFO "Encrypting backup (this may take a minute)..."
+
+  # Create files atomically by writing to temp location first, then moving
+  typeset temp_archive="${archive}.tmp"
+  typeset temp_checksum="${checksum}.tmp"
+
+  # Pipe tar directly to OpenSSL to avoid writing unencrypted data to disk
+  # This prevents sensitive keys from touching disk unencrypted (security best practice)
+  if ! (cd "$work_dir" && tar czf - --exclude='.*' --exclude='gpg.conf' --exclude='gpg-agent.conf' * 2>/dev/null | \
+        openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
+        -out "$temp_archive" -pass fd:3 2>/dev/null) 3< <(printf '%s' "$passphrase"); then
+    rm -f "$temp_archive"
+    _gpg_die "Failed to create encrypted archive"
+    return 1
+  fi
+
+  # Verify archive was created and has reasonable size (at least 1KB for GPG keys)
+  if [[ ! -s "$temp_archive" ]]; then
+    rm -f "$temp_archive"
+    _gpg_die "Encrypted archive is empty"
+    return 1
+  fi
+
+  typeset archive_size=$(stat -f%z "$temp_archive" 2>/dev/null || stat -c%s "$temp_archive" 2>/dev/null)
+  if [[ $archive_size -lt 1024 ]]; then
+    rm -f "$temp_archive"
+    _gpg_die "Encrypted archive suspiciously small (${archive_size} bytes)"
+    return 1
+  fi
+
+  chmod 600 "$temp_archive"
+
+  # Move atomically to final location
+  if ! mv "$temp_archive" "$archive"; then
+    rm -f "$temp_archive"
+    _gpg_die "Failed to move archive to final location"
+    return 1
+  fi
+
+  # Create checksum with filename for verification (atomic write)
+  if ! (cd "${archive:h}" && shasum -a $CHECKSUM_ALGO "${archive:t}") > "$temp_checksum"; then
+    rm -f "$temp_checksum"
+    _gpg_die "Failed to create checksum"
+    return 1
+  fi
+  chmod 600 "$temp_checksum"
+
+  if ! mv "$temp_checksum" "$checksum"; then
+    rm -f "$temp_checksum"
+    _gpg_die "Failed to move checksum to final location"
+    return 1
+  fi
+
+  # Sign checksum for authenticity verification using GPG passphrase from export
+  typeset signature="${checksum}.asc"
+  if [[ -n "$gpg_passphrase" ]]; then
+    if gpg --batch --yes --no-tty --pinentry-mode loopback --passphrase-fd 3 \
+         --detach-sign --armor --output "$signature" "$checksum" 2>/dev/null 3< <(printf '%s' "$gpg_passphrase"); then
+      chmod 600 "$signature"
+      [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "Checksum signed for authenticity"
+    else
+      [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "Could not sign checksum"
+    fi
+  else
+    [[ $VERBOSE -eq 1 ]] && _gpg_log WARN "GPG passphrase not provided, skipping checksum signing"
+  fi
+
+  # Verify checksum
+  if ! (cd "${archive:h}" && shasum -a $CHECKSUM_ALGO -c "${checksum:t}") &>/dev/null; then
+    _gpg_die "Checksum verification failed"
+    return 1
+  fi
+
+  _gpg_log SUCCESS "Creating encrypted archive..."
+  return 0
+}
+
+# Internal: Verify backup by test importing to temp GPG home
+_gpg_verify_backup() {
+  typeset archive=$1 passphrase=$2 email=$3
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Verifying backup..."
+
+  [[ $DRY_RUN -eq 1 ]] && return 0
+
+  typeset temp_gpg=$(mktemp -d)
+  chmod 700 "$temp_gpg"
+
+  # Note: Don't set trap here - it would override the main work_dir trap
+  # temp_gpg cleanup is handled by explicit rm -rf on all exit paths
+
+  # Decrypt using OpenSSL and extract
+  if ! (openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 \
+        -in "$archive" -pass fd:3 2>/dev/null 3< <(printf '%s' "$passphrase") | \
+        tar xzf - -C "$temp_gpg" 2>/dev/null); then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Failed to decrypt/extract backup for verification"
+    return 1
+  fi
+
+  # Verify all expected files were extracted from archive
+  typeset -i missing=0
+  if [[ ! -f "${temp_gpg}/private.asc" ]]; then
+    _gpg_log ERROR "Archive missing: private.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${temp_gpg}/public.asc" ]]; then
+    _gpg_log ERROR "Archive missing: public.asc"
+    ((missing++))
+  fi
+  if [[ ! -f "${temp_gpg}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "Archive missing: ownertrust.txt"
+    ((missing++))
+  fi
+  if [[ ! -f "${temp_gpg}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "Archive missing: KEY_INFO.txt"
+    ((missing++))
+  fi
+  if [[ ! -f "${temp_gpg}/revocation.rev" ]]; then
+    _gpg_log ERROR "Archive missing: revocation.rev"
+    ((missing++))
+  fi
+
+  # Verify file sizes (non-empty)
+  if [[ -f "${temp_gpg}/private.asc" ]] && [[ ! -s "${temp_gpg}/private.asc" ]]; then
+    _gpg_log ERROR "Archive file is empty: private.asc"
+    ((missing++))
+  fi
+  if [[ -f "${temp_gpg}/public.asc" ]] && [[ ! -s "${temp_gpg}/public.asc" ]]; then
+    _gpg_log ERROR "Archive file is empty: public.asc"
+    ((missing++))
+  fi
+  if [[ -f "${temp_gpg}/ownertrust.txt" ]] && [[ ! -s "${temp_gpg}/ownertrust.txt" ]]; then
+    _gpg_log ERROR "Archive file is empty: ownertrust.txt"
+    ((missing++))
+  fi
+  if [[ -f "${temp_gpg}/revocation.rev" ]] && [[ ! -s "${temp_gpg}/revocation.rev" ]]; then
+    _gpg_log ERROR "Archive file is empty: revocation.rev"
+    ((missing++))
+  fi
+  if [[ -f "${temp_gpg}/KEY_INFO.txt" ]] && [[ ! -s "${temp_gpg}/KEY_INFO.txt" ]]; then
+    _gpg_log ERROR "Archive file is empty: KEY_INFO.txt"
+    ((missing++))
+  fi
+
+  if [[ $missing -gt 0 ]]; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Archive verification failed: $missing file(s) missing from backup"
+    return 1
+  fi
+
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "All expected files found in archive"
+
+  if ! GNUPGHOME="$temp_gpg" gpg --batch --import "${temp_gpg}/private.asc" &>/dev/null; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Failed to import private key during verification"
+    return 1
+  fi
+
+  if ! GNUPGHOME="$temp_gpg" gpg --batch --import "${temp_gpg}/public.asc" &>/dev/null; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Failed to import public key during verification"
+    return 1
+  fi
+
+  if ! GNUPGHOME="$temp_gpg" gpg --import-ownertrust "${temp_gpg}/ownertrust.txt" &>/dev/null; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Failed to import ownertrust during verification"
+    return 1
+  fi
+
+  # Verify ALL keys (primary + subkeys) were restored correctly
+  typeset -a expected_fps=(${(f)"$(gpg --with-colons --show-keys "${temp_gpg}/public.asc" 2>/dev/null | awk -F: '/^fpr:/ {print $10}')"})
+  typeset -a restored_fps=(${(f)"$(GNUPGHOME="$temp_gpg" gpg --list-secret-keys --with-colons -- "$email" 2>/dev/null | awk -F: '/^fpr:/ {print $10}')"})
+
+  if [[ ${#expected_fps[@]} -eq 0 ]]; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Verification failed: could not read fingerprints from backup"
+    return 1
+  fi
+
+  if [[ ${#restored_fps[@]} -eq 0 ]]; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Verification failed: no keys found after import"
+    return 1
+  fi
+
+  if [[ ${#expected_fps[@]} -ne ${#restored_fps[@]} ]]; then
+    chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+    _gpg_die "Verification failed: expected ${#expected_fps[@]} key(s), restored ${#restored_fps[@]} key(s)"
+    return 1
+  fi
+
+  typeset i
+  for i in {1..${#expected_fps[@]}}; do
+    if [[ "${expected_fps[$i]}" != "${restored_fps[$i]}" ]]; then
+      chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+      _gpg_die "Verification failed: fingerprint mismatch at position $i"
+      return 1
+    fi
+  done
+
+  [[ $VERBOSE -eq 1 ]] && echo "Verified ${#restored_fps[@]} key(s) successfully" >&2
+
+  # Verify revocation certificate matches primary key
+  if [[ -f "${temp_gpg}/revocation.rev" ]]; then
+    typeset revoc_fp=$(cat "${temp_gpg}/revocation.rev" | sed 's/^://' | gpg --list-packets 2>/dev/null | grep "issuer fpr" | awk '{print $NF}' | sed 's/)//')
+    typeset primary_fp="${restored_fps[1]}"  # First fingerprint is always primary key
+
+    if [[ -z "$revoc_fp" ]]; then
+      chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+      _gpg_die "Verification failed: could not extract fingerprint from revocation certificate"
+      return 1
+    fi
+
+    if [[ "$revoc_fp" != "$primary_fp" ]]; then
+      chmod -R u+rwx "$temp_gpg" 2>/dev/null; rm -rf "$temp_gpg"
+      _gpg_die "Verification failed: revocation certificate fingerprint mismatch (expected: $primary_fp, got: $revoc_fp)"
+      return 1
+    fi
+
+    [[ $VERBOSE -eq 1 ]] && echo "Revocation certificate verified (fingerprint matches primary key)" >&2
+  fi
+
+  # Cleanup temp directory (force permissions if needed)
+  chmod -R u+rwx "$temp_gpg" 2>/dev/null
+  rm -rf "$temp_gpg"
+
+  _gpg_log SUCCESS "Verifying backup..."
+  return 0
+}
+
+# Internal: Securely delete files using available tools
+_gpg_secure_delete() {
+  typeset file=$1
+  [[ $VERBOSE -eq 1 ]] && _gpg_log INFO "Securely deleting: ${file:t}"
+
+  # Try secure deletion methods in order of preference
+  if command -v shred &>/dev/null; then
+    # GNU shred: overwrite 3 times, then unlink
+    shred -n 3 -z -u "$file" 2>/dev/null && return 0
+  elif command -v srm &>/dev/null; then
+    # Secure rm (if installed via Homebrew)
+    srm -sz "$file" 2>/dev/null && return 0
+  fi
+
+  # Fallback: overwrite with random data manually, then delete
+  # Note: On SSD/APFS with TRIM, overwrites may not guarantee data erasure
+  if [[ -f "$file" ]]; then
+    typeset file_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+    # Overwrite 3 times
+    for i in {1..3}; do
+      dd if=/dev/urandom of="$file" bs=1024 count=$((file_size / 1024 + 1)) conv=notrunc 2>/dev/null
+    done
+    # Zero out
+    dd if=/dev/zero of="$file" bs=1024 count=$((file_size / 1024 + 1)) conv=notrunc 2>/dev/null
+    rm -f "$file"
+    return 0
+  fi
+
+  return 1
+}
+
+# Internal: Get default email from git config or prompt user
+_gpg_get_default_email() {
+  typeset email
+
+  # Try global git config first
+  email=$(git config --global user.email 2>/dev/null)
+  [[ -n "$email" ]] && { echo "$email"; return 0; }
+
+  # Try local git config file
+  email=$(git config --file ~/.gitconfig.local --get user.email 2>/dev/null)
+  [[ -n "$email" ]] && { echo "$email"; return 0; }
+
+  # Prompt user for email if not found in git config
+  while true; do
+    echo -n "Enter GPG key email address: " >&2
+    read email
+    if [[ -n "$email" ]]; then
+      echo "$email"
+      return 0
+    fi
+    echo "Error: Email cannot be empty" >&2
+  done
+}
+
+# Internal: Show summary of created files
+_gpg_show_summary() {
+  typeset output_base=$1 timestamp=$2
+
+  echo
+  echo "${fg[green]}✓ Backup completed successfully!${reset_color}"
+  echo
+  echo "Files created:"
+
+  typeset archive="${output_base}.tar.gz.gpg"
+  typeset checksum="${archive}.${CHECKSUM_EXT}"
+
+  if [[ -f "$archive" ]]; then
+    typeset size=$(du -h "$archive" | awk '{print $1}')
+    echo "  ${archive:t} (${size})"
+  fi
+  [[ -f "$checksum" ]] && echo "  ${checksum:t}"
+
+  typeset signature="${checksum}.asc"
+  [[ -f "$signature" ]] && echo "  ${signature:t}"
+
+  echo
+  echo "Next steps:"
+  echo "  1. Upload to secure backup location:"
+  echo "     - ${archive:t}"
+  echo "     - ${checksum:t}"
+  [[ -f "$signature" ]] && echo "     - ${signature:t}"
+  echo "  2. Delete local files after backup is verified"
+}
+
+# Internal: Securely delete all existing backup files
+_gpg_secure_delete_all() {
+  # Find all backup files
+  typeset -a all_encrypted=(${BACKUP_DIR}/gpg-backup-*.tar.gz.gpg(N))
+  typeset -a all_checksums=(${BACKUP_DIR}/gpg-backup-*.tar.gz.gpg.${CHECKSUM_EXT}(N))
+  typeset -a all_signatures=(${BACKUP_DIR}/gpg-backup-*.tar.gz.gpg.${CHECKSUM_EXT}.asc(N))
+
+  # Count total files
+  typeset total=$((${#all_encrypted[@]} + ${#all_checksums[@]} + ${#all_signatures[@]}))
+
+  if [[ $total -eq 0 ]]; then
+    _gpg_log INFO "No backup files found in ${BACKUP_DIR}"
+    return 0
+  fi
+
+  echo
+  echo "${fg[yellow]}⚠${reset_color}  Found ${total} backup file(s) to securely delete:"
+  echo
+
+  # Show files grouped by backup
+  typeset file timestamp
+  for file in "${all_encrypted[@]}"; do
+    timestamp=$(basename "$file" | sed 's/gpg-backup-\(.*\)\.tar\.gz\.gpg/\1/')
+    echo "  Backup from ${timestamp}:"
+    [[ -f "${BACKUP_DIR}/gpg-backup-${timestamp}.tar.gz.gpg" ]] && \
+      echo "    - gpg-backup-${timestamp}.tar.gz.gpg"
+    [[ -f "${BACKUP_DIR}/gpg-backup-${timestamp}.tar.gz.gpg.${CHECKSUM_EXT}" ]] && \
+      echo "    - gpg-backup-${timestamp}.tar.gz.gpg.${CHECKSUM_EXT}"
+    [[ -f "${BACKUP_DIR}/gpg-backup-${timestamp}.tar.gz.gpg.${CHECKSUM_EXT}.asc" ]] && \
+      echo "    - gpg-backup-${timestamp}.tar.gz.gpg.${CHECKSUM_EXT}.asc"
+    echo
+  done
+
+  # Warn about SSD limitations
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "${fg[yellow]}Note:${reset_color} On macOS with SSD/APFS, secure deletion may not guarantee data erasure"
+    echo "      due to TRIM and wear-leveling. Consider full disk encryption."
+    echo
+  fi
+
+  echo "Make sure you have uploaded them to a secure location first!"
+  echo -n "Continue with secure deletion of ALL backups? [y/N]: "
+
+  typeset response
+  read response
+
+  if [[ "$response" =~ ^[Yy]$ ]]; then
+    echo
+    _gpg_log INFO "Securely deleting all backup files..."
+
+    typeset deleted=0
+    typeset failed=0
+
+    for file in "${all_encrypted[@]}" "${all_checksums[@]}" "${all_signatures[@]}"; do
+      if [[ -f "$file" ]]; then
+        if _gpg_secure_delete "$file"; then
+          ((deleted++))
+          [[ $VERBOSE -eq 1 ]] && _gpg_log SUCCESS "Deleted: ${file:t}"
+        else
+          ((failed++))
+          _gpg_log ERROR "Failed to delete: ${file:t}"
+        fi
+      fi
+    done
+
+    echo
+    if [[ $failed -eq 0 ]]; then
+      _gpg_log SUCCESS "All files securely deleted (${deleted} files)"
+    else
+      _gpg_log WARN "Deleted ${deleted} files, ${failed} failed"
+    fi
+  else
+    echo
+    _gpg_log INFO "Secure deletion cancelled"
+  fi
+}
+
+# Main function
+gpg-backup() {
+  # Create local option scope with error handling
+  emulate -L zsh
+  setopt PIPE_FAIL WARN_CREATE_GLOBAL NULL_GLOB
+
+  # Load colors in local scope (needed for log output)
+  autoload -Uz colors && colors
+
+  # Ensure restrictive file permissions (no group/other access)
+  umask 077
+
+  # GPG encryption parameters
+  typeset -r GPG_CIPHER="AES256"
+  typeset -r GPG_DIGEST="SHA512"
+  typeset -r GPG_S2K_ITERATIONS=65011712
+  typeset -r GPG_COMPRESS_LEVEL=9
+
+  # File checksum parameters
+  typeset -ri CHECKSUM_ALGO=256
+  typeset -r CHECKSUM_EXT="sha256"
+
+  typeset -ri MIN_FREE_SPACE_MB=100
+
+  # Initialize local variables
+  # Ensure HOME is set before using it
+  if [[ -z "${HOME:-}" ]]; then
+    _gpg_die "HOME environment variable is not set"
+    return 1
+  fi
+  typeset BACKUP_DIR="${BACKUP_DIR:-${GPG_BACKUP_DIR:-${HOME}/Downloads}}"
+  typeset timestamp=$(date +%Y%m%d_%H%M%S)
+  typeset -i DRY_RUN=${DRY_RUN:-0} VERBOSE=${VERBOSE:-0} NO_COMPLEXITY_CHECK=0 SECURE_DELETE=0
+  typeset email fingerprint work_dir passphrase output_base
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -o|--output-dir)
+        [[ -n "${2:-}" ]] || { _gpg_die "-o/--output-dir requires a directory path"; return 1; }
+        [[ -d "$2" ]] || { _gpg_die "Directory does not exist: $2"; return 1; }
+        BACKUP_DIR="$2"
+        shift 2
+        ;;
+      -d|--dry-run)
+        DRY_RUN=1
+        shift
+        ;;
+      -s|--secure-delete)
+        SECURE_DELETE=1
+        shift
+        ;;
+      -n|--no-complexity-check)
+        NO_COMPLEXITY_CHECK=1
+        shift
+        ;;
+      -v|--verbose)
+        VERBOSE=1
+        shift
+        ;;
+      -h|--help)
+        _gpg_show_help
+        return 0
+        ;;
+      *)
+        # Unknown argument
+        _gpg_die "Unknown argument: $1. Use --help for usage."
+        return 1
+        ;;
+    esac
+  done
+
+  # Handle standalone secure delete mode
+  if [[ $SECURE_DELETE -eq 1 ]]; then
+    [[ -d "$BACKUP_DIR" ]] || { _gpg_die "Backup directory not found: $BACKUP_DIR"; return 1; }
+    _gpg_secure_delete_all
+    return $?
+  fi
+
+  [[ -d "$BACKUP_DIR" ]] || { _gpg_die "Backup directory not found: $BACKUP_DIR"; return 1; }
+  [[ -w "$BACKUP_DIR" ]] || { _gpg_die "Backup directory not writable: $BACKUP_DIR"; return 1; }
+
+  # Auto-detect email from git config or prompt
+  email=$(_gpg_get_default_email)
+  [[ -n "$email" ]] || { _gpg_die "Email address is required"; return 1; }
+
+  _gpg_check_deps || return 1
+  _gpg_check_disk_space || return 1
+  fingerprint=$(_gpg_verify_key "$email") || return 1
+
+  echo
+  passphrase=$(_gpg_get_passphrase $NO_COMPLEXITY_CHECK) || return 1
+  echo
+
+  # Create working directory with secure permissions
+  work_dir=$(mktemp -d) || { _gpg_die "Failed to create temporary directory"; return 1; }
+  chmod 700 "$work_dir" || { _gpg_die "Failed to set work_dir permissions"; return 1; }
+
+  # Set trap with force flag to ensure cleanup even if permissions change
+  trap "chmod -R u+rwx '$work_dir' 2>/dev/null; rm -rf '$work_dir'" EXIT INT TERM HUP QUIT
+
+  output_base="${BACKUP_DIR}/gpg-backup-${timestamp}"
+
+  # Check if backup file already exists (prevents accidental overwrite)
+  if [[ -f "${output_base}.tar.gz.gpg" ]]; then
+    _gpg_die "Backup file already exists: ${output_base}.tar.gz.gpg (wait 1 second or use different output dir)"
+    return 1
+  fi
+
+  # Export keys and capture GPG passphrase for later signing
+  typeset gpg_passphrase
+  gpg_passphrase=$(_gpg_export_keys "$email" "$work_dir" "$fingerprint") || return 1
+
+  # Create archive and sign checksum using the GPG passphrase
+  _gpg_create_archive "$work_dir" "$output_base" "$passphrase" "$gpg_passphrase" || return 1
+
+  # Clear GPG passphrase from memory immediately after archive creation
+  gpg_passphrase=""
+
+  _gpg_verify_backup "${output_base}.tar.gz.gpg" "$passphrase" "$email" || return 1
+
+  _gpg_show_summary "$output_base" "$timestamp"
+}
+
+# Execute main function when script is run directly (not sourced)
+if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" ]] || [[ "$0" == "${(%):-%x}" ]]; then
+  gpg-backup "$@"
+fi
