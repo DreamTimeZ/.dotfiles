@@ -8,6 +8,7 @@ This Tmux configuration provides a productive terminal multiplexer setup with pl
 
 - **Custom Prefix Key**: Ctrl+A for easier access
 - **Vim-Style Navigation**: Familiar keybindings for pane navigation
+- **Pane Titles**: Displayed in pane borders with easy renaming
 - **Mouse Support**: Click to select panes, resize, and scroll
 - **Clipboard Integration**: Seamless copying between Tmux and system
 - **Session Management**: Save and restore sessions
@@ -28,6 +29,7 @@ This Tmux configuration provides a productive terminal multiplexer setup with pl
 | `C-a C-h/C-l` | Previous/next window |
 | `C-a Tab` | Last window |
 | `C-a Enter` | Copy mode |
+| `C-a <` | Rename pane |
 | `C-a r` | Reload config |
 | `C-a x` | Kill pane |
 | `C-a ?` | List all keybindings |
