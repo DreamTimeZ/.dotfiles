@@ -22,7 +22,7 @@ exec zsh
 - **🎯 Smart Defaults**: `cd` uses zoxide, `ls` uses eza by default
 - **🔧 Modular Design**: Functions organized in logical modules  
 - **⚡ Fast Startup**: Optimized loading with lazy initialization
-- **🛡️ Non-Breaking**: Modern tools with escape hatches (`oldcd`, `oldls`)
+- **🛡️ Non-Breaking**: Modern tools with escape hatches (`oldls`)
 - **📦 Rich Functions**: 50+ productivity functions included
 
 ## 📁 Structure
@@ -39,10 +39,10 @@ zsh/
 │   │   │   ├── 10-navigation.zsh  # mkcd, dusage, ffind
 │   │   │   ├── 15-network.zsh     # ip-local, sniff, nscan  
 │   │   │   ├── 20-git.zsh         # fbr, fgf (fuzzy git)
-│   │   │   ├── 30-process.zsh     # fp, fh (process mgmt)
+│   │   │   ├── 30-process.zsh     # fpkill, fh (process mgmt)
 │   │   │   ├── 40-python.zsh      # venv, pcheck (quality)
 │   │   │   ├── 50-webserver.zsh   # serve (dev server)
-│   │   │   ├── 60-system.zsh      # update_all (macOS)
+│   │   │   ├── 60-system.zsh      # update (macOS)
 │   │   │   ├── 70-services.zsh    # ollama-* (AI tools)
 │   │   │   └── 80-colorization.zsh # grc setup
 │   │   └── local/            # Your customizations

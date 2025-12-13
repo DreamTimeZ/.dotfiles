@@ -69,15 +69,14 @@ Create files in `modules/local/` for machine-specific configurations:
 # These will be loaded last and can override any previously loaded settings
 ```
 
-## Debug Mode
+## Logging
 
-Enable debug output to troubleshoot configuration:
+Control log verbosity with `ZDOTFILES_LOG_LEVEL` (set in `.zshrc` or `.zprofile`):
 
-```bash
-export ZDOTFILES_DEBUG=1
-```
-
-Then start a new shell or reload with `source ~/.zshrc`.
+- `0` = silent (production)
+- `1` = errors only
+- `2` = warnings
+- `3` = info (default in interactive shells)
 
 ## Common Tasks
 

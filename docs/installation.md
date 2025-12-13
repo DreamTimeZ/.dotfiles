@@ -58,9 +58,6 @@ cd ~/.dotfiles
 4. **Setup Shell Environment**:
 
     ```bash
-    # Clean login
-    ln -sf ~/.dotfiles/shell/.hushlogin ~/.hushlogin
-
     # Tmux session layouts
     mkdir -p ~/.config/tmuxinator && ln -sf ~/.dotfiles/tmuxinator/default.yml ~/.config/tmuxinator/default.yml
     ```
@@ -195,11 +192,13 @@ cd ~/.dotfiles
     # rm -rf ~/.hammerspoon && ln -s ~/.dotfiles/hammerspoon ~/.hammerspoon
     ```
 
-11. **Setup LaunchAgents**:
+11. **Setup LaunchAgents** (optional - add your own plist files first):
 
     ```bash
+    # Add .plist files to ~/.dotfiles/launchagents/ then run:
     mkdir -p ~/Library/LaunchAgents
     for plist in ~/.dotfiles/launchagents/*.plist; do
+      [ -f "$plist" ] || continue
       ln -sf "$plist" ~/Library/LaunchAgents/
       launchctl unload "$plist" 2>/dev/null || true
       launchctl load "$plist"
@@ -233,7 +232,7 @@ The dotfiles manage configuration files for various tools:
 
 - **Shell Integration**: Powerlevel10k prompt theme, FZF fuzzy finder, iTerm2 integration
 - **Development Tools**: tealdeer (tldr), direnv (environment), tmuxinator (sessions)
-- **Shell Management**: Atuin (shell history), Sheldon (plugin management), hushlogin (clean login)
+- **Shell Management**: Atuin (shell history), Sheldon (plugin management)
 - **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
 
 All managed files are symlinked from their respective tool directories in `~/.dotfiles/` to their expected locations.

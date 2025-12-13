@@ -58,7 +58,7 @@ The Zsh configuration uses a highly modular architecture:
 
 ### Tmux Plugin System
 - Uses TPM (Tmux Plugin Manager) for plugin management
-- Plugins stored in `tmux/plugins/tpm/`
+- TPM installed at `~/.tmux/plugins/tpm/` (standard location)
 - Configuration supports session resurrection and auto-restoration
 - Custom key bindings use Ctrl+A prefix instead of default Ctrl+B
 
@@ -71,12 +71,12 @@ The Zsh configuration uses a highly modular architecture:
 ### Hammerspoon Modular System
 - Entry point in `hammerspoon/init.lua`
 - Modular hotkey system in `hammerspoon/modules/hotkeys/`
-- Configuration system with local overrides in `config/local/`
+- Configuration system with local overrides in `modules/hotkeys/config/local/`
 - Separated concerns: validation, logging, modals, actions, UI
 
 ### SSH Configuration
 - Split configuration with `ssh/config` for general settings
-- `ssh/local/config.local` for machine-specific overrides
+- `ssh/local/` for machine-specific overrides
 - Designed for easy deployment across multiple machines
 
 ### Private Repository Integration

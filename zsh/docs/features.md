@@ -7,7 +7,7 @@
 - **Error Handling**: Comprehensive error detection and reporting
 - **Platform Detection**: Automatically adapts to different operating systems
 - **Path Management**: Safe path manipulation without duplications
-- **Debug Mode**: Built-in debug output (set `export ZDOTFILES_DEBUG=1`)
+- **Configurable Logging**: `ZDOTFILES_LOG_LEVEL` controls verbosity (0=silent, 1=error, 2=warn, 3=info)
 
 ## Features by Component
 
@@ -34,7 +34,7 @@
 
 - **Intuitive Bindings**: Carefully selected keyboard shortcuts
 - **FZF Integration**: Fuzzy search for files, history, and more
-- **Command History**: Enhanced history navigation with substring search
+- **Command History**: Enhanced history with Atuin (fuzzy search, sync, filtering)
 - **Completion System**: Advanced tab completion with fuzzy matching
 
 ### Terminal Integration

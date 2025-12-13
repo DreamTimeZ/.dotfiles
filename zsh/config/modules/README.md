@@ -11,10 +11,10 @@ modules/
 │   ├── 10-navigation.zsh   - Navigation functions (mkcd, dusage, ffind, fdir)
 │   ├── 15-network.zsh      - Network functions (ip-local, sniff, nscan)
 │   ├── 20-git.zsh          - Git functions (fbr, fgf - fuzzy git tools)
-│   ├── 30-process.zsh      - Process management (fp, fh - interactive tools)
+│   ├── 30-process.zsh      - Process management (fpkill, fh - interactive tools)
 │   ├── 40-python.zsh       - Python tools (venv, pcheck - quality checker)
 │   ├── 50-webserver.zsh    - Web server (serve - dev server)
-│   ├── 60-system.zsh       - System maintenance (update_all - macOS)
+│   ├── 60-system.zsh       - System maintenance (update - macOS)
 │   ├── 70-services.zsh     - Service management (ollama-* functions)
 │   └── 80-colorization.zsh - Output colorization (grc setup)
 │

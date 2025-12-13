@@ -45,6 +45,8 @@ The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped 
 | Hyper + W | Open Websites Modal | Open frequently used websites |
 | Hyper + D | Open System Modal | Perform system actions |
 | Hyper + S | Open Settings Modal | Quick access to system settings |
+| Hyper + Space | Open Window Modal | Window management (resize, move, etc.) |
+| Hyper + M | Open Macros Modal | Automation macros |
 | Hyper + Return | Open iTerm2 | Directly launch or focus terminal |
 
 ### App Shortcuts (Hyper+A, then...)

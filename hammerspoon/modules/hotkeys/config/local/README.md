@@ -70,7 +70,7 @@ If you don't have local mapping files, the following default mappings will be us
 | n   | `https://www.netflix.com` | Netflix |
 | r   | `https://www.reddit.com` | Reddit |
 | s   | `https://www.stackoverflow.com` | Stack Overflow |
-| w   | `https://www.wikipedia.orm` | Wikipedia |
+| w   | `https://www.wikipedia.org` | Wikipedia |
 | y   | `https://www.youtube.com` | YouTube |
 
 ### Default System Settings Mappings (in config.lua)

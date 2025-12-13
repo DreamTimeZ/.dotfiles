@@ -26,7 +26,7 @@ Get API keys from:
 ## Commands
 
 ```zsh
-api_keys_status           # Check stored keys
-api_key_remove openai     # Remove specific key
-./bin/api-keys-setup      # Update/add keys
+./bin/api-keys-setup --status        # Check stored keys
+./bin/api-keys-setup --remove openai # Remove specific key
+./bin/api-keys-setup                 # Interactive setup
 ```
