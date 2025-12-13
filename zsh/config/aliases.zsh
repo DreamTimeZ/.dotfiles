@@ -42,6 +42,7 @@ if zdotfiles_has_command git; then
     alias gpsf='git push --force-with-lease'
     
     # Logs and history
+    alias gl='git log'
     alias glo='git log --oneline --decorate'
     alias glg='git log --oneline --graph --decorate --all'
     alias ghist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
@@ -109,9 +110,9 @@ if zdotfiles_has_command tmux; then
     alias tkill='tmux kill-session -t'
 
     # Dev session shortcuts (see: dev -h)
-    alias devc='dev -c claude'       # 2 panes + claude
-    alias dev4='dev -l 4'            # 4 panes
-    alias dev4c='dev -l 4 -c claude' # 4 panes + claude
+    alias devc='dev --cmd claude'
+    alias dev4='dev 2x2'
+    alias dev4c='dev 2x2 --cmd claude'
 fi
 
 # ===============================
