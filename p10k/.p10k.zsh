@@ -142,7 +142,6 @@
   typeset -g POWERLEVEL9K_VCS_CONFLICTED_FOREGROUND=$deep_orange
   typeset -g POWERLEVEL9K_VCS_AHEAD_FOREGROUND=$soft_purple
   typeset -g POWERLEVEL9K_VCS_BEHIND_FOREGROUND=$soft_purple
-  typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND=$soft_red
   typeset -g POWERLEVEL9K_PROMPT_CHAR_FOREGROUND=$soft_red
   typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND=$warm_yellow
   # Don't show remote branch, current tag or stashes.

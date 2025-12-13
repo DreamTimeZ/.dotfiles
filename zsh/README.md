@@ -23,7 +23,7 @@ exec zsh
 - **🔧 Modular Design**: Functions organized in logical modules  
 - **⚡ Fast Startup**: Optimized loading with lazy initialization
 - **🛡️ Non-Breaking**: Modern tools with escape hatches (`oldls`)
-- **📦 Rich Functions**: 50+ productivity functions included
+- **📦 Rich Utilities**: Productivity functions and aliases included
 
 ## 📁 Structure
 

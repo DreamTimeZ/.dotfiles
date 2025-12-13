@@ -43,10 +43,7 @@ cd ~/.dotfiles
     ```bash
     # Powerlevel10k prompt theme
     ln -sf ~/.dotfiles/p10k/.p10k.zsh ~/.p10k.zsh
-    
-    # FZF fuzzy finder
-    ln -sf ~/.dotfiles/fzf/.fzf.zsh ~/.fzf.zsh
-    
+
     # iTerm2 shell integration
     ln -sf ~/.dotfiles/iterm2/.iterm2_shell_integration.zsh ~/.iterm2_shell_integration.zsh
     
@@ -230,7 +227,7 @@ The configuration supports local overrides and secure handling of sensitive data
 
 The dotfiles manage configuration files for various tools:
 
-- **Shell Integration**: Powerlevel10k prompt theme, FZF fuzzy finder, iTerm2 integration
+- **Shell Integration**: Powerlevel10k prompt theme, iTerm2 integration
 - **Development Tools**: tealdeer (tldr), direnv (environment), tmuxinator (sessions)
 - **Shell Management**: Atuin (shell history), Sheldon (plugin management)
 - **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
