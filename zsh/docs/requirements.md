@@ -40,7 +40,7 @@ curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
   | bash -s -- --repo rossmacarthur/sheldon --to ~/.local/bin
 
 # Install recommended tools
-sudo apt-get install -y exa direnv
+sudo apt-get install -y eza direnv
 pip3 install thefuck
 
 # Make zsh your default shell

@@ -10,7 +10,7 @@ The dotfiles use a clean, organized path structure with two repositories:
 ├── docs/            # Documentation
 ├── git/             # Git configuration
 ├── hammerspoon/     # Hammerspoon configuration
-│   └── hammerspoon.md  # Hammerspoon documentation
+│   └── README.md       # Hammerspoon documentation
 ├── launchagents/    # LaunchAgent plists
 │   └── launchagents.md # LaunchAgents documentation
 ├── nvim/            # Neovim configuration
@@ -21,10 +21,6 @@ The dotfiles use a clean, organized path structure with two repositories:
 ├── zsh/             # Zsh configuration
 │   └── README.md    # Zsh documentation
 ├── install.sh       # Installation script
-├── installation.md  # Installation guide
-├── iterm2.md        # iTerm2 configuration
-├── shell.md         # Shell configuration guide
-├── structure.md     # This file
 └── README.md        # Main documentation
 
 ~/.dotfiles-private/ # Private repository (source of truth for local files)

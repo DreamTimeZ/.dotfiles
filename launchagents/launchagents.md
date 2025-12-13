@@ -13,12 +13,13 @@ LaunchAgents in macOS are used to automate tasks and services that run on user l
 
 ## Installation
 
+First, add your `.plist` files to this directory, then run:
+
 ```bash
-# Create LaunchAgents directory if it doesn't exist
 mkdir -p ~/Library/LaunchAgents
 
-# Link each plist file and load it
 for plist in ~/.dotfiles/launchagents/*.plist; do
+  [ -f "$plist" ] || continue
   ln -sf "$plist" ~/Library/LaunchAgents/
   launchctl unload "$plist" 2>/dev/null || true
   launchctl load "$plist"

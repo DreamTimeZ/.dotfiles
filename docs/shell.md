@@ -40,7 +40,7 @@ ln -sf ~/.dotfiles/zsh/sheldon/plugins.toml ~/.config/sheldon/plugins.toml
 sheldon lock --update
 
 # iTerm2 shell integration (optional)
-curl -L https://iterm2.com/shell_integration/zsh -o ~/.iterm2_shell_integration.zsh
+ln -sf ~/.dotfiles/iterm2/.iterm2_shell_integration.zsh ~/.iterm2_shell_integration.zsh
 ```
 
 ## Security

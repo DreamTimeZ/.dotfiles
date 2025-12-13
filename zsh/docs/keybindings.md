@@ -13,8 +13,8 @@
 | `Ctrl+B`  | Move backward one char               |
 | `Ctrl+F`  | Move forward one char                |
 | `Ctrl+U`  | Kill whole line                      |
-| `Ctrl+K`  | `history-substring-search-up` ✅ (custom) |
-| `Ctrl+J`  | `history-substring-search-down` ✅ (custom) |
+| `Ctrl+K`  | Kill to end of line                  |
+| `Ctrl+J`  | Accept line (Enter)                  |
 | `Ctrl+W`  | Backward kill word                   |
 | `Ctrl+H`  | Backward delete char                 |
 | `Ctrl+D`  | Delete char or list completions      |
@@ -28,9 +28,11 @@
 
 ## 🔄 History Navigation
 
+> **Note:** History search is handled by Atuin. Press `Ctrl+R` to open interactive history.
+
 | Key         | Function                             |
 |-------------|--------------------------------------|
-| `Ctrl+R`    | `fzf-history-widget` ✅ (custom)     |
+| `Ctrl+R`    | Atuin history search                 |
 | `Ctrl+S`    | History incremental search forward   |
 | `ESC + p`   | History search backward              |
 | `ESC + n`   | History search forward               |

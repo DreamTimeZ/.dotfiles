@@ -29,7 +29,7 @@ This document outlines the recommended iTerm2 settings for optimal terminal usag
 
 #### Colors
 
-See [Color Presets](../terminal/color-presets.md) for recommended color schemes.
+Use your preferred color scheme (e.g., Solarized, Dracula, Nord).
 
 #### Key Mappings
 
@@ -44,7 +44,7 @@ See [Color Presets](../terminal/color-presets.md) for recommended color schemes.
 #### Window (Hotkey)
 
 - Text → Font: MesloLGS NF
-- Colors: See [Color Presets](../terminal/color-presets.md)
+- Colors: Use your preferred color scheme
 - Keys → Key Mappings → Presets: "Natural Text Editing"
 
 #### Terminal

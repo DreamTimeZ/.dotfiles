@@ -23,7 +23,7 @@ A carefully curated collection of dotfiles optimized for:
 - **Modern Shell**:
   - Modular Zsh configuration with isolated components
   - Powerlevel10k for a beautiful, informative prompt
-  - Syntax highlighting, auto-suggestions, and history substring search
+  - Syntax highlighting, auto-suggestions, and Atuin shell history
   - FZF integration for fuzzy file finding and history search
   - Sheldon for fast, declarative plugin management
 
