@@ -99,6 +99,11 @@ if zdotfiles_has_command tmux; then
     alias t='tmux-default'
     alias tls='tmux list-sessions'
     alias tkill='tmux kill-session -t'
+
+    # Dev session shortcuts (see: dev -h)
+    alias devc='dev -c claude'       # 2 panes + claude
+    alias dev4='dev -l 4'            # 4 panes
+    alias dev4c='dev -l 4 -c claude' # 4 panes + claude
 fi
 
 # ===============================
