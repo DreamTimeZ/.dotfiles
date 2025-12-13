@@ -1,6 +1,7 @@
 # Custom
 tmux/sessions
 **/*.bak
+**/*.log
 **/TODO.md
 
 .claude/

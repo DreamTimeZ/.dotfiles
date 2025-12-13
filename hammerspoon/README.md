@@ -14,11 +14,11 @@ hammerspoon/
 ├── modules/               
 │   └── hotkeys/           # Hotkeys module
 │       ├── config/        # Configuration files
+│       │   └── local/     # User customizations
 │       ├── core/          # Core functionality
 │       ├── modals/        # Modal implementations
 │       ├── ui/            # UI components
 │       ├── utils/         # Utility functions
-│       ├── local/         # User customizations
 │       └── init.lua       # Module entry point
 └── Spoons/                # Hammerspoon Spoons (plugins)
 ```
@@ -134,9 +134,9 @@ Items appear in alphabetical order in the modal:
 All hotkey mappings can be customized in the following locations:
 
 - Global configuration: `~/.hammerspoon/modules/hotkeys/config/config.lua`
-- Local (user-specific) mappings: `~/.hammerspoon/modules/hotkeys/local/*.lua`
+- Local (user-specific) mappings: `~/.hammerspoon/modules/hotkeys/config/local/*.lua`
 
-See the README in the `modules/hotkeys/local` directory for detailed customization instructions.
+See the README in the `modules/hotkeys/config/local` directory for detailed customization instructions.
 
 ## Advanced Usage
 

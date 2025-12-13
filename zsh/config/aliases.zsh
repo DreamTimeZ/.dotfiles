@@ -113,6 +113,15 @@ if zdotfiles_has_command tmux; then
     alias devc='dev --cmd claude'
     alias dev4='dev 2x2'
     alias dev4c='dev 2x2 --cmd claude'
+
+    # Cheatsheet (glow → bat → less)
+    tmux-help() {
+        local file="$HOME/.dotfiles/tmux/CHEATSHEET.md"
+        if (( ${+commands[glow]} )); then glow "$file"
+        elif (( ${+commands[bat]} )); then bat "$file"
+        else ${PAGER:-less} "$file"; fi
+    }
+    alias tsh='tmux-help'
 fi
 
 # ===============================
