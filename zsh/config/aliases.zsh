@@ -11,7 +11,8 @@ alias sudo=' sudo'  # Leading space triggers HIST_IGNORE_SPACE
 if zdotfiles_has_command git; then
     # Status and staging
     alias gs='git status'
-    alias ga='git add . && git status'
+    alias ga='git add'
+    alias gaa='git add -A && git status'
     alias gst='git stash'
     alias gstp='git stash pop'
     alias grmc='git rm --cached'
@@ -41,20 +42,27 @@ if zdotfiles_has_command git; then
     alias gpsf='git push --force-with-lease'
     
     # Logs and history
-    alias gl='git log --oneline --decorate'
+    alias glo='git log --oneline --decorate'
     alias glg='git log --oneline --graph --decorate --all'
     alias ghist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
     alias glast='git log -1 HEAD'
+    alias gsh='git show'
     
     # Diffs and changes
     alias gdf='git diff'
     alias gdc='git diff --cached'
+    alias gds='git diff --staged'  # Alias for gdc (modern naming)
+    alias gr='git restore'
     alias grs='git restore .'
     alias grss='git restore --staged .'
-    
+
     # Advanced operations
+    alias gm='git merge'
+    alias gcp='git cherry-pick'
     alias grb='git rebase'
     alias grbi='git rebase -i'
+    alias grbc='git rebase --continue'
+    alias grba='git rebase --abort'
     alias gfa='git fetch --all --prune'
     
     # Tags
@@ -300,11 +308,14 @@ alias env-grep='env | grep -i'
 
 # Process management
 alias psg='ps aux | grep -v grep | grep'
-alias ports-listening='lsof -i -P -n | grep LISTEN'
 
 # Disk usage helpers
 alias ducks='du -cks * | sort -rn | head'
-alias biggest='find . -type f -print0 2>/dev/null | xargs -0 stat -f "%z %N" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
+if zdotfiles_is_macos; then
+    alias biggest='find . -type f -print0 2>/dev/null | xargs -0 stat -f "%z %N" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
+else
+    alias biggest='find . -type f -printf "%s %p\n" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
+fi
 
 # ===============================
 # OVERRIDE FUNCTIONS
