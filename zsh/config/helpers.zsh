@@ -86,21 +86,28 @@ zdotfiles_has_command() {
 
 # Detect operating system platform - with caching
 # Usage: platform=$(zdotfiles_detect_platform)
-# Returns: String with platform name (macos, linux, bsd, windows, unknown)
+# Returns: String with platform name (macos, linux, wsl, bsd, windows, unknown)
 zdotfiles_detect_platform() {
   # Use cached value if available
   [[ -n "$ZDOTFILES_PLATFORM" ]] && echo "$ZDOTFILES_PLATFORM" && return 0
-  
+
   # Detect platform and cache it
   local platform
   case "$OSTYPE" in
     darwin*)  platform="macos" ;;
-    linux*)   platform="linux" ;;
+    linux*)
+      # Distinguish WSL from native Linux
+      if [[ -n "$WSL_DISTRO_NAME" || -n "$WSL_INTEROP" ]]; then
+        platform="wsl"
+      else
+        platform="linux"
+      fi
+      ;;
     bsd*)     platform="bsd" ;;
     msys*|cygwin*)  platform="windows" ;;
     *)        platform="unknown" ;;
   esac
-  
+
   # Cache the result
   ZDOTFILES_PLATFORM="$platform"
   echo "$platform"
@@ -122,6 +129,15 @@ zdotfiles_is_macos() {
 zdotfiles_is_linux() {
   [[ -z "$ZDOTFILES_PLATFORM" ]] && zdotfiles_detect_platform >/dev/null
   [[ "$ZDOTFILES_PLATFORM" == "linux" ]]
+  return $?
+}
+
+# Check if running on WSL (Windows Subsystem for Linux)
+# Usage: if zdotfiles_is_wsl; then ...; fi
+# Returns: 0 if on WSL, 1 otherwise
+zdotfiles_is_wsl() {
+  [[ -z "$ZDOTFILES_PLATFORM" ]] && zdotfiles_detect_platform >/dev/null
+  [[ "$ZDOTFILES_PLATFORM" == "wsl" ]]
   return $?
 }
 
@@ -161,6 +177,7 @@ zdotfiles_lazy_load() {
     zdotfiles_detect_platform
     zdotfiles_is_macos
     zdotfiles_is_linux
+    zdotfiles_is_wsl
     zdotfiles_lazy_load
   )
   
