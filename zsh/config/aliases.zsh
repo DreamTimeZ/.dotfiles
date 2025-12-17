@@ -306,6 +306,25 @@ if zdotfiles_has_command bandwhich; then
 fi
 
 # ===============================
+# AI TOOLS
+# ===============================
+if zdotfiles_has_command fabric-ai; then
+    alias fa='fabric-ai'
+
+    # fabric-ai with glow rendering
+    fag() {
+        if (( ${+commands[glow]} )); then
+            fabric-ai "$@" | glow
+        else
+            fabric-ai "$@"
+        fi
+    }
+
+    # fabric-ai with clipboard output
+    fac() { fabric-ai "$@" | pbcopy; }
+fi
+
+# ===============================
 # SYSTEM AND UTILITY
 # ===============================
 # his='history' - removed, conflicts with atuin
