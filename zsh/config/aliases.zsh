@@ -161,6 +161,17 @@ if zdotfiles_has_command eza; then
     
     # Escape hatch for original ls
     alias oldls='command ls'
+else
+    # Fallback: standard ls with color support
+    if zdotfiles_is_macos; then
+        alias ls='ls -G'                    # BSD ls uses -G
+        alias ll='ls -lAG'
+        alias la='ls -AG'
+    else
+        alias ls='ls --color=auto'          # GNU ls (Linux + WSL)
+        alias ll='ls -lA --color=auto'
+        alias la='ls -A --color=auto'
+    fi
 fi
 
 # Core utilities - keeping standard behavior for predictable output
