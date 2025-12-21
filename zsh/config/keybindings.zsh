@@ -1,51 +1,33 @@
-# bindkey -l to list all keybindings; -e to use emacs keybindings
+# Emacs mode keybindings (use bindkey -l to list all available keymaps)
 bindkey -e
 
-# WSL-specific key bindings for Ctrl + Arrow keys and word deletion
-if [[ "$(uname -r)" == *microsoft* ]] || [[ "$(uname -r)" == *WSL* ]]; then
-    # Ensure plain arrows move by character (standard behavior)
-    bindkey '^[[C' forward-char         # Right arrow
-    bindkey '^[[D' backward-char        # Left arrow
+# Word navigation: Ctrl/Alt + Arrow
+bindkey '^[[1;5C' forward-word        # Ctrl+Right
+bindkey '^[[1;5D' backward-word       # Ctrl+Left
+bindkey '^[[1;3C' forward-word        # Alt+Right
+bindkey '^[[1;3D' backward-word       # Alt+Left
 
-    # Word navigation with Ctrl modifier (Windows Terminal / WSL)
-    bindkey '^[[1;5C' forward-word      # Ctrl + Right
-    bindkey '^[[1;5D' backward-word     # Ctrl + Left
+# Word deletion: forward
+bindkey '^[[3;5~' kill-word           # Ctrl+Delete
+bindkey '^[[3;3~' kill-word           # Alt+Delete
 
-    # Word deletion
-    bindkey '^[[3;5~' kill-word         # Ctrl + Delete (forward delete word)
-fi
+# Word deletion: backward
+bindkey '^H' backward-kill-word       # Ctrl+Backspace
+bindkey '^[^?' backward-kill-word     # Alt+Backspace
+bindkey '^[[127;5u' backward-kill-word  # Ctrl+Backspace (kitty)
+bindkey '^[[127;3u' backward-kill-word  # Alt+Backspace (kitty)
 
-# Custom widget: Delete line to left of cursor (Cmd + Delete)
-backward-kill-to-beginning-of-line() {
-  zle set-mark-command       # Mark at current cursor position
-  zle beginning-of-line      # Move to start of line
-  zle kill-region            # Kill everything from start to original position
-}
-zle -N backward-kill-to-beginning-of-line
-bindkey '\e[79~' backward-kill-to-beginning-of-line
+# macOS/iTerm2 specific
+bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete (Cursor IDE)
+bindkey '^[[99~' kill-line            # Fn+Cmd+Delete (iTerm2)
 
-# iTerm2/Cursor fallback bindings
-bindkey '^[[3~' delete-char             # Fn+Delete fallback
-bindkey '^[[3;9~' kill-line             # Fn+Cmd+Delete (iterm in Cursor)
-bindkey '^[[99~' kill-line              # iTerm2: Fn + Cmd + Delete
-
-# Atuin replaces history substring search
-
-# Only define keybindings function if documentation file exists
+# Display keybindings documentation
 if [[ -f "${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md" ]]; then
-    # Function to display keybindings using best available viewer
     kb() {
-        local keybindings_file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
-        
-        # Use best available markdown viewer
-        if zdotfiles_has_command glow; then
-            glow "$keybindings_file"
-        elif zdotfiles_has_command bat; then
-            bat --style=plain --language=markdown "$keybindings_file"
-        elif zdotfiles_has_command less && less -V 2>/dev/null | grep -q "color"; then
-            less -R "$keybindings_file"
-        else
-            cat "$keybindings_file"
+        local file="${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md"
+        if zdotfiles_has_command glow; then glow "$file"
+        elif zdotfiles_has_command bat; then bat --style=plain --language=markdown "$file"
+        else less "$file"
         fi
     }
 fi
