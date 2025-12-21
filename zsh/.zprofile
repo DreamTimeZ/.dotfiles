@@ -23,6 +23,10 @@ fi
 [[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
 [[ -d "/snap/bin" ]] && zdotfiles_path_prepend "/snap/bin"
 
+# JetBrains Toolbox CLI scripts (idea, pycharm, webstorm, etc.)
+[[ -d "$HOME/.local/share/JetBrains/Toolbox/scripts" ]] && zdotfiles_path_prepend "$HOME/.local/share/JetBrains/Toolbox/scripts"
+[[ -d "$HOME/Library/Application Support/JetBrains/Toolbox/scripts" ]] && zdotfiles_path_prepend "$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
+
 # PNPM (Node.js package manager) - Platform-aware
 if [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
   if [[ "$OSTYPE" == "darwin"* ]]; then
