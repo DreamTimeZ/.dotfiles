@@ -47,6 +47,11 @@ setopt INTERACTIVE_COMMENTS   # Allow comments in interactive shell (improves us
 unsetopt BEEP                 # Disable audio bell in zsh
 # iTerm2: Prefs > Profiles > Terminal > Notifications > Visual Bell
 
+# ----- Homebrew Configuration -----
+# Disable analytics - Homebrew collects anonymous usage data by default
+# See: https://docs.brew.sh/Analytics
+export HOMEBREW_NO_ANALYTICS=1
+
 # Glob handling - NULL_GLOB is safer than NO_NOMATCH
 setopt NULL_GLOB              # Remove non-matching patterns instead of erroring or keeping them literal
 setopt NO_CASE_GLOB           # Enable case-insensitive globbing

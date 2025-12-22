@@ -28,22 +28,24 @@ fi
 [[ -d "$HOME/Library/Application Support/JetBrains/Toolbox/scripts" ]] && zdotfiles_path_prepend "$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
 
 # PNPM (Node.js package manager) - Platform-aware
-if [[ -d "$HOME/.local/share/pnpm" ]] || [[ -d "$HOME/Library/pnpm" ]]; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    export PNPM_HOME="$HOME/Library/pnpm"
-  else
-    export PNPM_HOME="$HOME/.local/share/pnpm"
-  fi
-  [[ -d "$PNPM_HOME" ]] && zdotfiles_path_prepend "$PNPM_HOME"
+# Always export PNPM_HOME and ensure directory exists for seamless first use
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export PNPM_HOME="$HOME/Library/pnpm"
+else
+  export PNPM_HOME="$HOME/.local/share/pnpm"
 fi
+[[ -d "$PNPM_HOME" ]] || mkdir -p "$PNPM_HOME"
+zdotfiles_path_prepend "$PNPM_HOME"
 
 # Pyenv (Python version manager)
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d "$PYENV_ROOT/bin" ]] && zdotfiles_path_prepend "$PYENV_ROOT/bin"
 
 # NVM (Node version manager) - Add default node to PATH
-if [[ -d "$HOME/.nvm/versions/node" ]]; then
-  export NVM_DIR="$HOME/.nvm"
+# Check multiple possible NVM locations (user install, Homebrew Linux, Homebrew macOS)
+for _nvm_dir in "$HOME/.nvm" "/home/linuxbrew/.linuxbrew/opt/nvm" "/opt/homebrew/opt/nvm" "/usr/local/opt/nvm"; do
+  [[ -d "$_nvm_dir/versions/node" ]] || continue
+  export NVM_DIR="$_nvm_dir"
 
   _node_version=""
   # Try to resolve default alias (handles 2-level nesting: default -> lts/* -> lts/krypton)
@@ -69,7 +71,9 @@ if [[ -d "$HOME/.nvm/versions/node" ]]; then
   fi
 
   unset _node_version _alias _versions _node_bin
-fi
+  break  # Found a valid NVM installation, stop searching
+done
+unset _nvm_dir
 
 # ------ Environment Variables ------
 export EDITOR="${EDITOR:-nvim}"
