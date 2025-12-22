@@ -10,6 +10,7 @@ _init_nvm() {
   local nvm_script
   for nvm_script in \
     "$NVM_DIR/nvm.sh" \
+    "/home/linuxbrew/.linuxbrew/opt/nvm/nvm.sh" \
     "/opt/homebrew/opt/nvm/nvm.sh" \
     "/usr/local/opt/nvm/nvm.sh"
   do
