@@ -8,13 +8,14 @@ alias sudo=' sudo'  # Leading space triggers HIST_IGNORE_SPACE
 # ===============================
 # VERSION CONTROL (Git)
 # ===============================
+# Aliases follow oh-my-zsh naming conventions
 if zdotfiles_has_command git; then
     # Status and staging
     alias gs='git status'
     alias ga='git add'
-    alias gap='git add -p'
+    alias gapa='git add --patch'
     alias gaa='git add -A && git status'
-    alias gst='git stash'
+    alias gsta='git stash push'
     alias gstp='git stash pop'
     alias grmc='git rm --cached'
     
@@ -33,7 +34,7 @@ if zdotfiles_has_command git; then
     
     # Commits
     alias gc='git commit'
-    alias gcm='git commit -m'
+    alias gcmsg='git commit -m'
     alias gca='git commit --amend'
     alias gundo='git reset --soft HEAD~1'
     
@@ -43,7 +44,7 @@ if zdotfiles_has_command git; then
     alias gpsf='git push --force-with-lease'
     
     # Logs and history
-    alias gl='git log'
+    alias glog='git log'
     alias glo='git log --oneline --decorate'
     alias glg='git log --oneline --graph --decorate --all'
     alias ghist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
@@ -55,8 +56,7 @@ if zdotfiles_has_command git; then
     alias gds='git diff --staged'
     alias gdh='git diff HEAD'
     alias gr='git restore'
-    alias grs='git restore .'
-    alias grss='git restore --staged .'
+    alias grs='git restore --staged'
 
     # Advanced operations
     alias gm='git merge'
@@ -110,14 +110,17 @@ if zdotfiles_has_command tmux; then
     alias tls='tmux list-sessions'
     alias tkill='tmux kill-session -t'
 
-    # Dev session shortcuts (see: dev -h)
-    alias devc='dev --cmd claude'
-    alias dev4='dev 2x2'
-    alias dev4c='dev 2x2 --cmd claude'
+    # Dev session shortcuts (requires 'dev' script)
+    if zdotfiles_has_command dev; then
+        alias devc='dev --cmd claude'
+        alias dev4='dev 2x2'
+        alias dev4c='dev 2x2 --cmd claude'
+    fi
 
     # Cheatsheet (glow → bat → less)
     tmux-help() {
-        local file="$HOME/.dotfiles/tmux/CHEATSHEET.md"
+        local file="${ZDOTFILES_DIR:-$HOME/.dotfiles}/tmux/CHEATSHEET.md"
+        [[ -f "$file" ]] || { print -u2 "Cheatsheet not found: $file"; return 1; }
         if (( ${+commands[glow]} )); then glow "$file"
         elif (( ${+commands[bat]} )); then bat "$file"
         else ${PAGER:-less} "$file"; fi
@@ -149,29 +152,34 @@ if zdotfiles_has_command zoxide; then
     fi
 fi
 
-# Enhanced file listing - enabled by default (mostly non-breaking)
+# Enhanced file listing - pipe-safe, industry standard
+# Uses --color=auto for pipe compatibility (vs --color=always)
 if zdotfiles_has_command eza; then
-    alias l='eza -l --icons=auto'
     alias ls='eza --color=auto --group-directories-first'
-    alias ll='eza -la --color=always --sort=name --group-directories-first --icons'
-    alias la='eza -a --color=always --sort=name --group-directories-first --icons'
-    alias lh='eza -l --color=always --sort=name --icons .* 2>/dev/null'
-    alias ld='eza -lD --icons=auto' # List directories only
-    alias tree='eza --tree --level=2 --icons'
-    alias ltree='eza --tree --level=3 --icons'
-    
-    # Escape hatch for original ls
-    alias oldls='command ls'
+    alias l='eza -l --color=auto --group-directories-first'
+    alias ll='eza -l --color=auto --group-directories-first --icons=auto'
+    alias la='eza -lA --color=auto --group-directories-first --icons=auto'
+    alias ld='eza -lD --color=auto --icons=auto'
+    alias tree='eza --tree --level=2 --color=auto --icons=auto'
+    alias ltree='eza --tree --level=3 --color=auto --icons=auto'
+    # lh: list hidden files only (function required to handle empty case)
+    # - .[^.]*(N) matches hidden files excluding . and ..
+    # - (N) = null glob: no error if no matches
+    # - Function prevents eza from listing all files when no hidden files exist
+    lh() { local f=(.[^.]*(N)); (( ${#f} )) && eza -ld --color=auto --icons=auto "${f[@]}"; }
 else
     # Fallback: standard ls with color support
+    alias l='ls -lh'
     if zdotfiles_is_macos; then
-        alias ls='ls -G'                    # BSD ls uses -G
-        alias ll='ls -lAG'
-        alias la='ls -AG'
+        alias ls='ls -G'
+        alias ll='ls -lhG'
+        alias la='ls -lAhG'
+        lh() { local f=(.[^.]*(N)); (( ${#f} )) && command ls -lhG "${f[@]}"; }
     else
-        alias ls='ls --color=auto'          # GNU ls (Linux + WSL)
-        alias ll='ls -lA --color=auto'
-        alias la='ls -A --color=auto'
+        alias ls='ls --color=auto'
+        alias ll='ls -lh --color=auto'
+        alias la='ls -lAh --color=auto'
+        lh() { local f=(.[^.]*(N)); (( ${#f} )) && command ls -lh --color=auto "${f[@]}"; }
     fi
 fi
 
@@ -186,24 +194,51 @@ alias rmi='rm -Iv'      # Interactive remove - asks before delete
 # ===============================
 # NETWORKING TOOLS
 # ===============================
-# Platform-aware ports listing (fallbacks)
-if zdotfiles_is_macos; then
-    alias ports='lsof -i -P -n | grep LISTEN'
-else
-    alias ports='ss -tuln || netstat -tuln'
-fi
+# Show listening ports - runtime detection with fallbacks
+# Note: macOS lsof and /proc fallback show TCP only; Linux ss/netstat show TCP and UDP
+ports() {
+    if zdotfiles_is_macos; then
+        lsof -i -P -n | grep LISTEN
+    elif (( $+commands[ss] )); then
+        # LISTEN=TCP listening, UNCONN=UDP listening (connectionless)
+        ss -tuln | grep -E 'LISTEN|UNCONN'
+    elif (( $+commands[netstat] )); then
+        netstat -tuln | grep -E 'LISTEN|UNCONN'
+    elif (( $+commands[lsof] )); then
+        lsof -i -P -n | grep LISTEN
+    elif [[ -r /proc/net/tcp ]]; then
+        # Fallback: parse /proc directly (TCP only)
+        print "Proto\tLocal Address"
+        awk 'NR>1 && $4=="0A" {
+            split($2,a,":"); printf "tcp\t0.0.0.0:%d\n", strtonum("0x"a[2])
+        }' /proc/net/tcp | sort -t: -k2 -nu
+    else
+        print -u2 "ports: no supported tool found"
+        return 1
+    fi
+}
 
-# Platform-aware DNS cache flush
-if zdotfiles_is_macos; then
-    alias flushdns='sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder'
-else
-    # Linux/Ubuntu - systemd-resolved
-    alias flushdns='sudo resolvectl flush-caches || sudo systemd-resolve --flush-caches'
-fi
+# Flush DNS cache - runtime detection
+flushdns() {
+    if zdotfiles_is_macos; then
+        sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+    elif (( $+commands[resolvectl] )); then
+        sudo resolvectl flush-caches
+    elif (( $+commands[systemd-resolve] )); then
+        sudo systemd-resolve --flush-caches
+    elif systemctl is-active --quiet nscd 2>/dev/null; then
+        sudo nscd -i hosts
+    elif systemctl is-active --quiet dnsmasq 2>/dev/null; then
+        sudo systemctl restart dnsmasq
+    else
+        print -u2 "flushdns: no supported DNS cache found"
+        return 1
+    fi
+}
 
-# IP address queries
-alias ipv4='curl -s https://ipv4.icanhazip.com'
-alias ipv6='curl -s https://ipv6.icanhazip.com'
+# IP address queries (with timeout to prevent hanging)
+alias ipv4='curl -s --connect-timeout 5 --max-time 10 https://ipv4.icanhazip.com'
+alias ipv6='curl -s --connect-timeout 5 --max-time 10 https://ipv6.icanhazip.com'
 
 # ===============================
 # CONTAINERIZATION (Docker)
@@ -283,9 +318,9 @@ if zdotfiles_has_command poetry; then
     # Testing and code quality
     alias ptest='poetry run pytest'
     alias ptest-cov='poetry run pytest --cov'
-    alias pblack='poetry run black .'
-    alias pisort='poetry run isort .'
-    alias pmypy='poetry run mypy .'
+    alias pblack='poetry run black'
+    alias pisort='poetry run isort'
+    alias pmypy='poetry run mypy'
     alias pflake='poetry run flake8'
     
     # Environment management
@@ -297,7 +332,7 @@ if zdotfiles_has_command poetry; then
     alias pshow='poetry show'
     alias ptree='poetry show --tree'
     alias poutdated='poetry show --outdated'
-    alias poecheck='poetry check'
+    alias pcheck='poetry check'
     
     # Build and publish
     alias pbuild='poetry build'
@@ -308,13 +343,13 @@ fi
 # SECURITY & MONITORING TOOLS
 # ===============================
 if zdotfiles_has_command gitleaks; then
-    alias gls='gitleaks detect --verbose'
-    alias glspre='gitleaks protect --staged --verbose'
+    alias gleak='gitleaks detect --verbose'
+    alias gleaks='gitleaks protect --staged --verbose'
 fi
 
 if zdotfiles_has_command bandwhich; then
-    alias bw='sudo bandwhich'
-    alias bwp='sudo bandwhich --addresses'
+    alias bwi='sudo bandwhich'
+    alias bwia='sudo bandwhich --addresses'
 fi
 
 # ===============================
@@ -333,7 +368,12 @@ if zdotfiles_has_command fabric-ai; then
     }
 
     # fabric-ai with clipboard output
-    fac() { fabric-ai "$@" | pbcopy; }
+    fac() {
+        zdotfiles_has_clipboard || { print -u2 "fac: clipboard not available"; return 1; }
+        local output
+        output=$(fabric-ai "$@") || return 1
+        print -rn -- "$output" | pbcopy
+    }
 fi
 
 # ===============================
@@ -342,21 +382,41 @@ fi
 # his='history' - removed, conflicts with atuin
 alias cls='clear'
 alias reload='exec zsh'              # Restart shell (fresh state)
-alias src='source ~/.zshrc'          # Reload config (preserve state)
-alias '?'='echo $?'
-alias path='echo $PATH | tr ":" "\n"'
+alias src='source "${ZDOTFILES_DIR:-$HOME/.dotfiles}/zsh/.zshrc"'  # Reload config
+alias '?'='print $?'
+alias path='print -l ${(s/:/)PATH}'
 alias env-grep='env | grep -i'
 
 # Process management
 alias psg='ps aux | grep -v grep | grep'
 
 # Disk usage helpers
-alias ducks='du -cks * | sort -rn | head'
-if zdotfiles_is_macos; then
-    alias biggest='find . -type f -print0 2>/dev/null | xargs -0 stat -f "%z %N" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
-else
-    alias biggest='find . -type f -printf "%s %p\n" 2>/dev/null | sort -nr | head -5 | awk '\''{size=$1; $1=""; if(size>=1073741824) printf "%.1fG\t%s\n", size/1073741824, $0; else if(size>=1048576) printf "%.1fM\t%s\n", size/1048576, $0; else if(size>=1024) printf "%.1fK\t%s\n", size/1024, $0; else printf "%dB\t%s\n", size, $0}'\'''
-fi
+# ducks: show directory sizes sorted by size (usage: ducks [count])
+# - ./*(N) matches regular files/dirs, ./.[!.]*(N) matches hidden (excluding . and ..)
+# - (N) = null glob qualifier: no error if pattern matches nothing
+ducks() {
+    du -cks ./*(N) ./.[!.]*(N) 2>/dev/null | sort -rn | head -n "${1:-15}"
+}
+
+# biggest: find largest files in current directory (usage: biggest [count])
+biggest() {
+    local count="${1:-5}"
+    local awk_fmt='{
+        size=$1; $1=""
+        if (size >= 1073741824) printf "%.1fG\t%s\n", size/1073741824, $0
+        else if (size >= 1048576) printf "%.1fM\t%s\n", size/1048576, $0
+        else if (size >= 1024) printf "%.1fK\t%s\n", size/1024, $0
+        else printf "%dB\t%s\n", size, $0
+    }'
+    if zdotfiles_is_macos; then
+        find . -type f -print0 2>/dev/null |
+            xargs -0 stat -f "%z %N" 2>/dev/null |
+            sort -nr | head -n "$count" | awk "$awk_fmt"
+    else
+        find . -type f -printf "%s %p\n" 2>/dev/null |
+            sort -nr | head -n "$count" | awk "$awk_fmt"
+    fi
+}
 
 # ===============================
 # OVERRIDE FUNCTIONS
@@ -366,8 +426,8 @@ fi
 
 use_interactive_file_ops() {
     alias cp='cp -iv'
-    alias mv='mv -iv' 
+    alias mv='mv -iv'
     alias rm='rm -Iv'
-    echo "⚠️  File operations are now interactive by default for the session."
-    echo "💡 Use 'command cp/mv/rm' for original behavior in scripts."
+    print "File operations are now interactive by default for the session."
+    print "Use 'command cp/mv/rm' for original behavior in scripts."
 }

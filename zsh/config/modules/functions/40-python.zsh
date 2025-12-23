@@ -73,11 +73,17 @@ venv() {
     abs_venv_dir="$(absolute_path "$venv_dir")"
 
     # If the deleted venv is currently activated, deactivate it.
+    # Note: deactivate is a shell FUNCTION defined by venv/bin/activate, not a command.
+    # Must use $+functions (not $commands) to detect it.
     if [[ "$VIRTUAL_ENV" = "$abs_venv_dir" ]]; then
-      if [[ -n $commands[deactivate] ]]; then
+      if (( $+functions[deactivate] )); then
+        # Proper deactivation: restores PATH, PS1, PYTHONHOME, calls hash -r
         deactivate
       else
-        unset VIRTUAL_ENV
+        # Fallback: deactivate function unavailable (direnv-managed venv, shell reload, etc.)
+        # Cannot restore PATH - we don't know what it was before activation.
+        # Only safe action is clearing env vars; user may need to restart shell.
+        unset VIRTUAL_ENV VIRTUAL_ENV_PROMPT
       fi
       echo "Deactivated current virtual environment."
     fi
