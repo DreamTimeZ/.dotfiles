@@ -12,6 +12,7 @@ if zdotfiles_has_command git; then
     # Status and staging
     alias gs='git status'
     alias ga='git add'
+    alias gap='git add -p'
     alias gaa='git add -A && git status'
     alias gst='git stash'
     alias gstp='git stash pop'
@@ -50,9 +51,9 @@ if zdotfiles_has_command git; then
     alias gsh='git show'
     
     # Diffs and changes
-    alias gdf='git diff'
-    alias gdc='git diff --cached'
-    alias gds='git diff --staged'  # Alias for gdc (modern naming)
+    alias gd='git diff'
+    alias gds='git diff --staged'
+    alias gdh='git diff HEAD'
     alias gr='git restore'
     alias grs='git restore .'
     alias grss='git restore --staged .'
