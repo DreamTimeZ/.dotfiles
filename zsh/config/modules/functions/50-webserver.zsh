@@ -52,22 +52,22 @@ serve() {
         if [[ -n "$2" ]]; then
           mode=$2; shift 2
         else
-          echo "Missing argument for $1"; return 1
+          print -u2 "Missing argument for $1"; return 1
         fi
         ;;
       -p|--port)
         if [[ -n "$2" ]]; then
           port=$2; shift 2
         else
-          echo "Missing argument for $1"; return 1
+          print -u2 "Missing argument for $1"; return 1
         fi
         ;;
       --)
         shift; extra_opts=("$@"); break
         ;;
       *)
-        echo "Unknown option: $1"
-        echo "Usage: serve [directory] [-m mode] [-p port] [-- extra options]"
+        print -u2 "Unknown option: $1"
+        print -u2 "Usage: serve [directory] [-m mode] [-p port] [-- extra options]"
         return 1
         ;;
     esac
@@ -75,15 +75,15 @@ serve() {
 
   # Validate port and directory.
   if ! [[ "$port" =~ ^[0-9]+$ ]]; then
-    echo "Error: Port must be numeric."; return 1
+    print -u2 "serve: port must be numeric"; return 1
   fi
   if [[ ! -d "$directory" ]]; then
-    echo "Error: Directory '$directory' does not exist."; return 1
+    print -u2 "serve: directory '$directory' does not exist"; return 1
   fi
 
   # Choose mode if set to auto.
   if [[ "$mode" == "auto" ]]; then
-    if [[ -n $commands[nodemon] ]]; then
+    if zdotfiles_has_command nodemon; then
       mode="node"
     else
       mode="python"
@@ -96,31 +96,29 @@ serve() {
   local width=65
   local inner_width=$((width - 2))  # 63 characters.
   local border=$(printf '%*s' "$inner_width" '' | tr ' ' '═')
-  echo -e "\e[1;34m╔${border}╗"
-  # "  Directory: " is 13 characters; field width = 63 - 13 = 50.
+  print -P "%B%F{blue}╔${border}╗%f%b"
   printf "║  Directory: %-50s║\n" "$directory"
-  # "  Mode: " is 8 characters; field width = 63 - 8 = 55.
   printf "║  Mode: %-55s║\n" "$mode"
-  echo -e "╚${border}╝\e[0m"
+  print -P "%B%F{blue}╚${border}╝%f%b"
 
   # Print the URL inline on the same line as "URL:".
-  printf "\e[1;32mURL: \e[0m"
+  print -Pn "%B%F{green}URL: %f%b"
   _print_clickable_url "$url"
-  echo ""
+  print
 
   # Start serving with the chosen method.
   if [[ "$mode" == "node" ]]; then
-    if [[ ! -n $commands[nodemon] ]]; then
-      echo "Error: nodemon is not installed."; return 1
+    if ! zdotfiles_has_command nodemon; then
+      print -u2 "serve: nodemon is not installed"; return 1
     fi
     local cmd=(npx serve "$directory" -l "$port" ${extra_opts[@]})
     nodemon --watch "$directory" -e js,html,css --exec "${cmd[@]}"
   elif [[ "$mode" == "python" ]]; then
-    if [[ ! -n $commands[python3] ]]; then
-      echo "Error: python3 is not installed."; return 1
+    if ! zdotfiles_has_command python3; then
+      print -u2 "serve: python3 is not installed"; return 1
     fi
     python3 -m http.server "$port" --directory "$directory" ${extra_opts[@]} 2>&1 | _format_logs
   else
-    echo "Error: Unknown mode '$mode'. Use 'auto', 'node', or 'python'."; return 1
+    print -u2 "serve: unknown mode '$mode' (use 'auto', 'node', or 'python')"; return 1
   fi
-} 
+}

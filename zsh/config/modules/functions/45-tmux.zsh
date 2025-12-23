@@ -4,7 +4,7 @@
 
 # Start or attach to dev tmux session with configurable pane grid
 dev() {
-  (( $+commands[tmux] )) || { print -u2 "dev: tmux not found"; return 1; }
+  zdotfiles_has_command tmux || { print -u2 "dev: tmux not found"; return 1; }
 
   local session="dev" cmd="" grid=""
   local -i rows=1 cols=2

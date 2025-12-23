@@ -1,6 +1,6 @@
 # ===============================
 # PLUGIN MANAGER: Sheldon
 # ===============================
-if [[ -n $commands[sheldon] ]]; then
+if zdotfiles_has_command sheldon; then
   eval "$(sheldon source 2>/dev/null)"
 fi

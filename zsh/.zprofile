@@ -26,6 +26,14 @@ fi
 # JetBrains Toolbox CLI scripts (idea, pycharm, webstorm, etc.)
 [[ -d "$HOME/.local/share/JetBrains/Toolbox/scripts" ]] && zdotfiles_path_prepend "$HOME/.local/share/JetBrains/Toolbox/scripts"
 [[ -d "$HOME/Library/Application Support/JetBrains/Toolbox/scripts" ]] && zdotfiles_path_prepend "$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
+# WSL: Windows JetBrains Toolbox scripts (detect Windows username dynamically)
+if [[ -d /mnt/c/Users ]]; then
+  # (N) = null glob: no error if pattern matches nothing
+  for _win_user_dir in /mnt/c/Users/*/AppData/Local/JetBrains/Toolbox/scripts(N); do
+    [[ -d "$_win_user_dir" ]] && zdotfiles_path_prepend "$_win_user_dir" && break
+  done
+  unset _win_user_dir
+fi
 
 # PNPM (Node.js package manager) - Platform-aware
 # Always export PNPM_HOME and ensure directory exists for seamless first use

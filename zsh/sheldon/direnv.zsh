@@ -6,7 +6,7 @@
 export DIRENV_LOG_FORMAT=""
 
 # Always initialize direnv during shell startup
-if [[ -n $commands[direnv] ]]; then
+if zdotfiles_has_command direnv; then
   eval "$(direnv hook zsh)"
 else
   # Create a placeholder function that will show error when used

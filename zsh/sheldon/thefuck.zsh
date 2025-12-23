@@ -8,7 +8,7 @@
 # Fix: pipx inject thefuck setuptools (partial) or wait for upstream update
 
 # Disabled by default, only works when explicitly called
-if [[ -n $commands[thefuck] ]]; then
+if zdotfiles_has_command thefuck; then
   _thefuck_init_and_run() {
     # Try to initialize thefuck
     if eval "$(thefuck --alias 2>&1)"; then

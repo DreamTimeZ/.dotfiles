@@ -6,7 +6,7 @@
 export PYENV_ROOT="$HOME/.pyenv"
 
 _init_pyenv() {
-  [[ -n $commands[pyenv] ]] && eval "$(pyenv init - --no-rehash zsh)"
+  zdotfiles_has_command pyenv && eval "$(pyenv init - --no-rehash zsh)"
 }
 
 # Lazy load pyenv
