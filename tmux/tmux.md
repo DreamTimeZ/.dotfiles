@@ -29,6 +29,7 @@ This Tmux configuration provides a productive terminal multiplexer setup with pl
 | `C-a C-h/C-l` | Previous/next window |
 | `C-a Tab` | Last window |
 | `C-a Enter` | Copy mode |
+| `C-a ]` | Paste buffer (bracketed) |
 | `C-a <` | Rename pane |
 | `C-a r` | Reload config |
 | `C-a x` | Kill pane |
