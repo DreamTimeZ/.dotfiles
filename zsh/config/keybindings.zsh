@@ -1,6 +1,9 @@
 # Emacs mode keybindings (use bindkey -l to list all available keymaps)
 bindkey -e
 
+# Redo (not bound by default in zsh; undo is already ^Xu / ^X^U)
+bindkey '^[r' redo                    # Alt+r
+
 # Word navigation: Ctrl/Alt + Arrow
 bindkey '^[[1;5C' forward-word        # Ctrl+Right
 bindkey '^[[1;5D' backward-word       # Ctrl+Left

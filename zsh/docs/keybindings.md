@@ -84,7 +84,8 @@
 | `ESC + w`     | Copy region as kill              |
 | `ESC + y`     | Yank-pop                         |
 | `Ctrl+X Ctrl+K` | Kill buffer                    |
-| `Ctrl+X Ctrl+U` | Undo                          |
+| `Ctrl+X u`      | Undo                           |
+| `Alt+r`         | Redo                           |
 
 ---
 
