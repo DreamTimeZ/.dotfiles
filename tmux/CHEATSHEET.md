@@ -39,6 +39,7 @@ Quick reference for custom tmux bindings. Prefix: `Ctrl+a`
 | Shortcut | Description |
 |----------|-------------|
 | `prefix` `Enter` | Enter copy mode |
+| `prefix` `]` | Paste buffer (bracketed) |
 | `v` | Begin selection |
 | `Ctrl+v` | Rectangle selection toggle |
 | `y` | Copy to system clipboard |

@@ -93,6 +93,7 @@
 
 | Key         | Function                          |
 |-------------|-----------------------------------|
+| `Ctrl+X l`  | Clear screen and scrollback       |
 | `ESC + L`   | Clear screen                      |
 | `ESC + ?`   | Which command                     |
 | `ESC + =`   | What cursor position              |
