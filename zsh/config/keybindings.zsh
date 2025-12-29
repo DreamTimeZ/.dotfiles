@@ -24,6 +24,15 @@ bindkey '^[[127;3u' backward-kill-word  # Alt+Backspace (kitty)
 bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete (Cursor IDE)
 bindkey '^[[99~' kill-line            # Fn+Cmd+Delete (iTerm2)
 
+# Clear screen + scrollback (Ctrl+X l = extended clear)
+_clear_screen_and_scrollback() {
+    [[ -n "$TMUX" ]] && tmux clear-history
+    printf '\e[H\e[2J\e[3J'  # Cursor home + clear screen + clear scrollback
+    zle reset-prompt
+}
+zle -N _clear_screen_and_scrollback
+bindkey '^Xl' _clear_screen_and_scrollback
+
 # Display keybindings documentation
 if [[ -f "${ZDOTDIR:-$HOME}/.dotfiles/zsh/docs/keybindings.md" ]]; then
     kb() {
