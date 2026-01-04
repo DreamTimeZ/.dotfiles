@@ -105,8 +105,8 @@ fi
 # TERMINAL MULTIPLEXER
 # ===============================
 if zdotfiles_has_command tmux; then
-    alias tmux-default='tmux attach-session -t default 2>/dev/null || tmux new-session -s default'
-    alias t='tmux-default'
+    alias t='tmux'
+    alias ta='tmux attach'
     alias tls='tmux list-sessions'
     alias tkill='tmux kill-session -t'
 
