@@ -1,6 +1,6 @@
 # Tmux Cheatsheet
 
-Quick reference for custom tmux bindings. Prefix: `Ctrl+a`
+Quick reference for tmux bindings. Prefix: `Ctrl+a`
 
 ## GENERAL
 
@@ -19,6 +19,7 @@ Quick reference for custom tmux bindings. Prefix: `Ctrl+a`
 | `prefix` `h/j/k/l` | Navigate panes (vim-style) |
 | `prefix` `H/J/K/L` | Resize panes (repeatable) |
 | `prefix` `<` | Rename pane |
+| `prefix` `z` | Toggle pane zoom (fullscreen) |
 | `prefix` `x` | Kill pane |
 | `prefix` `S` | Toggle pane synchronization |
 
@@ -31,6 +32,21 @@ Quick reference for custom tmux bindings. Prefix: `Ctrl+a`
 | `prefix` `Ctrl+l` | Next window (repeatable) |
 | `prefix` `Tab` | Last window |
 | `prefix` `&` | Kill window |
+
+## POPUP SHELLS
+
+| Shortcut | Description |
+|----------|-------------|
+| `prefix` `g` | Quick popup shell (70% × 70%) |
+| `prefix` `G` | Large popup shell (80% × 80%) |
+
+**Tips:**
+
+- Popups float above your layout without disrupting it
+- Dismiss with `Ctrl+D`, `exit`, or `Escape`
+- Opens in current pane's directory
+- Quick (`g`): git status, one-liners, quick lookups
+- Large (`G`): lazygit, htop, extended work
 
 ## COPY MODE (Vi-style)
 
@@ -76,3 +92,5 @@ Quick reference for custom tmux bindings. Prefix: `Ctrl+a`
 - Mouse support is enabled for scrolling and selection
 - Clipboard auto-detects platform (macOS/WSL/X11/Wayland)
 - Sessions auto-save every 10 minutes (tmux-continuum)
+- Config changes require reload: `prefix r` or `tmux source-file ~/.tmux.conf`
+- Tmux server persists across terminal restarts; use `tmux kill-server` for full reset
