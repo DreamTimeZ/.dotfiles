@@ -43,8 +43,9 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 **Tips:**
 
 - Popups float above your layout without disrupting it
-- Dismiss with `Ctrl+D`, `exit`, or `Escape`
+- Dismiss with `Ctrl+D` or `exit` (ephemeral, no state preserved)
 - Opens in current pane's directory
+- No scrollback/copy mode - use tools with built-in scroll (lazygit, htop, less)
 - Quick (`g`): git status, one-liners, quick lookups
 - Large (`G`): lazygit, htop, extended work
 
