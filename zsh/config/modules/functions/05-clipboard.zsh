@@ -10,10 +10,11 @@
 # Check if clipboard is available (native command or cross-platform function)
 # Usage: if zdotfiles_has_clipboard; then ... | pbcopy; fi
 zdotfiles_has_clipboard() {
-    (( ${+commands[pbcopy]} || ${+functions[pbcopy]} ))
+    (( ${+commands[pbcopy]} || ${+functions[pbcopy]} )) && \
+    (( ${+commands[pbpaste]} || ${+functions[pbpaste]} ))
 }
 
-# Skip setup if pbcopy already available (includes macOS with native pbcopy)
+# Skip setup if both pbcopy and pbpaste already available (includes macOS)
 zdotfiles_has_clipboard && return
 
 if zdotfiles_is_wsl; then
