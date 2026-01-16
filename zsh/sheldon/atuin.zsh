@@ -5,7 +5,7 @@
   
   # Setup config symlink if needed
   local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/atuin"
-  local dotfiles_config="$HOME/.dotfiles/zsh/config/atuin/config.toml"
+  local dotfiles_config="${ZDOTFILES_CONFIG_DIR:-$HOME/.dotfiles/zsh/config}/atuin/config.toml"
   
   if [[ -f "$dotfiles_config" && ! -L "$config_dir/config.toml" ]]; then
     mkdir -p "$config_dir"
