@@ -59,7 +59,8 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 | `prefix` `]` | Paste buffer (bracketed) |
 | `v` | Begin selection |
 | `Ctrl+v` | Rectangle selection toggle |
-| `y` | Copy to system clipboard |
+| `y` | Copy to system clipboard (raw) |
+| `Shift+y` | Copy clean (strips 2 leading spaces + trailing whitespace) |
 | `Escape` | Cancel and exit |
 
 ### Navigation in Copy Mode
@@ -95,3 +96,4 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 - Sessions auto-save every 10 minutes (tmux-continuum)
 - Config changes require reload: `prefix r` or `tmux source-file ~/.tmux.conf`
 - Tmux server persists across terminal restarts; use `tmux kill-server` for full reset
+- Use `Shift+y` (clean copy) when copying from Claude Code to remove UI padding; use `y` for code with intentional indentation
