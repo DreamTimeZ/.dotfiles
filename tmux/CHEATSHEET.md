@@ -59,8 +59,8 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 | `prefix` `]` | Paste buffer (bracketed) |
 | `v` | Begin selection |
 | `Ctrl+v` | Rectangle selection toggle |
-| `y` | Copy to system clipboard (raw) |
-| `Shift+y` | Copy clean (strips 2 leading spaces + trailing whitespace) |
+| `y` | Copy to system clipboard (raw, preserves all whitespace) |
+| `Shift+y` | Copy clean (for Claude Code output, see below) |
 | `Escape` | Cancel and exit |
 
 ### Navigation in Copy Mode
@@ -96,4 +96,14 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 - Sessions auto-save every 10 minutes (tmux-continuum)
 - Config changes require reload: `prefix r` or `tmux source-file ~/.tmux.conf`
 - Tmux server persists across terminal restarts; use `tmux kill-server` for full reset
-- Use `Shift+y` (clean copy) when copying from Claude Code to remove UI padding; use `y` for code with intentional indentation
+
+### Clean Copy (`Shift+y`) for Claude Code
+
+Cleans Claude Code output: strips 2-space padding, joins soft-wrapped lines, converts tables to markdown — while preserving lists, code blocks, and paragraph breaks.
+
+| Key | Use Case |
+|-----|----------|
+| `y` | Raw copy — code, logs, exact whitespace |
+| `Shift+y` | Clean copy — prose, docs from Claude Code |
+
+Full documentation: `$ZDOTFILES_DIR/tmux/scripts/clean-copy.pl --help`
