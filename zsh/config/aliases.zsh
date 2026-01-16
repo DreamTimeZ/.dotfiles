@@ -309,12 +309,12 @@ if zdotfiles_has_command poetry; then
     alias pa='poetry add'
     alias padev='poetry add --group dev'
     alias prm='poetry remove'
-    
+
     # Execution
     alias pr='poetry run'
     alias prp='poetry run python'
     alias pshell='poetry shell'
-    
+
     # Testing and code quality
     alias ptest='poetry run pytest'
     alias ptest-cov='poetry run pytest --cov'
@@ -322,21 +322,39 @@ if zdotfiles_has_command poetry; then
     alias pisort='poetry run isort'
     alias pmypy='poetry run mypy'
     alias pflake='poetry run flake8'
-    
+
     # Environment management
     alias penv='poetry env info'
     alias penv-list='poetry env list'
     alias penv-use='poetry env use'
-    
+
     # Package information
     alias pshow='poetry show'
     alias ptree='poetry show --tree'
     alias poutdated='poetry show --outdated'
     alias pcheck='poetry check'
-    
+
     # Build and publish
     alias pbuild='poetry build'
     alias ppublish='poetry publish'
+fi
+
+# ===============================
+# PYTHON PACKAGE MANAGEMENT (uv)
+# ===============================
+if zdotfiles_has_command uv; then
+    # Core commands
+    alias uvr='uv run'
+    alias uvs='uv sync'
+
+    # Dependency management
+    alias uva='uv add'
+    alias uvd='uv add --group dev'
+    alias uvt='uv add --group test'
+    alias uvrm='uv remove'
+
+    # Testing
+    alias pyt='uv run pytest'
 fi
 
 # ===============================
