@@ -54,6 +54,9 @@ update_pnpm() {
     fi
   fi
 
+  # Ensure pnpm shim exists (required after fresh Node install)
+  corepack enable pnpm 2>/dev/null
+
   echo -e "\033[1;32m◆ Updating pnpm via corepack...\033[0m"
   if corepack prepare pnpm@latest --activate; then
     echo "✓ pnpm updated successfully."
