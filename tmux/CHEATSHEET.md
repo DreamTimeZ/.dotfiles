@@ -18,7 +18,8 @@ Quick reference for tmux bindings. Prefix: `Ctrl+a`
 | `prefix` `-` | Split vertically (stacked) |
 | `prefix` `h/j/k/l` | Navigate panes (vim-style) |
 | `prefix` `H/J/K/L` | Resize panes (repeatable) |
-| `prefix` `<` | Rename pane |
+| `prefix` `<` | Set pane name (protected, overrides program titles) |
+| `prefix` `>` | Clear pane name (show program title again) |
 | `prefix` `z` | Toggle pane zoom (fullscreen) |
 | `prefix` `x` | Kill pane |
 | `prefix` `S` | Toggle pane synchronization |
