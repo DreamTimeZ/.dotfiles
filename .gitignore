@@ -4,7 +4,8 @@ tmux/sessions
 **/*.log
 **/TODO.md
 
-.claude/
+.claude/*
+!.claude/settings.json
 *.local
 .vscode
 .cursor/
