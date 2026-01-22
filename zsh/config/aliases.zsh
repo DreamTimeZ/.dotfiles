@@ -394,6 +394,15 @@ if zdotfiles_has_command fabric-ai; then
     }
 fi
 
+if zdotfiles_has_command claude; then
+    claudeh() { claude --model haiku "$@"; }
+    claudes() { claude --model sonnet "$@"; }
+    claudeo() { claude --model opus "$@"; }
+    claudew() { claude --allowedTools "WebFetch,WebSearch" "$@"; }
+    claudef() { claude --allowedTools "Glob,Grep,Read" "$@"; }
+    claudet() { claude --allowedTools "Edit,Write,Bash,WebFetch,WebSearch" "$@"; }
+fi
+
 # ===============================
 # SYSTEM AND UTILITY
 # ===============================
