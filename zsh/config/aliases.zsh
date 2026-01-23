@@ -77,6 +77,11 @@ if zdotfiles_has_command lazygit; then
     alias lg='lazygit'
 fi
 
+# WSL: Git for Windows (faster on /mnt/c paths due to native NTFS access)
+if zdotfiles_is_wsl && [[ -x "/mnt/c/Program Files/Git/bin/git.exe" ]]; then
+    alias gitw='/mnt/c/Program\ Files/Git/bin/git.exe'
+fi
+
 # ===============================
 # EDITOR AND DEVELOPMENT TOOLS
 # ===============================
