@@ -55,8 +55,8 @@ zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/functions"
 # 2. Load any future module types (example: lib)
 # zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/lib" "library"
 
-# 3. Use local module overrides if they exist
-zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/local"
+# NOTE: Local overrides are loaded by local.zsh (after aliases.zsh)
+# to ensure they can override keybindings and aliases, not just functions.
 
 # Don't expose loader internals
 unset -f zdotfiles_load_dir zdotfiles_validate_dir 

@@ -34,6 +34,7 @@ _CONFIG_FILES=(
   "modules.zsh"     # Modular function and plugin system
   "keybindings.zsh" # Custom key bindings (after plugins)
   "aliases.zsh"     # Command aliases
+  "local.zsh"       # Local overrides (loaded last, can override anything)
 )
 
 # Load each config file silently (logging would break p10k instant prompt)

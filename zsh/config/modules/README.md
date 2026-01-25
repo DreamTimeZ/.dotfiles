@@ -63,7 +63,7 @@ The module will be automatically loaded in the right order - no need to modify a
 If you need user-specific configurations that shouldn't be committed to the repository:
 
 1. Create a `.zsh` file in the `local/` directory
-2. These will be loaded last and can override any previously loaded settings
+2. These are loaded last (via `local.zsh` after `aliases.zsh`) and can override any setting
 
 See [local/README.md](local/README.md) for more details on local configurations.
 
