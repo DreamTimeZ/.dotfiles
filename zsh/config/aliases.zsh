@@ -78,8 +78,13 @@ if zdotfiles_has_command lazygit; then
 fi
 
 # WSL: Git for Windows (faster on /mnt/c paths due to native NTFS access)
-if zdotfiles_is_wsl && [[ -x "/mnt/c/Program Files/Git/bin/git.exe" ]]; then
-    alias gitw='/mnt/c/Program\ Files/Git/bin/git.exe'
+if zdotfiles_is_wsl; then
+    local _gw
+    for _gw in "/mnt/c/Program Files/Git/bin/git.exe" \
+               /mnt/c/Users/*/AppData/Local/Programs/Git/bin/git.exe(N) \
+               /mnt/c/Users/*/scoop/apps/git/current/bin/git.exe(N); do
+        [[ -x "$_gw" ]] && { alias gitw="$_gw"; break }
+    done
 fi
 
 # ===============================
