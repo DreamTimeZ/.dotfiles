@@ -78,13 +78,28 @@ if zdotfiles_has_command lazygit; then
 fi
 
 # WSL: Git for Windows (faster on /mnt/c paths due to native NTFS access)
+# Note: Avoids glob on /mnt/c which is extremely slow (~100ms+)
 if zdotfiles_is_wsl; then
-    local _gw
-    for _gw in "/mnt/c/Program Files/Git/bin/git.exe" \
-               /mnt/c/Users/*/AppData/Local/Programs/Git/bin/git.exe(N) \
-               /mnt/c/Users/*/scoop/apps/git/current/bin/git.exe(N); do
-        [[ -x "$_gw" ]] && { alias gitw="$_gw"; break }
-    done
+    local _gw="/mnt/c/Program Files/Git/bin/git.exe"
+    if [[ -x "$_gw" ]]; then
+        alias gitw=${(q)_gw}
+    else
+        # Lazy fallback: only glob when gitw is first called
+        gitw() {
+            local gw
+            for gw in /mnt/c/Users/*/AppData/Local/Programs/Git/bin/git.exe(N) \
+                      /mnt/c/Users/*/scoop/apps/git/current/bin/git.exe(N); do
+                if [[ -x "$gw" ]]; then
+                    alias gitw=${(q)gw}
+                    unfunction gitw
+                    "$gw" "$@"
+                    return
+                fi
+            done
+            zdotfiles_error "Git for Windows not found"
+            return 1
+        }
+    fi
 fi
 
 # ===============================
