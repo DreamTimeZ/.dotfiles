@@ -23,7 +23,8 @@ hammerspoon/modules/hotkeys/config/local/*
 !hammerspoon/modules/hotkeys/config/local/README.md
 !hammerspoon/modules/hotkeys/config/local/.gitkeep
 
-# ZSH local configurations - exclude everything in the local directory
+# ZSH local configurations - private dotfiles symlinked here
+zsh/config/local/
 zsh/config/modules/local/*
 
 # Keep only these specific files
