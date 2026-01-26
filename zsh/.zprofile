@@ -7,6 +7,9 @@
 export ZDOTFILES_DIR="${ZDOTFILES_DIR:-$HOME/.dotfiles}"
 export ZDOTFILES_CONFIG_DIR="${ZDOTFILES_CONFIG_DIR:-$ZDOTFILES_DIR/zsh/config}"
 
+# ------ Local Pre-hook ------
+[[ -r "$ZDOTFILES_CONFIG_DIR/local/zprofile.pre.zsh" ]] && source "$ZDOTFILES_CONFIG_DIR/local/zprofile.pre.zsh"
+
 # Silent mode for login shells (non-interactive shells should not produce output)
 export ZDOTFILES_LOG_LEVEL=0
 
