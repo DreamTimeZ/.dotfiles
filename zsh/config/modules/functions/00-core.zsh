@@ -2,24 +2,33 @@
 # CORE UTILITY FUNCTIONS
 # ===============================
 
-# Only define notify if we have a notification method available
-# Enable in macos notification settings for it to work
+# Cross-platform desktop notification
+# Priority: terminal-notifier (macOS) > osascript (macOS) > notify-send (Linux) > terminal bell
 if zdotfiles_has_command terminal-notifier; then
-    # Send desktop notification using terminal-notifier (preferred)
     notify() {
         [[ $# -eq 0 ]] && { echo "Usage: notify <message> [title]" >&2; return 1; }
         terminal-notifier -title "${2:-Terminal}" -message "$1"
     }
 elif zdotfiles_has_command osascript; then
-    # Send desktop notification using AppleScript (fallback)
     notify() {
         [[ $# -eq 0 ]] && { echo "Usage: notify <message> [title]" >&2; return 1; }
         local _msg="$1"
         local _title="${2:-Terminal}"
-        # Escape embedded quotes for AppleScript
         _msg="${_msg//\"/\\\"}"
         _title="${_title//\"/\\\"}"
         osascript -e "display notification \"$_msg\" with title \"$_title\""
+    }
+elif zdotfiles_has_command notify-send && [[ -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
+    # Linux desktop (GNOME, KDE, XFCE) and WSLg
+    notify() {
+        [[ $# -eq 0 ]] && { echo "Usage: notify <message> [title]" >&2; return 1; }
+        notify-send "${2:-Terminal}" "$1"
+    }
+else
+    # Fallback: terminal bell + formatted print
+    notify() {
+        [[ $# -eq 0 ]] && { echo "Usage: notify <message> [title]" >&2; return 1; }
+        echo -e "\a\033[1;33m==> ${2:-Terminal}:\033[0m $1"
     }
 fi
 
