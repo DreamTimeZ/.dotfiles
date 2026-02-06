@@ -7,6 +7,7 @@
 # Cache for frequently used values
 typeset -g ZDOTFILES_PLATFORM=""  # Will be set on first use
 typeset -gA ZDOTFILES_CMD_CACHE   # Command existence cache
+ZDOTFILES_CMD_CACHE=()            # Clear on re-source to detect newly installed tools
 
 # ----- Logging Helpers -----
 
