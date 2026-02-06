@@ -426,6 +426,7 @@ if zdotfiles_has_command claude; then
     claudew() { claude --allowedTools "WebFetch,WebSearch" "$@"; }
     claudef() { claude --allowedTools "Glob,Grep,Read" "$@"; }
     claudet() { claude --allowedTools "Edit,Write,Bash,WebFetch,WebSearch" "$@"; }
+    claudey() { claude --dangerously-skip-permissions "$@"; }
 fi
 
 # ===============================
