@@ -430,6 +430,73 @@ if zdotfiles_has_command claude; then
     claudew() { claude --allowedTools "WebFetch,WebSearch" "$@"; }
     claudef() { claude --allowedTools "Glob,Grep,Read" "$@"; }
     claudet() { claude --allowedTools "Edit,Write,Bash,WebFetch,WebSearch" "$@"; }
+
+    # Claude Code + fabric patterns (uses Claude subscription instead of API)
+    # Usage: echo "text" | cfab <pattern>
+    #        cfab -l [filter]  | cfab -g <pattern>  | cfab -m sonnet <pattern>
+    cfab() {
+        local patterns_dir="${HOME}/.config/fabric/patterns"
+        [[ -d "$patterns_dir" ]] || { print -u2 "cfab: fabric patterns not found (run 'fabric-ai -S' to download)"; return 1; }
+        local model="" pattern="" use_glow=false
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -l|--list)
+                    shift
+                    if [[ -n "$1" && "$1" != -* ]]; then
+                        ls "$patterns_dir" 2>/dev/null | grep -i "$1"
+                    else
+                        ls "$patterns_dir" 2>/dev/null
+                    fi
+                    return ;;
+                -m|--model) model="$2"; shift 2 ;;
+                -g|--glow)  use_glow=true; shift ;;
+                -h|--help)
+                    print "Usage: echo 'text' | cfab [-m model] [-g] <pattern>"
+                    print "       cfab -l [filter]    List available patterns"
+                    print "Options: -m model  Claude model (haiku/sonnet/opus)"
+                    print "         -g        Render output with glow"
+                    return 0 ;;
+                -*) print -u2 "cfab: unknown option: $1"; return 1 ;;
+                *)  pattern="$1"; shift ;;
+            esac
+        done
+
+        if [[ -z "$pattern" ]]; then
+            print -u2 "Usage: echo 'text' | cfab [-m model] [-g] <pattern>"
+            return 1
+        fi
+
+        local pattern_dir="${patterns_dir}/${pattern}"
+        if [[ ! -f "${pattern_dir}/system.md" ]]; then
+            print -u2 "cfab: pattern not found: $pattern"
+            return 1
+        fi
+
+        local system_prompt
+        system_prompt=$(<"${pattern_dir}/system.md") || return 1
+
+        local cmd=(claude -p --no-session-persistence --system-prompt "$system_prompt")
+        [[ -n "$model" ]] && cmd+=(--model "$model")
+
+        local input=""
+        [[ -f "${pattern_dir}/user.md" ]] && input=$(<"${pattern_dir}/user.md")$'\n'
+        [[ ! -t 0 ]] && input+=$(cat)
+
+        if $use_glow && (( ${+commands[glow]} )); then
+            if [[ -n "$input" ]]; then
+                print -r -- "$input" | "${cmd[@]}" | glow
+            else
+                "${cmd[@]}" | glow
+            fi
+        else
+            if [[ -n "$input" ]]; then
+                print -r -- "$input" | "${cmd[@]}"
+            else
+                "${cmd[@]}"
+            fi
+        fi
+    }
 fi
 
 # ===============================
