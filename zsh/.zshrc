@@ -52,9 +52,9 @@ done
 # Aggressively remove Windows paths for faster command lookups
 # Windows filesystem access from WSL adds 10-100ms overhead per lookup
 # NOTE: Must run AFTER plugins load (plugins might add Windows paths)
-if [[ -n "$WSL_DISTRO_NAME" ]] || [[ -n "$WSL_INTEROP" ]]; then
+if zdotfiles_is_wsl; then
   # Keep only Linux paths, remove all /mnt/c paths
-  export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "^/mnt/c" | tr '\n' ':' | sed 's/:$//')
+  path=(${path:#/mnt/c*})
 
   # Optional: Add back specific Windows tools if needed (uncomment as needed)
   # export PATH="$PATH:/mnt/c/Windows/System32"

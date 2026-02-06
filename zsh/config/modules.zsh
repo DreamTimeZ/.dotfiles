@@ -37,7 +37,7 @@ zdotfiles_load_dir() {
   # Load any remaining modules without numerical prefix
   for module in "$dir"/*.zsh(N); do
     # Skip if file has a numerical prefix (already loaded)
-    if [[ ! "$(basename "$module")" =~ ^[0-9][0-9]- ]]; then
+    if [[ ! "${module:t}" =~ ^[0-9][0-9]- ]]; then
       source "$module" 2>/dev/null
     fi
   done
