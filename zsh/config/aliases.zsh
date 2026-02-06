@@ -112,11 +112,6 @@ if zdotfiles_has_command nvim; then
     alias vim='nvim'
 fi
 
-# Cursor
-if zdotfiles_has_command cursor; then
-    alias c='cursor'
-fi
-
 # Enhanced search with ripgrep
 # Note: Keeping rg as standard command (no default flags) for predictable behavior
 # Use 'rg -S --follow --hidden' manually when needed
@@ -420,13 +415,21 @@ if zdotfiles_has_command fabric-ai; then
 fi
 
 if zdotfiles_has_command claude; then
+    alias c='claude'
+
+    # Model variants (claude<tab> to discover)
     claudeh() { claude --model haiku "$@"; }
     claudes() { claude --model sonnet "$@"; }
     claudeo() { claude --model opus "$@"; }
+
+    # Mode variants
+    claudep() { claude -p "$@"; }
+    claudey() { claude --dangerously-skip-permissions "$@"; }
+
+    # Tool-restricted variants
     claudew() { claude --allowedTools "WebFetch,WebSearch" "$@"; }
     claudef() { claude --allowedTools "Glob,Grep,Read" "$@"; }
     claudet() { claude --allowedTools "Edit,Write,Bash,WebFetch,WebSearch" "$@"; }
-    claudey() { claude --dangerously-skip-permissions "$@"; }
 fi
 
 # ===============================
