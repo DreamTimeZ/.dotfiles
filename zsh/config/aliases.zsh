@@ -497,6 +497,29 @@ if zdotfiles_has_command claude; then
             fi
         fi
     }
+
+    # YouTube transcript → Claude Code with fabric pattern (no API needed)
+    # Prepends video metadata for context, adds timestamps only when pattern needs them
+    # Usage: cyt "URL" [pattern]  (default: extract_wisdom)
+    #        cyt "URL" youtube_summary | cyt "URL" summarize_lecture
+    cyt() {
+        [[ -z "$1" ]] && { print -u2 "Usage: cyt \"URL\" [pattern]"; return 1; }
+        local url="$1" pattern="${2:-extract_wisdom}"
+
+        # Patterns that require timestamps for their output format
+        local -a ts_patterns=(youtube_summary summarize_lecture create_video_chapters)
+        local ts_flag=""
+        (( ${ts_patterns[(Ie)$pattern]} )) && ts_flag="--transcript-with-timestamps"
+
+        {
+            yt-dlp --print "Title: %(title)s" --print "Channel: %(channel)s" \
+                   --print "Duration: %(duration_string)s" \
+                   --print "Description: %(description).300s" \
+                   --no-download "$url" 2>/dev/null
+            print ""
+            fabric-ai -y "$url" ${ts_flag:-"--transcript"} --dry-run
+        } | cfab "$pattern"
+    }
 fi
 
 # ===============================
