@@ -53,3 +53,10 @@ espanso/local/**
 !espanso/local/config/.gitkeep
 !espanso/local/match/
 !espanso/local/match/.gitkeep
+
+# Nilesoft local configurations - exclude personal context menu config
+nilesoft/local/**
+!nilesoft/local/
+!nilesoft/local/.gitkeep
+!nilesoft/local/imports/
+!nilesoft/local/imports/.gitkeep
