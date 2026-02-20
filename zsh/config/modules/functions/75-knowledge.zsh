@@ -434,6 +434,7 @@ EOF
         _yt2note_timer_stop
 
         local content
+        local -i _ai_ok=0
         if (( raw )); then
             content="$transcript"
         else
@@ -453,6 +454,27 @@ ${transcript}"
             if [[ -z "$content" ]]; then
                 zdotfiles_warn "yt2note: AI summary failed, falling back to raw transcript"
                 content="$transcript"
+            else
+                _ai_ok=1
+            fi
+        fi
+
+        # Extract inline #tags from AI output's last line for frontmatter
+        local -a _ai_tags=()
+        if (( _ai_ok )); then
+            local _c="$content"
+            while [[ "$_c" == *$'\n' ]]; do _c="${_c%$'\n'}"; done
+            local _last="${_c##*$'\n'}"
+            local -a _tokens=(${=_last})
+            local -i _is_tags=${#_tokens} _ti
+            for (( _ti=1; _ti<=${#_tokens}; _ti++ )); do
+                [[ "${_tokens[$_ti]}" =~ '^#[a-zA-Z][a-zA-Z0-9_/.-]*$' ]] || { _is_tags=0; break }
+            done
+            if (( _is_tags )); then
+                for (( _ti=1; _ti<=${#_tokens}; _ti++ )); do
+                    _ai_tags+=("${(L)${_tokens[$_ti]#\#}}")
+                done
+                content="${_c%$'\n'*}"
             fi
         fi
 
@@ -507,6 +529,11 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
         local date
         date=$(date +%Y-%m-%d)
         local tags=$'tags:\n  - youtube'
+        local _tag
+        for _tag in "${_ai_tags[@]}"; do
+            [[ "$_tag" == youtube ]] && continue
+            tags+=$'\n  - '"$_tag"
+        done
 
         local template
         if [[ -n "${YT2NOTE_TEMPLATE:-}" && -f "$YT2NOTE_TEMPLATE" ]]; then
