@@ -541,7 +541,7 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
         else
             template='---
 fileClass: Global
-created: {{date}}
+created: "{{date}}"
 source: "{{source}}"
 channel: "{{channel}}"
 duration: "{{duration}}"
