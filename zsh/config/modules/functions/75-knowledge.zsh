@@ -120,7 +120,7 @@ Choose a better directory based on the latest feedback.}"
     }
 
     _yt2note_render() {
-        local template="$1" title="$2" date="$3" source="$4" channel="$5" duration="$6" tags="$7" content="$8"
+        local template="$1" title="$2" date="$3" source="$4" channel="$5" duration="$6" tags="$7" content="$8" links="$9"
 
         # Strip leading blank lines from content to avoid double spacing after title
         content="${content#"${content%%[^$'\n']*}"}"
@@ -131,6 +131,7 @@ Choose a better directory based on the latest feedback.}"
         template="${template//\{\{channel\}\}/$channel}"
         template="${template//\{\{duration\}\}/$duration}"
         template="${template//\{\{tags\}\}/$tags}"
+        template="${template//\{\{links\}\}/$links}"
         template="${template//\{\{content\}\}/$content}"
 
         print -r -- "$template"
@@ -535,6 +536,18 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
             tags+=$'\n  - '"$_tag"
         done
 
+        # Auto-detect parent MOC in target directory
+        local links_yaml="links:"
+        if [[ -d "$vault_path" ]]; then
+            local -a _moc_files=("${vault_path}"/*MOC.md(N:t:r))
+            if (( ${#_moc_files} )); then
+                local _moc
+                for _moc in "${_moc_files[@]}"; do
+                    links_yaml+=$'\n  - "[['"$_moc"']]"'
+                done
+            fi
+        fi
+
         local template
         if [[ -n "${YT2NOTE_TEMPLATE:-}" && -f "$YT2NOTE_TEMPLATE" ]]; then
             template=$(<"$YT2NOTE_TEMPLATE")
@@ -546,7 +559,7 @@ source: "{{source}}"
 channel: "{{channel}}"
 duration: "{{duration}}"
 {{tags}}
-links:
+{{links}}
 status:
 ---
 # {{title}}
@@ -557,7 +570,7 @@ status:
         local safe_channel="${channel//\"/\\\"}"
 
         local note
-        note=$(_yt2note_render "$template" "$title" "$date" "$url" "$safe_channel" "$duration" "$tags" "$content")
+        note=$(_yt2note_render "$template" "$title" "$date" "$url" "$safe_channel" "$duration" "$tags" "$content" "$links_yaml")
 
         if (( dry_run )); then
             print -r -- "$note"
