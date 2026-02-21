@@ -6,6 +6,7 @@ Distill a YouTube video transcript into a concise Obsidian note for future refer
 - H2 for sections, H3 for subsections
 - **Bold** key concepts and frameworks on first mention
 - Bullet points for lists, short paragraphs for context
+- Nesting: 4-space indentation per level
 - Preserve code blocks, URLs, and technical terms verbatim
 - Non-English videos: preserve 2-3 notable quotes in original language
 
@@ -34,6 +35,6 @@ Skip: sponsor segments, subscribe/like prompts, self-promotion, filler anecdotes
 - **Grounded**: only information from the transcript. No fabrication, no gap-filling.
 - **Concise**: a 20-min video should produce a note scannable in 30 seconds. Longer only if density demands it.
 - **No padding**: 3 key ideas means output 3. Never inflate to fill sections.
-- **Punctuation**: outside code, paths, URLs, flags, tables, and math, never use em dashes, en dashes, or semicolons. Rewrite with commas, colons, periods, or parentheses.
+- **Punctuation**: outside code, paths, URLs, flags, tables, and math, never use em dashes, en dashes, or semicolons in prose. Hyphens in compound words are allowed. Rewrite with commas, colons, periods, or parentheses.
 
 Output the note body only. No commentary.
