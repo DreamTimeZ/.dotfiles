@@ -1,0 +1,7 @@
+[cache]
+auto_update = true
+max_age = 336 # 2 weeks
+
+[output]
+compact = false
+show_title = true
