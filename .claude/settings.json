@@ -13,9 +13,7 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:stackoverflow.com)",
       "WebFetch(domain:wiki.archlinux.org)",
-
       "Glob",
-
       "Bash(awk:*)",
       "Bash(chmod:*)",
       "Bash(curl:*)",
@@ -34,7 +32,6 @@
       "Bash(wc:*)",
       "Bash(xargs:*)",
       "Bash(yq:*)",
-
       "Bash(docker:*)",
       "Bash(docker compose:*)",
       "Bash(gh:*)",
