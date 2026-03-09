@@ -531,9 +531,12 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
         date=$(date +%Y-%m-%d)
         local tags=$'tags:\n  - youtube'
         local _tag
+        local -i _tag_count=1
         for _tag in "${_ai_tags[@]}"; do
             [[ "$_tag" == youtube ]] && continue
+            (( _tag_count >= 4 )) && break
             tags+=$'\n  - '"$_tag"
+            (( _tag_count++ ))
         done
 
         # Auto-detect parent MOC in target directory
