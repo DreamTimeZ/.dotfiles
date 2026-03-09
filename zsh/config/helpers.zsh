@@ -71,12 +71,9 @@ zdotfiles_has_command() {
 
   local cmd="$1"
 
-  # Ensure cache is associative (guards against loss of type in subshells,
-  # re-source edge cases, or emulation mode changes by plugins)
-  if [[ ${(t)ZDOTFILES_CMD_CACHE} != association* ]]; then
-    zdotfiles_warn "ZDOTFILES_CMD_CACHE lost associative type (was: ${(t)ZDOTFILES_CMD_CACHE:-unset}), re-initializing"
-    typeset -gA ZDOTFILES_CMD_CACHE=()
-  fi
+  # Lazy-init: cache may not exist in snapshot-restored shells (e.g. Claude
+  # Code) where functions are restored without their non-exported variables
+  [[ ${(t)ZDOTFILES_CMD_CACHE} != association* ]] && typeset -gA ZDOTFILES_CMD_CACHE=()
 
   # Check cache first
   if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]:-}" ]]; then
