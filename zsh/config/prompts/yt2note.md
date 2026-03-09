@@ -18,7 +18,7 @@ Distill a YouTube video transcript into a concise Obsidian note for future refer
    - Conceptual (deep dives): one H2 per major concept with key takeaways
    - Discussions, interviews: organize by theme, extract positions
 3. **Resources**: tools, books, links mentioned (one-line each). Omit if none.
-4. **Tags**: #inline-tags at end, covering domain (#ai, #productivity), subject (#rag, #sleep), format (#tutorial, #interview)
+4. **Tags**: end with a single line of 1-3 #inline-tags, most important first. One broad domain, then 1-2 specific topics. No format tags.
 
 # WHAT TO EXTRACT
 
