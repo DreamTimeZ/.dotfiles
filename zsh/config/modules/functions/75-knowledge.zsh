@@ -245,10 +245,10 @@ Choose a better directory based on the latest feedback.}"
         _YT2NOTE_TIMER_PID=""
     }
 
-    # Extract YouTube transcript to stdout
-    # Usage: ytt [-l lang] [-r] URL
+    # Extract YouTube transcript to stdout or clipboard
+    # Usage: ytt [-l lang] [-r] [-c] URL
     ytt() {
-        local lang="" raw=0
+        local lang="" raw=0 copy=0
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -h|--help)
@@ -260,29 +260,54 @@ Extract YouTube transcript to stdout.
 Options:
   -l, --lang LANG   Subtitle language (default: original)
   -r, --raw         Output raw VTT (no cleanup)
+  -c, --copy        Copy to clipboard instead of printing
   -h, --help        Show help
 EOF
                     return 0 ;;
                 -l|--lang) [[ $# -lt 2 ]] && { print -u2 "ytt: $1 requires an argument"; return 1; }; lang="$2"; shift 2 ;;
                 -r|--raw) raw=1; shift ;;
+                -c|--copy) copy=1; shift ;;
+                -[rc]*)
+                    local flags="${1#-}"; shift
+                    local i
+                    for (( i=0; i<${#flags}; i++ )); do
+                        case "${flags:$i:1}" in
+                            r) set -- "-r" "$@" ;;
+                            c) set -- "-c" "$@" ;;
+                            *) print -u2 "ytt: unknown flag: -${flags:$i:1}"; return 1 ;;
+                        esac
+                    done
+                    ;;
                 -*) print -u2 "ytt: unknown option: $1"; return 1 ;;
                 *) break ;;
             esac
         done
 
-        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] URL"; return 1; }
+        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] [-c] URL"; return 1; }
         local url="$1"
 
+        local output
         if (( raw )); then
             local tmpdir=$(mktemp -d /tmp/ytt-vtt.XXXXXX)
             trap "rm -rf $tmpdir" EXIT
             local vtt
             vtt=$(_yt2note_download_vtt "$url" "$tmpdir" "$lang") || { print -u2 "ytt: no subtitles found"; return 1; }
-            cat "$vtt"
+            output=$(<"$vtt")
         else
-            _yt2note_fetch_transcript "$url" "--transcript" "$lang" || {
+            output=$(_yt2note_fetch_transcript "$url" "--transcript" "$lang") || {
                 print -u2 "ytt: no transcript available"; return 1
             }
+        fi
+
+        if (( copy )); then
+            if ! zdotfiles_has_clipboard; then
+                print -u2 "ytt: no clipboard available"
+                return 1
+            fi
+            print -rn -- "$output" | pbcopy
+            print -u2 "ytt: transcript copied to clipboard"
+        else
+            print -r -- "$output"
         fi
     }
 
