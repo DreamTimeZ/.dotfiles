@@ -1,0 +1,12 @@
+# IDE state — not git-tracked, filesystem-only noise
+.idea/
+.vscode/
+
+# Auto-managed by lazy.nvim — specs live in init.lua, lockfile is just commit hashes
+nvim/lazy-lock.json
+
+# Artifacts that may exist on disk despite .gitignore
+*.log
+*.bak
+*.backup
+*.orig
