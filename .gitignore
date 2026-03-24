@@ -8,7 +8,6 @@ tmux/sessions
 !.claude/settings.json
 *.local
 .vscode
-.cursor/
 .DS_Store
 .idea/
 .env
