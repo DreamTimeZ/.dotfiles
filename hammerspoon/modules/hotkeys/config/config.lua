@@ -226,7 +226,7 @@ config.globalShortcuts = {
             field = "app",
             action = "launchOrFocus"
         },
-        mapping = { app = "iTerm", desc = "Launch iTerm" }
+        mapping = { app = "Ghostty", desc = "Launch Ghostty" }
     },
     
 }

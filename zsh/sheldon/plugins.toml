@@ -79,10 +79,11 @@ apply = ["source"]
 github = "zsh-users/zsh-syntax-highlighting"
 apply = ["source"]
 
-# Optional iTerm integration (commented out by default)
-# [plugins.iterm]
-# local = "~/.dotfiles/zsh/sheldon"
-# use = ["iterm.zsh"]
+# iTerm2 integration (self-guards via TERM_PROGRAM check)
+[plugins.iterm]
+local = "~/.dotfiles/zsh/sheldon"
+use = ["iterm.zsh"]
+apply = ["source"]
 
 # SSH key lazy loading (agent started in .zprofile, keys loaded on first ssh/git use)
 [plugins.ssh-keys]

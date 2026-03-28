@@ -23,7 +23,7 @@ setopt HIST_VERIFY            # Show command with history expansion to user befo
 
 # ----- Terminal Configuration -----
 # Enable true color (24-bit) support - only set if not already configured
-# Modern terminals (iTerm2, Alacritty, WezTerm, Kitty) often set this automatically
+# Modern terminals (Ghostty, iTerm2, Alacritty, WezTerm, Kitty) often set this automatically
 if [[ -z "$COLORTERM" ]]; then
   export COLORTERM=truecolor
 fi

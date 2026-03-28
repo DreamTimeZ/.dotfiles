@@ -20,9 +20,12 @@ bindkey '^[^?' backward-kill-word     # Alt+Backspace
 bindkey '^[[127;5u' backward-kill-word  # Ctrl+Backspace (kitty)
 bindkey '^[[127;3u' backward-kill-word  # Alt+Backspace (kitty)
 
-# macOS/iTerm2 specific
+# macOS: xterm Meta modifier (standard, works across terminals)
 bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete
-bindkey '^[[99~' kill-line            # Fn+Cmd+Delete (iTerm2)
+# iTerm2 proprietary sequence
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
+  bindkey '^[[99~' kill-line          # Fn+Cmd+Delete (iTerm2)
+fi
 
 # Clear screen + scrollback (Ctrl+X l = extended clear)
 _clear_screen_and_scrollback() {

@@ -31,7 +31,7 @@ local OVERLAY_MAX_COUNT = 9
 local OVERLAY_AUTO_HIDE_TIME = 5
 local OVERLAY_TEXT_Y_POS = 45
 
--- Constants for default window sizing (optimized for iTerm2 122x29 characters)
+-- Constants for default window sizing (optimized for Ghostty/iTerm2 122x29 characters)
 local DEFAULT_WIDTH_PERCENT = 0.58
 local DEFAULT_HEIGHT_PERCENT = 0.50
 
@@ -119,7 +119,7 @@ local prevScreen = windowOperation(function(win)
     win:moveToScreen(win:screen():previous())
 end)
 
--- Default window size function - sets window to default size (optimized for iTerm2 122x29)
+-- Default window size function - sets window to default size (optimized for Ghostty/iTerm2 122x29)
 local defaultWindowSize = windowOperation(function(win)
     local screen = win:screen():frame()
     local f = win:frame()
