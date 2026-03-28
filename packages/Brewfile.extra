@@ -1,0 +1,8 @@
+# Extra: optional specialized tools
+
+brew "hyperfine"        # CLI benchmarking
+brew "scc"              # source code counter
+brew "pandoc"           # document converter
+brew "yt-dlp"           # video downloader
+brew "nmap"             # network scanner
+brew "gdu"              # interactive disk usage cleanup

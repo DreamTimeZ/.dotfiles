@@ -43,6 +43,10 @@ git/local/*
 ssh/local/*
 !ssh/local/.gitkeep
 
+# Package local configurations - private Brewfiles symlinked here
+packages/local/*
+!packages/local/.gitkeep
+
 # Espanso local configurations - exclude personal text expansions
 # Keep only templates and README
 espanso/local/**

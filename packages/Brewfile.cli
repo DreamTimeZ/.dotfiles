@@ -1,0 +1,16 @@
+# CLI: enhanced command-line tools
+
+brew "bat"              # cat with syntax highlighting
+brew "eza"              # modern ls
+brew "fd"               # fast find
+brew "ripgrep"          # fast grep
+brew "jq"               # JSON processor
+brew "yq"               # YAML processor
+brew "glow"             # markdown renderer
+brew "tealdeer"         # tldr pages (tlrc)
+brew "tree"             # directory tree listing
+brew "btop"             # modern htop
+brew "dust"             # modern du
+brew "duf"              # modern df
+brew "p7zip"            # 7-zip archive tool
+brew "grc"              # generic colorizer

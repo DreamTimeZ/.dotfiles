@@ -1,0 +1,11 @@
+# Dev: development tools and language managers
+
+brew "mise"             # runtime version manager (node, python, pnpm)
+brew "lazygit"          # terminal git UI
+brew "gh"               # GitHub CLI
+brew "neovim"           # text editor
+brew "gitleaks"         # secret scanning
+brew "git-delta"        # git pager with syntax highlighting
+brew "uv"               # Python package manager
+brew "shellcheck"       # shell script linter
+brew "shfmt"            # shell script formatter

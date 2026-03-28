@@ -1,0 +1,11 @@
+# Core: shell essentials (always needed)
+
+brew "git"
+brew "zsh"
+brew "tmux"
+brew "curl"
+brew "sheldon"
+brew "fzf"
+brew "zoxide"
+brew "atuin"
+brew "rsync"            # file sync

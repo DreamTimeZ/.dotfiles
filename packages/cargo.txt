@@ -1,0 +1,3 @@
+# Rust packages installed via cargo
+
+cargo-update
