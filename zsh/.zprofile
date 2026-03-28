@@ -37,7 +37,6 @@ zdotfiles_path_prepend "$PNPM_HOME"
 
 # ------ Environment Variables ------
 export EDITOR="${EDITOR:-nvim}"
-[[ -d "/usr/lib/jvm/temurin-25-jdk-amd64" ]] && export JAVA_HOME="/usr/lib/jvm/temurin-25-jdk-amd64"
 
 # ------ SSH Agent Setup ------
 # Start ssh-agent if needed. Key loading is deferred to first use (see sheldon/ssh-keys.zsh)

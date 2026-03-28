@@ -26,13 +26,10 @@ _zdotfiles_open_url() {
     if zdotfiles_is_macos; then
         open "$url"
     elif zdotfiles_is_wsl; then
-        # Prefer firefox/chrome functions if available (from WSL launchers)
+        # Prefer firefox function if available (from WSL launchers)
         if (( ${+functions[firefox]} )); then
             firefox "$url"
-        elif (( ${+functions[chrome]} )); then
-            chrome "$url"
         else
-            # Fallback to cmd.exe start
             /mnt/c/Windows/System32/cmd.exe /c start "" "$url" >/dev/null 2>&1 &!
         fi
     else

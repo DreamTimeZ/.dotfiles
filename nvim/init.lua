@@ -16,7 +16,7 @@ require("lazy").setup({{
             ensure_installed = {
                 "lua", "vim", "vimdoc", "query", "regex",
                 "bash", "fish",
-                "python", "javascript", "typescript", "java", "c", "cpp", "go", "rust",
+                "python", "javascript", "typescript", "c", "cpp", "go", "rust",
                 "json", "yaml", "toml", "xml",
                 "markdown", "markdown_inline", "comment",
                 "git_config", "git_rebase", "gitcommit", "gitignore", "diff",

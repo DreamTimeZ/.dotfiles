@@ -326,10 +326,6 @@ if zdotfiles_has_command gitleaks; then
     alias gleaks='gitleaks protect --staged --verbose'
 fi
 
-if zdotfiles_has_command bandwhich; then
-    alias bwi='sudo bandwhich'
-    alias bwia='sudo bandwhich --addresses'
-fi
 
 # ===============================
 # AI TOOLS
