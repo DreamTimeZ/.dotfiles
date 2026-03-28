@@ -37,7 +37,6 @@ fi
 # ----- Miscellaneous Options -----
 # CORRECT_ALL: You want aggressive typo correction everywhere (command, args, paths). Often overkill.
 # CORRECT: You want smart correction of just command names, low false positives.
-# Disabled - use thefuck instead with 'f', 'fk', or 'fuck' commands
 unsetopt CORRECT              # Disable auto-correct prompts
 # Prompt handling - Global solution for '%' character from incomplete output
 export PROMPT_EOL_MARK=""     # Suppress '%' character for incomplete lines

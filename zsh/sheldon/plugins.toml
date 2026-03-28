@@ -44,11 +44,6 @@ local = "~/.dotfiles/zsh/sheldon"
 use = ["zoxide.zsh"]
 apply = ["source"]
 
-[plugins.thefuck]
-local = "~/.dotfiles/zsh/sheldon"
-use = ["thefuck.zsh"]
-apply = ["source"]
-
 # Terminal appearance and behavior
 [plugins.terminal-title]
 local = "~/.dotfiles/zsh/sheldon"
