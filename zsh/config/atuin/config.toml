@@ -17,7 +17,7 @@ enter_accept = true
 
 ## Statistics
 [stats]
-common_subcommands = ["cargo", "go", "npm", "yarn", "pnpm", "git", "docker", "kubectl"]
+common_subcommands = ["cargo", "go", "pnpm", "uv", "git", "docker", "kubectl"]
 
 ## Dotfiles Integration
 [dotfiles]

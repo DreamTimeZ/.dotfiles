@@ -111,7 +111,7 @@ serve() {
     if ! zdotfiles_has_command nodemon; then
       print -u2 "serve: nodemon is not installed"; return 1
     fi
-    local cmd=(npx serve "$directory" -l "$port" ${extra_opts[@]})
+    local cmd=(pnpm dlx serve "$directory" -l "$port" ${extra_opts[@]})
     nodemon --watch "$directory" -e js,html,css --exec "${cmd[@]}"
   elif [[ "$mode" == "python" ]]; then
     if ! zdotfiles_has_command python3; then

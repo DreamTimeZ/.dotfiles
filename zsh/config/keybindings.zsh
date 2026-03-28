@@ -21,7 +21,7 @@ bindkey '^[[127;5u' backward-kill-word  # Ctrl+Backspace (kitty)
 bindkey '^[[127;3u' backward-kill-word  # Alt+Backspace (kitty)
 
 # macOS/iTerm2 specific
-bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete (Cursor IDE)
+bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete
 bindkey '^[[99~' kill-line            # Fn+Cmd+Delete (iTerm2)
 
 # Clear screen + scrollback (Ctrl+X l = extended clear)

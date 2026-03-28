@@ -104,7 +104,7 @@ EOF
         fd_args+=(--exclude '.nvm' --exclude '.pyenv' --exclude '.rustup' --exclude '.local')
         fd_args+=(--exclude 'go/pkg' --exclude '.gradle' --exclude '.m2' --exclude '.gem')
         fd_args+=(--exclude '.vscode-server' --exclude '.cursor-server' --exclude '.claude' --exclude 'Library')
-        fd_args+=(--exclude '.Trash' --exclude 'snap' --exclude '.var' --exclude '.cpan')
+        fd_args+=(--exclude '.Trash' --exclude '.var' --exclude '.cpan')
         repos=("${(@f)$(fd "${fd_args[@]}" "$target" 2>/dev/null)}")
     else
         local maxdepth=""
@@ -118,7 +118,7 @@ EOF
             -not -path '*/.gradle/*' -not -path '*/.m2/*' -not -path '*/.gem/*' \
             -not -path '*/.vscode-server/*' -not -path '*/.cursor-server/*' \
             -not -path '*/.claude/*' \
-            -not -path '*/Library/*' -not -path '*/.Trash/*' -not -path '*/snap/*' \
+            -not -path '*/Library/*' -not -path '*/.Trash/*' \
             -not -path '*/.var/*' -not -path '*/.cpan/*' 2>/dev/null)}")
     fi
 
