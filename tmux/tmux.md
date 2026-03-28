@@ -45,4 +45,3 @@ ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
 ## Requirements
 
 - Tmux >= 3.0
-- [Optional] Tmuxinator for session management
