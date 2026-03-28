@@ -23,7 +23,7 @@ This document provides detailed information about the requirements for running t
 brew install zsh git sheldon fzf eza python3 mas terminal-notifier
 
 # Optional but recommended tools
-brew install zoxide direnv glow
+brew install zoxide glow
 ```
 
 ### Linux (Debian/Ubuntu)
@@ -40,7 +40,7 @@ curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
   | bash -s -- --repo rossmacarthur/sheldon --to ~/.local/bin
 
 # Install recommended tools
-sudo apt-get install -y eza direnv
+sudo apt-get install -y eza
 # Make zsh your default shell
 chsh -s $(which zsh)
 ```
@@ -68,7 +68,6 @@ chsh -s $(which zsh)
 
 ## Optional Dependencies
 
-- **direnv**: For directory-specific environment variables
 - **zoxide**: Smart directory navigation (alternative to `cd`)
 - **eza/exa**: Modern replacement for `ls`
 - **glow**: Markdown terminal viewer

@@ -49,7 +49,6 @@ cd ~/.dotfiles
     
     # Development tools
     mkdir -p ~/.config/tlrc && ln -sf ~/.dotfiles/tlrc/config.toml ~/.config/tlrc/config.toml
-    mkdir -p ~/.config/direnv && ln -sf ~/.dotfiles/direnv/config.toml ~/.config/direnv/direnv.toml
     ```
 
 4. **Setup Shell Environment**:
@@ -228,7 +227,7 @@ The configuration supports local overrides and secure handling of sensitive data
 The dotfiles manage configuration files for various tools:
 
 - **Shell Integration**: Powerlevel10k prompt theme, iTerm2 integration
-- **Development Tools**: tlrc (tldr), direnv (environment), tmuxinator (sessions)
+- **Development Tools**: tlrc (tldr), tmuxinator (sessions)
 - **Shell Management**: Atuin (shell history), Sheldon (plugin management)
 - **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
 

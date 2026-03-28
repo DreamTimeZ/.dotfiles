@@ -28,11 +28,6 @@ local = "~/.dotfiles/zsh/sheldon"
 use = ["mise.zsh"]
 apply = ["source"]
 
-# Other lazy-loaded tools
-# [plugins.direnv]
-# local = "~/.dotfiles/zsh/sheldon"
-# use = ["direnv.zsh"]
-# apply = ["source"]
 
 [plugins.zoxide]
 local = "~/.dotfiles/zsh/sheldon"

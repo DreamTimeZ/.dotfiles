@@ -80,7 +80,7 @@ venv() {
         # Proper deactivation: restores PATH, PS1, PYTHONHOME, calls hash -r
         deactivate
       else
-        # Fallback: deactivate function unavailable (direnv-managed venv, shell reload, etc.)
+        # Fallback: deactivate function unavailable (shell reload, etc.)
         # Cannot restore PATH - we don't know what it was before activation.
         # Only safe action is clearing env vars; user may need to restart shell.
         unset VIRTUAL_ENV VIRTUAL_ENV_PROMPT
