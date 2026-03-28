@@ -93,7 +93,7 @@ For detailed information on each component:
 
 - Homebrew for package management
 - iTerm2 (recommended terminal emulator)
-- Recommended tools: fzf, eza/exa, zoxide, thefuck, direnv
+- Recommended tools: fzf, eza/exa, zoxide, direnv
 
 #### Linux
 

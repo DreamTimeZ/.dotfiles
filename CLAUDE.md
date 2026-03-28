@@ -41,7 +41,7 @@ The Zsh configuration uses a highly modular architecture:
 
 - **Plugin management via Sheldon** (`zsh/sheldon/`):
   - `plugins.toml` - Declarative plugin configuration with load order
-  - Individual `.zsh` files for tool-specific lazy loading (nvm, pyenv, etc.)
+  - Individual `.zsh` files for tool-specific lazy loading (zoxide, etc.)
   - Custom configuration files for complex plugins (fzf-tab-config.zsh)
 
 - **Modular functions** (`zsh/config/modules/functions/`):

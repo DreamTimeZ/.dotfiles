@@ -23,7 +23,7 @@ This document provides detailed information about the requirements for running t
 brew install zsh git sheldon fzf eza python3 mas terminal-notifier
 
 # Optional but recommended tools
-brew install zoxide thefuck direnv glow
+brew install zoxide direnv glow
 ```
 
 ### Linux (Debian/Ubuntu)
@@ -41,8 +41,6 @@ curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
 
 # Install recommended tools
 sudo apt-get install -y eza direnv
-pip3 install thefuck
-
 # Make zsh your default shell
 chsh -s $(which zsh)
 ```
@@ -72,8 +70,7 @@ chsh -s $(which zsh)
 
 - **direnv**: For directory-specific environment variables
 - **zoxide**: Smart directory navigation (alternative to `cd`)
-- **thefuck**: Command correction utility
 - **eza/exa**: Modern replacement for `ls`
 - **glow**: Markdown terminal viewer
-- **pyenv**: Python version manager
+- **mise**: Version manager for Node, Python, and other tools
 - **Powerlevel10k**: ZSH theme (installed automatically via Sheldon)

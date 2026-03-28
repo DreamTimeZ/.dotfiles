@@ -23,7 +23,6 @@ zsh/
 │   ├── plugins.toml   - Plugin declarations
 │   ├── fzf-tab-config.zsh - FZF tab completion config
 │   ├── iterm.zsh      - iTerm2 integration
-│   ├── pyenv.zsh      - Python environment manager
 │   └── terminal-title.zsh - Terminal window title config
 └── docs/              - Documentation
     ├── keybindings.md - Keyboard shortcuts documentation
