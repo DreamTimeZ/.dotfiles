@@ -2,67 +2,21 @@
 # SYSTEM MAINTENANCE FUNCTIONS
 # ===============================
 
-# Function: update_nodejs
-# Updates Node.js to latest LTS via nvm and enables corepack
-update_nodejs() {
-  # Check if nvm function exists (nvm is a shell function, not a binary)
-  if ! type nvm &>/dev/null; then
-    echo -e "\033[1;33m⚠ nvm not found. Skipping Node.js update.\033[0m"
+# Function: update_mise
+# Updates mise-managed tools (Node, Python, pnpm, etc.)
+update_mise() {
+  if ! zdotfiles_has_command mise; then
+    echo -e "\033[1;33m⚠ mise not found. Skipping tool updates.\033[0m"
     return 1
   fi
 
-  echo -e "\033[1;32m◆ Updating Node.js via nvm...\033[0m"
-
-  local current_version=$(nvm current)
-  if nvm install --lts --latest-npm; then
-    echo "✓ Node.js LTS installed successfully."
-
-    # Enable corepack for pnpm/yarn (only if not already enabled)
-    if ! zdotfiles_has_command corepack && zdotfiles_has_command node; then
-      echo -e "\033[1;32m◆ Enabling corepack...\033[0m"
-      if corepack enable; then
-        echo "✓ Corepack enabled successfully."
-      else
-        echo -e "\033[1;31m✗ Failed to enable corepack.\033[0m"
-        return 1
-      fi
-    fi
-
-    # Set as default and migrate packages
-    local new_version=$(nvm current)
-    if [[ "$current_version" != "$new_version" ]]; then
-      nvm alias default "$new_version"
-      echo "✓ Set Node.js $new_version as default."
-    fi
+  echo -e "\033[1;32m◆ Updating mise and managed tools...\033[0m"
+  mise self-update -y 2>/dev/null
+  if mise upgrade; then
+    echo "✓ mise tools updated successfully."
     return 0
   else
-    echo -e "\033[1;31m✗ Error updating Node.js.\033[0m"
-    return 1
-  fi
-}
-
-# Function: update_pnpm
-# Updates pnpm to latest version via corepack
-update_pnpm() {
-  if ! zdotfiles_has_command corepack; then
-    echo -e "\033[1;33m⚠ corepack not found. Attempting to enable...\033[0m"
-    if zdotfiles_has_command node && corepack enable 2>/dev/null; then
-      echo "✓ corepack enabled successfully."
-    else
-      echo -e "\033[1;31m✗ Failed to enable corepack. Skipping pnpm update.\033[0m"
-      return 1
-    fi
-  fi
-
-  # Ensure pnpm shim exists (required after fresh Node install)
-  corepack enable pnpm 2>/dev/null
-
-  echo -e "\033[1;32m◆ Updating pnpm via corepack...\033[0m"
-  if corepack prepare pnpm@latest --activate; then
-    echo "✓ pnpm updated successfully."
-    return 0
-  else
-    echo -e "\033[1;31m✗ Error updating pnpm.\033[0m"
+    echo -e "\033[1;31m✗ Error updating mise tools.\033[0m"
     return 1
   fi
 }
@@ -86,7 +40,7 @@ update_sheldon() {
 }
 
 # Function: update
-# Updates: Homebrew, App Store, Node.js, pnpm, Sheldon plugins, and macOS
+# Updates: Homebrew, App Store, mise tools, Rust, Sheldon plugins, and macOS
 update() {
   echo -e "\033[1;34m╔═══════════════════════════════════════════════════════╗"
   echo -e "║          Starting update process on macOS...          ║"
@@ -131,18 +85,23 @@ update() {
     echo -e "\033[1;33m⚠ The 'mas' CLI tool is not installed. Skipping App Store updates.\033[0m"
   fi
 
-  # 3. Update Node.js via nvm
+  # 3. Update mise-managed tools (Node, Python, pnpm, etc.)
   echo ""
-  if ! update_nodejs; then
+  if ! update_mise; then
     success=false
-    errors+=("Node.js update failed")
+    errors+=("mise tools update failed")
   fi
 
-  # 4. Update pnpm
-  echo ""
-  if ! update_pnpm; then
-    success=false
-    errors+=("pnpm update failed")
+  # 4. Update Rust toolchain
+  if zdotfiles_has_command rustup; then
+    echo -e "\n\033[1;32m◆ Updating Rust toolchain...\033[0m"
+    if rustup update; then
+      echo "✓ Rust toolchain updated successfully."
+    else
+      success=false
+      errors+=("Rust toolchain update failed")
+      echo -e "\033[1;31m✗ Error updating Rust toolchain.\033[0m"
+    fi
   fi
 
   # 5. Update sheldon plugins

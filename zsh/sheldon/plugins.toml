@@ -22,15 +22,10 @@ github = "romkatv/powerlevel10k"
 use = ["powerlevel10k.zsh-theme"]
 apply = ["source"]
 
-# Version managers with lazy-loading
-[plugins.nvm]
+# Runtime version manager (Node, Python, pnpm, etc.)
+[plugins.mise]
 local = "~/.dotfiles/zsh/sheldon"
-use = ["nvm.zsh"]
-apply = ["source"]
-
-[plugins.pyenv]
-local = "~/.dotfiles/zsh/sheldon"
-use = ["pyenv.zsh"]
+use = ["mise.zsh"]
 apply = ["source"]
 
 # Other lazy-loaded tools
