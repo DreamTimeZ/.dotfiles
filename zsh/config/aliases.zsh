@@ -344,6 +344,7 @@ if zdotfiles_has_command claude; then
 
     # Mode variants
     claudep() { claude -p "$@"; }
+    cbare() { claude --bare "$@"; }
     cy() { claude --dangerously-skip-permissions "$@"; }
 
     # Tool-restricted variants
