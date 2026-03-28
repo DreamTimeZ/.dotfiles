@@ -352,27 +352,6 @@ fi
 # ===============================
 # AI TOOLS
 # ===============================
-if zdotfiles_has_command fabric-ai; then
-    alias fa='fabric-ai'
-
-    # fabric-ai with glow rendering
-    fag() {
-        if (( ${+commands[glow]} )); then
-            fabric-ai "$@" | glow
-        else
-            fabric-ai "$@"
-        fi
-    }
-
-    # fabric-ai with clipboard output
-    fac() {
-        zdotfiles_has_clipboard || { print -u2 "fac: clipboard not available"; return 1; }
-        local output
-        output=$(fabric-ai "$@") || return 1
-        print -rn -- "$output" | pbcopy
-    }
-fi
-
 if zdotfiles_has_command claude; then
     alias c='claude'
 
@@ -391,28 +370,64 @@ if zdotfiles_has_command claude; then
     claudet() { claude --allowedTools "Edit,Write,Bash,WebFetch,WebSearch" "$@"; }
 
     # Claude Code + fabric patterns (uses Claude subscription instead of API)
+    # Fetch/update fabric patterns from GitHub
+    _cfab_fetch_patterns() {
+        local patterns_dir="$1"
+        local repo_url="https://github.com/danielmiessler/fabric.git"
+
+        (( ${+commands[git]} )) || { print -u2 "cfab: git is required for --fetch"; return 1; }
+
+        local tmp_dir
+        tmp_dir="$(mktemp -d)" || return 1
+
+        print "Fetching fabric patterns..."
+        local git_output ret=0
+        if git_output=$(git clone --depth 1 --filter=blob:none --sparse \
+            "$repo_url" "$tmp_dir" 2>&1 &&
+           git -C "$tmp_dir" sparse-checkout init --cone 2>&1 &&
+           git -C "$tmp_dir" sparse-checkout set data/patterns 2>&1); then
+            mkdir -p "${patterns_dir%/*}"
+            [[ -d "$patterns_dir" ]] && rm -rf "$patterns_dir"
+            mv "$tmp_dir/data/patterns" "$patterns_dir"
+            print "Installed $(ls "$patterns_dir" | wc -l) patterns to $patterns_dir"
+        else
+            print -u2 "cfab: failed to fetch patterns:"
+            print -u2 "  $git_output"
+            ret=1
+        fi
+        rm -rf "$tmp_dir"
+        return $ret
+    }
+
     # Usage: echo "text" | cfab <pattern>
     #        cfab -l [filter]  | cfab -g <pattern>  | cfab -m sonnet <pattern>
     cfab() {
         local patterns_dir="${HOME}/.config/fabric/patterns"
-        [[ -d "$patterns_dir" ]] || { print -u2 "cfab: fabric patterns not found (run 'fabric-ai -S' to download)"; return 1; }
         local model="" pattern="" use_glow=false
 
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -l|--list)
                     shift
+                    if [[ ! -d "$patterns_dir" ]]; then
+                        print -u2 "cfab: no patterns installed (run 'cfab --fetch')"
+                        return 1
+                    fi
                     if [[ -n "$1" && "$1" != -* ]]; then
                         ls "$patterns_dir" 2>/dev/null | grep -i "$1"
                     else
                         ls "$patterns_dir" 2>/dev/null
                     fi
                     return ;;
+                --fetch)
+                    _cfab_fetch_patterns "$patterns_dir"
+                    return ;;
                 -m|--model) model="$2"; shift 2 ;;
                 -g|--glow)  use_glow=true; shift ;;
                 -h|--help)
                     print "Usage: echo 'text' | cfab [-m model] [-g] <pattern>"
                     print "       cfab -l [filter]    List available patterns"
+                    print "       cfab --fetch        Download/update patterns from GitHub"
                     print "Options: -m model  Claude model (haiku/sonnet/opus)"
                     print "         -g        Render output with glow"
                     return 0 ;;
@@ -420,6 +435,11 @@ if zdotfiles_has_command claude; then
                 *)  pattern="$1"; shift ;;
             esac
         done
+
+        if [[ ! -d "$patterns_dir" ]]; then
+            print -u2 "cfab: no patterns installed (run 'cfab --fetch')"
+            return 1
+        fi
 
         if [[ -z "$pattern" ]]; then
             print -u2 "Usage: echo 'text' | cfab [-m model] [-g] <pattern>"
