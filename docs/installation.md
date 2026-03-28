@@ -1,234 +1,115 @@
 # Installation Guide
 
-## Automated Setup (COMING SOON!)
+## Full Setup
+
+Clone both repos, then run setup:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DreamTimeZ/dotfiles-macos/main/install.sh | bash
-```
-
-Or clone and run the installer:
-
-```bash
-git clone git@github.com:DreamTimeZ/dotfiles-macos.git ~/.dotfiles
+git clone git@github.com:DreamTimeZ/.dotfiles.git ~/.dotfiles
+git clone <private-repo-url> ~/.dotfiles-private
 cd ~/.dotfiles
-./install.sh
+./setup.sh --all
 ```
 
-## Manual Setup
+This installs all packages, links private configs into the public repo, creates home
+symlinks, and initializes plugin managers. The private repo must be cloned first so
+that local overrides (git user identity, SSH hosts, shell aliases) are available when
+symlinks are created.
 
-1. **Clone the repository**:
+## Minimal Setup (Without Private Repo)
 
-    ```bash
-    git clone git@github.com:DreamTimeZ/dotfiles-macos.git ~/.dotfiles
-    ```
+```bash
+git clone git@github.com:DreamTimeZ/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+./setup.sh --all
+```
 
-2. **Setup Shell Configuration**:
+Works without the private repo. You get a functional shell, editor, and tools, but
+without machine-specific configs. Add the private repo later and re-run:
 
-    ```bash
-    # Zsh
-    ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc
-    ln -sf ~/.dotfiles/zsh/.zprofile ~/.zprofile
+```bash
+git clone <private-repo-url> ~/.dotfiles-private
+./setup.sh --link-only --force
+```
 
-    # Sheldon (Zsh plugin manager)
-    mkdir -p ~/.config/sheldon
-    ln -sf ~/.dotfiles/zsh/sheldon/plugins.toml ~/.config/sheldon/plugins.toml
-    sheldon lock --update
-    
-    # Atuin (shell history) - auto-configured on first shell load
-    # Config will be auto-symlinked from ~/.dotfiles/zsh/config/atuin/config.toml
-    ```
+## Prerequisites
 
-3. **Setup Shell Tool Configurations**:
+- **git** (to clone the repositories)
+- **[Homebrew](https://brew.sh)** (required for package installation on all platforms)
 
-    ```bash
-    # Powerlevel10k prompt theme
-    ln -sf ~/.dotfiles/p10k/.p10k.zsh ~/.p10k.zsh
+## Setup Options
 
-    # iTerm2 shell integration
-    ln -sf ~/.dotfiles/iterm2/.iterm2_shell_integration.zsh ~/.iterm2_shell_integration.zsh
-    
-    # Development tools
-    mkdir -p ~/.config/tlrc && ln -sf ~/.dotfiles/tlrc/config.toml ~/.config/tlrc/config.toml
-    ```
+```bash
+./setup.sh                     # Interactive: choose package categories
+./setup.sh --all               # Full setup (all packages + symlinks)
+./setup.sh core cli            # Install specific categories only
+./setup.sh --link-only         # Only create symlinks (no packages)
+./setup.sh --link-only --force # Recreate all symlinks
+./setup.sh --packages-only     # Only install packages (no symlinks)
+./setup.sh --doctor            # Check system health
+./setup.sh --unlink            # Remove all managed symlinks
+./setup.sh --dry-run --all     # Preview what would happen
+```
 
-4. **Setup Shell Environment**:
+### Package Categories
 
-    ```bash
-    # Tmux session layouts
-    mkdir -p ~/.config/tmuxinator && ln -sf ~/.dotfiles/tmuxinator/default.yml ~/.config/tmuxinator/default.yml
-    ```
+| Category | Contents |
+|----------|----------|
+| `core`   | zsh, git, tmux, sheldon, fzf, zoxide, atuin |
+| `cli`    | bat, eza, fd, ripgrep, jq, yq, glow, tealdeer, grc |
+| `dev`    | mise, lazygit, gh, neovim, gitleaks, uv, shellcheck, shfmt |
+| `extra`  | hyperfine, scc, pandoc, yt-dlp, nmap |
+| `macos`  | Hammerspoon, Karabiner Elements (macOS only) |
 
-5. **Setup System Customization**:
+Package lists are in `packages/` (Brewfile format for brew, plain text for apt and cargo).
 
-    ```bash
-    # Karabiner keyboard remapping (macOS only)
-    mkdir -p ~/.config/karabiner && ln -sf ~/.dotfiles/karabiner/karabiner.json ~/.config/karabiner/karabiner.json
+## Post-Install
 
-    # Espanso text expansion (setup from templates)
-    cd ~/.dotfiles/espanso/templates && for f in *.template; do cp "$f" "../local/${f%.template}"; done
+`setup.sh` handles these automatically, but for reference:
 
-    # Choose based on your OS:
+- **Sheldon**: `sheldon lock --update` (zsh plugin lockfile)
+- **TPM**: Cloned to `~/.tmux/plugins/tpm/`, press `prefix+I` in tmux to install plugins
+- **Neovim**: `nvim --headless "+Lazy! sync" +qa` (plugin sync)
+- **Permissions**: `~/.ssh` (700), `~/.gnupg` (700), config files (600)
 
-    # Linux/macOS:
-    ESPANSO_PATH="$HOME/.config/espanso"
-    mkdir -p "$ESPANSO_PATH"/{config,match}
+## Espanso (Text Expansion)
 
-    # Remove default base.yml if it exists (we'll use our own from local/match/)
-    [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
+Espanso configs come from the private repo. On macOS/Linux, symlinks are created
+in `~/.config/espanso/`. On WSL, use `temporary-link.bat` from the private repo
+to create Windows-side NTFS symlinks (run as admin).
 
-    # Symlink config files from local/config/ (default.yml, etc.)
-    if [[ -d ~/.dotfiles/espanso/local/config ]]; then
-      for f in ~/.dotfiles/espanso/local/config/*.yml; do
-        [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
-      done
-    fi
+## LaunchAgents (macOS)
 
-    # Symlink match files from local/match/ (both .yml and .md files)
-    if [[ -d ~/.dotfiles/espanso/local/match ]]; then
-      for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
-        [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
-      done
-    fi
+```bash
+mkdir -p ~/Library/LaunchAgents
+for plist in ~/.dotfiles/launchagents/*.plist; do
+    [ -f "$plist" ] || continue
+    ln -sf "$plist" ~/Library/LaunchAgents/
+    launchctl unload "$plist" 2>/dev/null || true
+    launchctl load "$plist"
+done
+```
 
-    # Windows (WSL - use Windows path):
-    # ESPANSO_PATH="$APPDATA/espanso"
-    # mkdir -p "$ESPANSO_PATH"/{config,match}
-    #
-    # # Remove default base.yml if it exists (we'll use our own from local/match/)
-    # [[ -f "$ESPANSO_PATH/config/base.yml" ]] && rm "$ESPANSO_PATH/config/base.yml"
-    #
-    # # Symlink config files from local/config/ (default.yml, etc.)
-    # if [[ -d ~/.dotfiles/espanso/local/config ]]; then
-    #   for f in ~/.dotfiles/espanso/local/config/*.yml; do
-    #     [[ -f "$f" ]] && ln -sf "$f" "$ESPANSO_PATH/config/$(basename "$f")"
-    #   done
-    # fi
-    #
-    # # Symlink match files from local/match/ (both .yml and .md files)
-    # if [[ -d ~/.dotfiles/espanso/local/match ]]; then
-    #   for f in ~/.dotfiles/espanso/local/match/*.{yml,md}; do
-    #     [[ -f "$f" ]] && [[ "$(basename "$f")" != "README.md" ]] && ln -sf "$f" "$ESPANSO_PATH/match/$(basename "$f")"
-    #   done
-    # fi
-    ```
+## Health Check
 
-6. **Setup Neovim**:
+Run `./setup.sh --doctor` to verify:
+- All expected symlinks exist and point to correct targets
+- Required and recommended tools are installed
+- Private repo is linked
+- SSH/GPG directory permissions are correct
+- Plugin managers are initialized
 
-    ```bash
-    mkdir -p ~/.config/nvim
-    ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
-    ```
+## Architecture
 
-7. **Setup Tmux**:
+See [setup-architecture.md](setup-architecture.md) for the design rationale.
 
-    ```bash
-    ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
-    ```
+## Local Override Files
 
-8. **Setup Git**:
+These files come from the private repo and are symlinked into `local/` directories:
 
-    ```bash
-    ln -sf ~/.dotfiles/git/.gitconfig ~/.gitconfig
-    ln -sf ~/.dotfiles/git/.gitignore_global ~/.gitignore_global
-
-    # Create local Git config (if not exists)
-    mkdir -p ~/.dotfiles/git/local
-    if [ ! -f ~/.dotfiles/git/local/.gitconfig.local ]; then
-      cat > ~/.dotfiles/git/local/.gitconfig.local <<EOL
-    [user]
-        name = Your Name
-        email = your.email@example.com
-    EOL
-    fi
-
-    # Link local config to home directory
-    ln -sf ~/.dotfiles/git/local/.gitconfig.local ~/.gitconfig.local
-    ```
-
-9. **Setup SSH**:
-
-    ```bash
-    mkdir -p ~/.ssh
-    ln -sf ~/.dotfiles/ssh/config ~/.ssh/config
-
-    # Create local SSH config (if not exists)
-    mkdir -p ~/.dotfiles/ssh/local
-    if [ ! -f ~/.dotfiles/ssh/local/config.local ]; then
-      cat > ~/.dotfiles/ssh/local/config.local <<EOL
-    # Local SSH configurations - Example private server
-    Host myserver
-        HostName server.example.com
-        User admin
-        Port 22
-        IdentityFile ~/.ssh/id_ed25519_server
-        AddKeysToAgent yes
-        UseKeychain yes
-        ForwardAgent yes
-        ServerAliveInterval 60
-        ServerAliveCountMax 10
-    EOL
-    fi
-
-    # Link local config to SSH directory
-    ln -sf ~/.dotfiles/ssh/local/config.local ~/.ssh/config.local
-
-    # Set proper permissions for SSH files
-    chmod 700 ~/.ssh
-    chmod 600 ~/.ssh/config*
-    ```
-
-10. **Setup Hammerspoon**:
-
-    ```bash
-    brew install --cask hammerspoon
-    ln -sf ~/.dotfiles/hammerspoon ~/.hammerspoon
-    
-    # Ensure the init.lua is directly in ~/.hammerspoon
-    # If not, you may need to remove the existing directory:
-    # rm -rf ~/.hammerspoon && ln -s ~/.dotfiles/hammerspoon ~/.hammerspoon
-    ```
-
-11. **Setup LaunchAgents** (optional - add your own plist files first):
-
-    ```bash
-    # Add .plist files to ~/.dotfiles/launchagents/ then run:
-    mkdir -p ~/Library/LaunchAgents
-    for plist in ~/.dotfiles/launchagents/*.plist; do
-      [ -f "$plist" ] || continue
-      ln -sf "$plist" ~/Library/LaunchAgents/
-      launchctl unload "$plist" 2>/dev/null || true
-      launchctl load "$plist"
-    done
-    ```
-
-12. **Secure Important Directories**:
-
-    ```bash
-    # Restrict write permissions on Zsh function path directory
-    chmod go-w "$(dirname ${fpath[1]})"
-
-    # Restrict write permissions on the cache directory
-    chmod go-w "${XDG_CACHE_HOME:-$HOME/.cache}"
-    ```
-
-## Local Customization & Security
-
-The configuration supports local overrides and secure handling of sensitive data:
-
-### Local Override Files
-
-- `git/local/.gitconfig.local`: Git user info and machine-specific settings (symlinked to `~/.gitconfig.local`)
-- `ssh/local/config.local`: Machine-specific SSH configurations (symlinked to `~/.ssh/config.local`)
-- `zsh/config/modules/local/*.zsh`: Machine-specific shell functions and aliases
-- `hammerspoon/modules/hotkeys/config/local/*`: Machine-specific Hammerspoon hotkey configurations
-
-### Managed Configuration Files
-
-The dotfiles manage configuration files for various tools:
-
-- **Shell Integration**: Powerlevel10k prompt theme, iTerm2 integration
-- **Development Tools**: tlrc (tldr), tmuxinator (sessions)
-- **Shell Management**: Atuin (shell history), Sheldon (plugin management)
-- **System Customization**: Karabiner (keyboard remapping), Espanso (text expansion)
-
-All managed files are symlinked from their respective tool directories in `~/.dotfiles/` to their expected locations.
+- `git/local/.gitconfig.local` - Git user info (symlinked to `~/.gitconfig.local`)
+- `ssh/local/config.local` - SSH hosts (symlinked to `~/.ssh/config.local`)
+- `zsh/config/modules/local/*.zsh` - Shell functions, aliases, exports
+- `hammerspoon/modules/hotkeys/config/local/*` - Hotkey mappings (macOS)
+- `espanso/local/{config,match}/*` - Text expansion configs
+- `nilesoft/local/*` - Context menu configs (Windows)
