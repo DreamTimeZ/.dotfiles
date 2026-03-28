@@ -285,24 +285,6 @@ if zdotfiles_has_command docker; then
     alias dprune-all='docker system prune -a'
 fi
 
-# ===============================
-# HTTP CLIENT (HTTPie)
-# ===============================
-if zdotfiles_has_command http; then
-    # HTTP methods
-    alias hget='http GET'
-    alias hpost='http POST'
-    alias hput='http PUT'
-    alias hdelete='http DELETE'
-    alias hpatch='http PATCH'
-    
-    # Content types and options
-    alias hjson='http --json'
-    alias hform='http --form'
-    alias hverbose='http --verbose'
-    alias hheaders='http --headers'
-    alias hdownload='http --download'
-fi
 
 # ===============================
 # KUBERNETES
