@@ -40,10 +40,11 @@ update_sheldon() {
 }
 
 # Function: update
-# Updates: Homebrew, App Store, mise tools, Rust, Sheldon plugins, and macOS
+# Updates: Homebrew, App Store (macOS), mise tools, Rust, Sheldon plugins, and macOS system updates
 update() {
+  local platform_label="$(zdotfiles_detect_platform)"
   echo -e "\033[1;34m╔═══════════════════════════════════════════════════════╗"
-  echo -e "║          Starting update process on macOS...          ║"
+  printf "║          Starting update process on %-17s ║\n" "${platform_label}..."
   echo -e "╚═══════════════════════════════════════════════════════╝\033[0m"
 
   local success=true
@@ -63,26 +64,28 @@ update() {
     echo -e "\033[1;33m⚠ Homebrew not found. Skipping Homebrew updates.\033[0m"
   fi
 
-  # 2. Update Mac App Store apps via 'mas'
-  if zdotfiles_has_command mas; then
-    echo -e "\n\033[1;32m◆ Upgrading Mac App Store apps...\033[0m"
-    local outdated_apps
-    outdated_apps=$(mas outdated 2>/dev/null)
-    if [[ -z "$outdated_apps" ]]; then
-      echo "✓ All App Store apps are up to date."
-    else
-      echo "$outdated_apps"
-      # Try mas upgrade, fall back to App Store if it fails
-      # (mas has a known bug: https://github.com/mas-cli/mas/issues/1029)
-      if mas upgrade 2>&1 | grep -q "PKInstallErrorDomain"; then
-        echo -e "\033[1;33m⚠ mas upgrade failed. Opening App Store for manual update.\033[0m"
-        open "macappstore://showUpdatesPage"
+  # 2. Update Mac App Store apps via 'mas' (macOS only)
+  if zdotfiles_is_macos; then
+    if zdotfiles_has_command mas; then
+      echo -e "\n\033[1;32m◆ Upgrading Mac App Store apps...\033[0m"
+      local outdated_apps
+      outdated_apps=$(mas outdated 2>/dev/null)
+      if [[ -z "$outdated_apps" ]]; then
+        echo "✓ All App Store apps are up to date."
       else
-        echo "✓ App Store apps updated successfully."
+        echo "$outdated_apps"
+        # Try mas upgrade, fall back to App Store if it fails
+        # (mas has a known bug: https://github.com/mas-cli/mas/issues/1029)
+        if mas upgrade 2>&1 | grep -q "PKInstallErrorDomain"; then
+          echo -e "\033[1;33m⚠ mas upgrade failed. Opening App Store for manual update.\033[0m"
+          open "macappstore://showUpdatesPage"
+        else
+          echo "✓ App Store apps updated successfully."
+        fi
       fi
+    else
+      echo -e "\033[1;33m⚠ The 'mas' CLI tool is not installed. Skipping App Store updates.\033[0m"
     fi
-  else
-    echo -e "\033[1;33m⚠ The 'mas' CLI tool is not installed. Skipping App Store updates.\033[0m"
   fi
 
   # 3. Update mise-managed tools (Node, Python, pnpm, etc.)
@@ -111,25 +114,26 @@ update() {
     errors+=("Sheldon plugins update failed")
   fi
 
-  # 6. Check and install macOS system updates
-  echo -e "\n\033[1;32m◆ Checking for macOS system updates...\033[0m"
-  if sudo softwareupdate --list-full-installers &>/dev/null; then
-    if sudo softwareupdate -i -a --restart; then
-      echo "✓ System updates installed successfully and will restart when ready."
+  # 6. Check and install macOS system updates (macOS only)
+  if zdotfiles_is_macos; then
+    echo -e "\n\033[1;32m◆ Checking for macOS system updates...\033[0m"
+    if sudo softwareupdate --list-full-installers &>/dev/null; then
+      if sudo softwareupdate -i -a --restart; then
+        echo "✓ System updates installed successfully and will restart when ready."
+      else
+        success=false
+        errors+=("System update failed")
+        echo -e "\033[1;31m✗ Error installing system updates.\033[0m"
+      fi
     else
-      success=false
-      errors+=("System update failed")
-      echo -e "\033[1;31m✗ Error installing system updates.\033[0m"
+      echo "✓ No system updates available."
     fi
-  else
-    echo "✓ No system updates available."
   fi
 
   # Summary
   echo -e "\n\033[1;34m╔═══════════════════════════════════════════════════════╗"
   if $success; then
     echo -e "║          System update process completed!             ║"
-    echo -e "║     System will restart if updates were installed     ║"
   else
     echo -e "║      Update process completed with some errors:       ║"
     for error in "${errors[@]}"; do
