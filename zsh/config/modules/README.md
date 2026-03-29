@@ -7,15 +7,19 @@ This directory contains the modular components of the ZSH configuration system. 
 ```markdown
 modules/
 ├── functions/  - User-defined shell functions
-│   ├── 00-core.zsh         - Core utility functions (notify, retry)
+│   ├── 00-core.zsh         - Core utility functions (notify, retry, confirm)
+│   ├── 05-clipboard.zsh    - Cross-platform clipboard (pbcopy/pbpaste)
 │   ├── 10-navigation.zsh   - Navigation functions (mkcd, dusage, ffind, fdir)
 │   ├── 15-network.zsh      - Network functions (ip-local, sniff, nscan)
+│   ├── 16-websearch.zsh    - Web search functions (google, ghs, yt, so)
 │   ├── 20-git.zsh          - Git functions (fbr, fgf - fuzzy git tools)
 │   ├── 30-process.zsh      - Process management (fpkill, fh - interactive tools)
-│   ├── 40-python.zsh       - Python tools (venv, pcheck - quality checker)
+│   ├── 40-python.zsh       - Python tools (venv - environment management)
+│   ├── 45-tmux.zsh         - Tmux session management (dev)
 │   ├── 50-webserver.zsh    - Web server (serve - dev server)
-│   ├── 60-system.zsh       - System maintenance (update - macOS)
+│   ├── 60-system.zsh       - System maintenance (update - system updater)
 │   ├── 70-services.zsh     - Service management (ollama-* functions)
+│   ├── 75-knowledge.zsh    - Knowledge management (yt2note, ytt, ytc)
 │   └── 80-colorization.zsh - Output colorization (grc setup)
 │
 └── local/      - Local overrides (optional, user-specific)

@@ -22,7 +22,7 @@ exec zsh
 - **🎯 Smart Defaults**: `cd` uses zoxide, `ls` uses eza by default
 - **🔧 Modular Design**: Functions organized in logical modules  
 - **⚡ Fast Startup**: Optimized loading with lazy initialization
-- **🛡️ Non-Breaking**: Modern tools with escape hatches (`oldls`)
+- **🛡️ Non-Breaking**: Modern tools with graceful fallbacks
 - **📦 Rich Utilities**: Productivity functions and aliases included
 
 ## 📁 Structure
@@ -36,14 +36,19 @@ zsh/
 │   ├── exports.zsh           # Environment & options
 │   ├── modules/
 │   │   ├── functions/        # Organized by domain
+│   │   │   ├── 00-core.zsh        # notify, retry, confirm
+│   │   │   ├── 05-clipboard.zsh   # cross-platform clipboard
 │   │   │   ├── 10-navigation.zsh  # mkcd, dusage, ffind
-│   │   │   ├── 15-network.zsh     # ip-local, sniff, nscan  
+│   │   │   ├── 15-network.zsh     # ip-local, sniff, nscan
+│   │   │   ├── 16-websearch.zsh   # google, ghs, yt, so
 │   │   │   ├── 20-git.zsh         # fbr, fgf (fuzzy git)
 │   │   │   ├── 30-process.zsh     # fpkill, fh (process mgmt)
-│   │   │   ├── 40-python.zsh      # venv, pcheck (quality)
+│   │   │   ├── 40-python.zsh      # venv (environment mgmt)
+│   │   │   ├── 45-tmux.zsh        # dev (tmux sessions)
 │   │   │   ├── 50-webserver.zsh   # serve (dev server)
-│   │   │   ├── 60-system.zsh      # update (macOS)
+│   │   │   ├── 60-system.zsh      # update (system updater)
 │   │   │   ├── 70-services.zsh    # ollama-* (AI tools)
+│   │   │   ├── 75-knowledge.zsh   # yt2note, ytt, ytc
 │   │   │   └── 80-colorization.zsh # grc setup
 │   │   └── local/            # Your customizations
 │   └── plugins.zsh           # Plugin management
@@ -71,7 +76,7 @@ zsh/
 - `ip-local` → network interface overview
 - `serve` → instant dev server (Node.js/Python)
 - `venv` → smart Python environment manager
-- `pcheck` → comprehensive code quality check
+- `dirty` → scan git repos for uncommitted changes
 
 ### Shell History (Atuin)
 

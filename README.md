@@ -48,21 +48,21 @@ A carefully curated collection of dotfiles optimized for:
 
 ## 🚀 Installation
 
-### Quick Install (manual until automated script is ready)
+### Quick Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/username/dotfiles.git ~/.dotfiles
-
-# Navigate to the directory
 cd ~/.dotfiles
-
-# Set up components you need (examples)
-ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc
-ln -sf ~/.dotfiles/zsh/.zprofile ~/.zprofile
-ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua
-ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf
+./setup.sh --all
 ```
+
+Or install selectively (`core`, `cli`, `dev`, `extra`, `macos`):
+
+```bash
+./setup.sh core cli dev
+```
+
+Run `./setup.sh --doctor` to verify your setup.
 
 See the [Installation Guide](docs/installation.md) for complete step-by-step instructions.
 
@@ -92,8 +92,7 @@ For detailed information on each component:
 #### macOS
 
 - Homebrew for package management
-- iTerm2 (recommended terminal emulator)
-- Recommended tools: fzf, eza/exa, zoxide
+- Recommended tools: fzf, eza, zoxide
 
 #### Linux
 
@@ -108,8 +107,6 @@ For detailed information on each component:
 
 ## 🗺️ Roadmap
 
-- Automated installation script with configuration wizard
-- Homebrew formula management
 - Backup and restore system
 - Enhanced Linux and WSL compatibility
 

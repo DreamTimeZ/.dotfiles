@@ -8,7 +8,7 @@ This document details the structure of the ZSH configuration system.
 zsh/
 ├── .zshrc             - Main ZSH configuration file
 ├── .zprofile          - Login shell configuration
-├── profile-zsh.zsh    - Profile configuration for ZSH
+├── profile-zsh.zsh    - Startup profiling and benchmarking script
 ├── config/            - Configuration modules
 │   ├── modules.zsh    - Module loader system
 │   ├── exports.zsh    - Environment variables
@@ -21,9 +21,13 @@ zsh/
 │       └── local/     - User-specific overrides (optional)
 ├── sheldon/           - Sheldon plugin manager configurations
 │   ├── plugins.toml   - Plugin declarations
+│   ├── atuin.zsh      - Atuin shell history setup
 │   ├── fzf-tab-config.zsh - FZF tab completion config
 │   ├── iterm.zsh      - iTerm2 integration
-│   └── terminal-title.zsh - Terminal window title config
+│   ├── mise.zsh       - mise version manager lazy loading
+│   ├── ssh-keys.zsh   - SSH key lazy loading
+│   ├── terminal-title.zsh - Terminal window title config
+│   └── zoxide.zsh     - zoxide smart cd setup
 └── docs/              - Documentation
     ├── keybindings.md - Keyboard shortcuts documentation
     ├── requirements.md - Installation requirements
