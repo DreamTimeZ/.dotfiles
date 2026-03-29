@@ -43,6 +43,10 @@ git/local/*
 ssh/local/*
 !ssh/local/.gitkeep
 
+# GPG local configurations - machine-specific GPG settings
+gpg/local/*
+!gpg/local/.gitkeep
+
 # Package local configurations - private Brewfiles symlinked here
 packages/local/*
 !packages/local/.gitkeep
