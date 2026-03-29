@@ -20,7 +20,7 @@ The dotfiles use a clean, organized path structure with two repositories:
 │   └── tmux.md      # Tmux documentation
 ├── zsh/             # Zsh configuration
 │   └── README.md    # Zsh documentation
-├── install.sh       # Installation script
+├── setup.sh         # Installation and setup script
 └── README.md        # Main documentation
 
 ~/.dotfiles-private/ # Private repository (source of truth for local files)
