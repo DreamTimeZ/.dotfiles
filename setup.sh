@@ -855,7 +855,7 @@ run_doctor() {
 
     # ── Plugin managers ──
     printf "\n${BOLD}Plugin managers${NC}\n"
-    if [[ -f "${HOME}/.config/sheldon/plugins.lock" ]]; then
+    if [[ -f "${HOME}/.local/share/sheldon/plugins.lock" ]]; then
         log_success "Sheldon lockfile"
     else
         log_warn "Sheldon lockfile missing (run: sheldon lock)"
