@@ -2,6 +2,7 @@
 tmux/sessions
 **/*.bak
 **/*.log
+**/Brewfile.lock.json
 **/TODO.md
 
 .claude/*

@@ -502,7 +502,7 @@ install_brew_packages() {
     fi
 
     log_info "Installing $category packages (brew)..."
-    brew bundle --no-lock --file="$brewfile" || {
+    brew bundle --file="$brewfile" || {
         log_warn "Some $category packages may have failed (continuing)"
         PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
     }
@@ -602,7 +602,7 @@ install_local_packages() {
         fi
 
         log_info "Installing local packages ($name)..."
-        brew bundle --no-lock --file="$brewfile" || {
+        brew bundle --file="$brewfile" || {
             log_warn "Some local packages may have failed (continuing)"
             PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
         }
