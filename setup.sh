@@ -109,6 +109,7 @@ EOF
     if [[ -f "$SYMLINKS_CONF" ]]; then
         printf "Symlink groups (from symlinks.conf):\n"
         sed -n 's/^# @group \([a-zA-Z0-9_-]*\).*/  \1/p' "$SYMLINKS_CONF"
+        printf "  espanso  (virtual, handled separately due to spaces in macOS path)\n"
     fi
 
     cat << 'EOF'
@@ -130,7 +131,8 @@ EOF
 
 parse_args() {
     # Load valid group names for validation
-    local -a valid_groups=()
+    # Virtual groups (handled outside symlinks.conf): espanso
+    local -a valid_groups=(espanso)
     if [[ -f "$SYMLINKS_CONF" ]]; then
         while IFS= read -r _g; do
             valid_groups+=("$_g")
@@ -286,9 +288,11 @@ is_group_excluded() {
         done
         return 0  # not in --only list
     fi
-    for g in "${SKIP_GROUPS[@]}"; do
-        [[ "$g" == "$group" ]] && return 0
-    done
+    if [[ ${#SKIP_GROUPS[@]} -gt 0 ]]; then
+        for g in "${SKIP_GROUPS[@]}"; do
+            [[ "$g" == "$group" ]] && return 0
+        done
+    fi
     return 1
 }
 
@@ -661,6 +665,99 @@ install_packages() {
     install_linux_extras "$platform"
 }
 
+# ── Espanso Config Linking ────────────────────────────────────────
+# macOS espanso config path contains spaces (~/Library/Application Support/espanso/)
+# which symlinks.conf cannot handle, so this is done separately.
+
+espanso_target_dir() {
+    case "$(detect_platform)" in
+        macos) printf '%s' "${HOME}/Library/Application Support/espanso" ;;
+        linux) printf '%s' "${HOME}/.config/espanso" ;;
+        # WSL: espanso runs on the Windows side, no config linking needed
+        *)     return 1 ;;
+    esac
+}
+
+link_espanso_config() {
+    # Respect --skip/--only group filtering (virtual group: espanso)
+    if is_group_excluded "espanso"; then
+        SYMLINKS_EXCLUDED=$((SYMLINKS_EXCLUDED + 1))
+        return 0
+    fi
+
+    local espanso_source="${DOTFILES_DIR}/espanso/local"
+    local espanso_target
+    espanso_target="$(espanso_target_dir)" || return 0
+
+    if [[ ! -d "$espanso_source/config" || ! -d "$espanso_source/match" ]]; then
+        log_skip "Espanso config not found (populate espanso/local/ first)"
+        return 0
+    fi
+
+    local dir
+    for dir in config match; do
+        local src="${espanso_source}/${dir}"
+        local tgt="${espanso_target}/${dir}"
+
+        if [[ -L "$tgt" ]]; then
+            local current
+            current="$(readlink "$tgt")"
+            if [[ "$current" == "$src" ]]; then
+                log_skip "Already linked: ${tgt/#$HOME/~}"
+                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
+                continue
+            fi
+            if (( ! FORCE )); then
+                log_warn "Exists (different target): ${tgt/#$HOME/~} -> $current"
+                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
+                continue
+            fi
+            (( ! DRY_RUN )) && rm -f "$tgt"
+        elif [[ -d "$tgt" ]]; then
+            if (( ! FORCE )); then
+                log_warn "Exists as directory: ${tgt/#$HOME/~} (use --force to replace)"
+                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
+                continue
+            fi
+            (( ! DRY_RUN )) && rm -rf "$tgt"
+        fi
+
+        if (( DRY_RUN )); then
+            log_info "[dry-run] Would link: ${tgt/#$HOME/~} -> ${src/#$DOTFILES_DIR/}"
+        else
+            mkdir -p "$espanso_target"
+            ln -s "$src" "$tgt"
+            log_success "${tgt/#$HOME/~} -> ${src/#$DOTFILES_DIR/}"
+        fi
+        SYMLINKS_CREATED=$((SYMLINKS_CREATED + 1))
+    done
+}
+
+unlink_espanso_config() {
+    local espanso_source="${DOTFILES_DIR}/espanso/local"
+    local espanso_target
+    espanso_target="$(espanso_target_dir)" || return 0
+
+    local dir
+    for dir in config match; do
+        local src="${espanso_source}/${dir}"
+        local tgt="${espanso_target}/${dir}"
+
+        if [[ -L "$tgt" ]]; then
+            local current
+            current="$(readlink "$tgt")"
+            if [[ "$current" == "$src" ]]; then
+                if (( DRY_RUN )); then
+                    log_info "[dry-run] Would remove: ${tgt/#$HOME/~}"
+                else
+                    rm -f "$tgt"
+                    log_success "Removed: ${tgt/#$HOME/~}"
+                fi
+            fi
+        fi
+    done
+}
+
 # ── Post-Install ──────────────────────────────────────────────────
 
 post_install() {
@@ -811,6 +908,37 @@ run_doctor() {
         issues=$((issues + 1))
     fi
 
+    # ── Espanso config (not in symlinks.conf due to spaces in macOS path) ──
+    local espanso_target
+    if espanso_target="$(espanso_target_dir)"; then
+        local espanso_source="${DOTFILES_DIR}/espanso/local"
+        if [[ -d "$espanso_source/config" && -d "$espanso_source/match" ]]; then
+            local _dir
+            for _dir in config match; do
+                local _src="${espanso_source}/${_dir}"
+                local _tgt="${espanso_target}/${_dir}"
+                if [[ -L "$_tgt" ]]; then
+                    local _current
+                    _current="$(readlink "$_tgt")"
+                    if [[ "$_current" == "$_src" ]]; then
+                        log_success "${_tgt/#$HOME/~}"
+                    else
+                        log_warn "${_tgt/#$HOME/~} -> wrong target"
+                        issues=$((issues + 1))
+                    fi
+                elif [[ -d "$_tgt" ]]; then
+                    log_warn "${_tgt/#$HOME/~} exists but is not a symlink (run setup.sh --link-only --force)"
+                    issues=$((issues + 1))
+                else
+                    log_error "${_tgt/#$HOME/~} missing"
+                    issues=$((issues + 1))
+                fi
+            done
+        else
+            log_skip "Espanso config not found (populate espanso/local/ first)"
+        fi
+    fi
+
     # ── Required tools ──
     printf "\n${BOLD}Required tools${NC}\n"
     local -a required_tools=(git zsh tmux sheldon fzf)
@@ -918,6 +1046,7 @@ main() {
     # Unlink mode
     if (( DO_UNLINK )); then
         remove_symlinks "$platform"
+        unlink_espanso_config
         exit 0
     fi
 
@@ -934,6 +1063,7 @@ main() {
     # Create home symlinks and run post-install
     if (( ! PACKAGES_ONLY )); then
         process_symlinks "$platform"
+        link_espanso_config
         if (( ! LINK_ONLY )); then
             post_install
         fi
