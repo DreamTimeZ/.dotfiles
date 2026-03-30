@@ -1,0 +1,28 @@
+# Window size (matches iTerm2 default profile)
+window-width = 122
+window-height = 29
+
+# Font
+font-family = "MesloLGS Nerd Font Mono"
+
+# Silence bell
+bell-features = no-system,no-audio,no-attention,no-title,no-border
+
+# Clipboard: allow apps to read without prompting
+clipboard-read = allow
+
+# Disable paste protection (triggers on Espanso multi-line expansions)
+clipboard-paste-protection = false
+
+# No confirm on close (matches iTerm2 setting)
+confirm-close-surface = false
+
+# Option+Backspace: send ESC+DEL (backward-kill-word)
+# Removed as default in Ghostty 1.2+ (PR #7320)
+keybind = opt+backspace=text:\x1b\x7f
+
+# Option+Delete (fn+Option+Backspace): forward delete one word
+keybind = opt+delete=text:\x1b[3;3~
+
+# Cmd+Delete (fn+Cmd+Backspace): delete to end of line
+keybind = super+delete=text:\x1b[3;9~
