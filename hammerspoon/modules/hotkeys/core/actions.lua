@@ -80,7 +80,7 @@ function M.openFinderFolder(path)
                 else
                     make new Finder window
                     set target of front window to (POSIX file "%s")
-                end ifn
+                end if
                 activate
             end tell
         ]], escapedPath, escapedPath)
