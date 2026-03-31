@@ -1,5 +1,8 @@
 -- Main Hammerspoon configuration file
 
+-- Hide login-item apps that should start in the background
+require("modules.startup")
+
 -- Load and initialize the hotkeys module.
 local hotkeys = require("modules.hotkeys")
 
