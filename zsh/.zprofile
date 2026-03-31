@@ -25,16 +25,6 @@ fi
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
 [[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
 
-# PNPM (Node.js package manager) - Platform-aware
-# Always export PNPM_HOME and ensure directory exists for seamless first use
-if zdotfiles_is_macos; then
-  export PNPM_HOME="$HOME/Library/pnpm"
-else
-  export PNPM_HOME="$HOME/.local/share/pnpm"
-fi
-[[ -d "$PNPM_HOME" ]] || mkdir -p "$PNPM_HOME"
-zdotfiles_path_prepend "$PNPM_HOME"
-
 # ------ Environment Variables ------
 export EDITOR="${EDITOR:-nvim}"
 

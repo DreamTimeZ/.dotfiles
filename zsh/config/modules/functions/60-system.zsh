@@ -8,20 +8,20 @@ if zdotfiles_is_macos; then
 fi
 
 # Function: update_mise
-# Updates mise-managed tools (Node, Python, pnpm, etc.)
+# Upgrades mise-managed tool versions. The mise binary itself is updated
+# by Homebrew in the brew upgrade step, so we only run mise upgrade here.
 update_mise() {
   if ! zdotfiles_has_command mise; then
     echo -e "\033[1;33m⚠ mise not found. Skipping tool updates.\033[0m"
     return 1
   fi
 
-  echo -e "\033[1;32m◆ Updating mise and managed tools...\033[0m"
-  mise self-update -y 2>/dev/null
+  echo -e "\033[1;32m◆ Upgrading mise-managed tools...\033[0m"
   if mise upgrade; then
-    echo "✓ mise tools updated successfully."
+    echo "✓ mise tools upgraded successfully."
     return 0
   else
-    echo -e "\033[1;31m✗ Error updating mise tools.\033[0m"
+    echo -e "\033[1;31m✗ Error upgrading mise tools.\033[0m"
     return 1
   fi
 }
