@@ -814,6 +814,22 @@ post_install() {
         log_skip "TPM already installed"
     fi
 
+    # Mise: install managed tools
+    if command -v mise &>/dev/null; then
+        if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
+            if (( DRY_RUN )); then
+                log_info "[dry-run] Would run: mise install"
+            else
+                log_info "Installing mise-managed tools..."
+                mise install --yes 2>/dev/null \
+                    && log_success "Mise tools installed" \
+                    || log_warn "mise install failed (run manually: mise install)"
+            fi
+        fi
+    else
+        log_skip "Mise not installed"
+    fi
+
     # Neovim plugins
     if command -v nvim &>/dev/null; then
         if [[ -f "${HOME}/.config/nvim/init.lua" ]]; then
@@ -1013,6 +1029,25 @@ run_doctor() {
     else
         log_warn "TPM not installed (setup.sh will install it)"
         issues=$((issues + 1))
+    fi
+
+    # ── Mise tools ──
+    if command -v mise &>/dev/null; then
+        printf "\n${BOLD}Mise tools${NC}\n"
+        if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
+            log_success "Global config"
+        else
+            log_warn "Global config missing (~/.config/mise/config.toml)"
+            issues=$((issues + 1))
+        fi
+        local missing_tools
+        missing_tools="$(mise ls --missing 2>/dev/null)"
+        if [[ -z "$missing_tools" ]]; then
+            log_success "All tools installed"
+        else
+            log_warn "Missing tools (run: mise install)"
+            issues=$((issues + 1))
+        fi
     fi
 
     # ── Summary ──
