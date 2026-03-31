@@ -9,7 +9,6 @@ local macrosModal = config.modals.macros
 -- Macro registry for dynamic management
 local macros = {
     ["Auto-Clicker"] = require("modules.hotkeys.macros.auto-clicker")
-    -- Add new macros here: ["MacroName"] = require("path.to.macro")
 }
 
 -- Core functions

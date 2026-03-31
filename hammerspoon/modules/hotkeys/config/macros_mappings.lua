@@ -10,12 +10,8 @@ return {
     },
     
     -- Status check
-    i = { 
-        action = "showStatus", 
-        desc = "Show Macro Status" 
+    i = {
+        action = "showStatus",
+        desc = "Show Macro Status"
     }
-    
-    -- Note: Dynamic macro mappings are automatically generated
-    -- based on registered macros. You can add custom mappings here
-    -- if you want to override the defaults.
 }
