@@ -415,6 +415,24 @@ link_private_repo() {
     fi
 }
 
+# ── Private Post-Install ──────────────────────────────────────────
+
+run_private_post_install() {
+    local script="${DOTFILES_PRIVATE}/post-install.sh"
+    [[ -f "$script" ]] || return 0
+
+    log_header "Running private post-install"
+
+    local -a cmd=(bash "$script")
+    (( DRY_RUN )) && cmd+=(--dry-run)
+
+    if ! "${cmd[@]}"; then
+        log_error "Private post-install failed"
+        log_error "Fix the issue and re-run: ${script/#$HOME/~}"
+        return 1
+    fi
+}
+
 # ── Package Installation ──────────────────────────────────────────
 
 select_categories_interactive() {
@@ -1066,6 +1084,7 @@ main() {
         link_espanso_config
         if (( ! LINK_ONLY )); then
             post_install
+            run_private_post_install
         fi
     fi
 
