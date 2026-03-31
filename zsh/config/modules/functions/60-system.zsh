@@ -2,6 +2,11 @@
 # SYSTEM MAINTENANCE FUNCTIONS
 # ===============================
 
+# macOS: provide poweroff (exists natively on Linux but not macOS)
+if zdotfiles_is_macos; then
+  poweroff() { sudo shutdown -h "${@:-now}"; }
+fi
+
 # Function: update_mise
 # Updates mise-managed tools (Node, Python, pnpm, etc.)
 update_mise() {
