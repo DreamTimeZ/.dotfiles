@@ -17,12 +17,23 @@ clipboard-paste-protection = false
 # No confirm on close (matches iTerm2 setting)
 confirm-close-surface = false
 
+# Page Up/Down: scroll terminal scrollback
+keybind = page_up=scroll_page_up
+keybind = page_down=scroll_page_down
+
+# Home/End: move to beginning/end of line
+keybind = home=text:\x01
+keybind = end=text:\x05
+
 # Option+Backspace: send ESC+DEL (backward-kill-word)
 # Removed as default in Ghostty 1.2+ (PR #7320)
 keybind = opt+backspace=text:\x1b\x7f
 
-# Option+Delete (fn+Option+Backspace): forward delete one word
-keybind = opt+delete=text:\x1b[3;3~
+# Option+Delete: forward delete one word (ESC+d)
+keybind = opt+delete=text:\x1bd
 
-# Cmd+Delete (fn+Cmd+Backspace): delete to end of line
-keybind = super+delete=text:\x1b[3;9~
+# Cmd+Backspace: delete to beginning of line (Ctrl+U)
+keybind = super+backspace=text:\x15
+
+# Cmd+Delete: forward delete to end of line (Ctrl+K)
+keybind = super+delete=text:\x0b
