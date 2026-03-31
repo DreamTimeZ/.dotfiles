@@ -18,6 +18,10 @@ tmux/sessions
 
 hammerspoon/Spoons
 
+# Karabiner auto-generated directories
+karabiner/assets
+karabiner/automatic_backups
+
 # Exclude local config directory contents but keep README
 hammerspoon/modules/hotkeys/config/local/*
 !hammerspoon/modules/hotkeys/config/local/README.md
