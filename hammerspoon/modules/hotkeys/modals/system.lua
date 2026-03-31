@@ -48,9 +48,18 @@ local function reloadHammerspoon()
     return true
 end
 
+local naturalScroll = require("modules.hotkeys.macros.natural-scroll")
+
+local function toggleNaturalScroll()
+    logging.info("Toggling Natural Scroll")
+    naturalScroll.toggle()
+    return true
+end
+
 -- Define system actions mapping
 local systemMappings = {
     c = { action = actions.handlers.clearNotifications, desc = "Clear Notifications" },
+    n = { action = toggleNaturalScroll, desc = "Toggle Natural Scroll" },
     s = { action = shutdownSystem, desc = "Shutdown System" },
     r = { action = restartSystem, desc = "Restart System" },
     h = { action = reloadHammerspoon, desc = "Reload Hammerspoon" },
