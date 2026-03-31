@@ -1,0 +1,17 @@
+min_version = "2026.3.0"
+
+[tools]
+python = "3.14"
+node = "lts"
+pnpm = "latest"
+uv = "latest"
+
+[settings]
+# Trust dotfiles repo so mise doesn't prompt when working inside it
+trusted_config_paths = ["~/.dotfiles"]
+
+# Read .python-version, .node-version, .nvmrc, etc.
+idiomatic_version_file_enable_tools = ["python", "node"]
+
+# Auto-source .venv created by uv (don't create, uv owns that)
+python.uv_venv_auto = "source"
