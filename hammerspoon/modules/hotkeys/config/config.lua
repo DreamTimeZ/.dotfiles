@@ -175,11 +175,23 @@ config.modals = {
         mappings = {
             u = { pref = "x-apple.systempreferences:com.apple.preferences.softwareupdate",    desc = "Software Update" },
             d = { pref = "x-apple.systempreferences:com.apple.preference.displays",           desc = "Displays" },
-            p = { pref = "x-apple.systempreferences:com.apple.preference.security",           desc = "Privacy/Accessibility" },
-            w = { pref = "x-apple.systempreferences:com.apple.preference.network",            desc = "Wi‑Fi" },
+            p = { pref = "x-apple.systempreferences:com.apple.preference.security",                            desc = "Privacy & Security" },
+            a = { pref = "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility", desc = "Accessibility" },
+            w = { pref = "x-apple.systempreferences:com.apple.wifi-settings-extension",                             desc = "Wi-Fi" },
+            e = { pref = "x-apple.systempreferences:com.apple.preference.network",                               desc = "Network" },
             b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" },
             k = { pref = "x-apple.systempreferences:com.apple.preference.keyboard",           desc = "Keyboard" },
-            s = { pref = "x-apple.systempreferences:com.apple.preference.printfax",           desc = "Printers & Scanners" }
+            s = { pref = "x-apple.systempreferences:com.apple.preference.printfax",           desc = "Printers & Scanners" },
+            l = { pref = "x-apple.systempreferences:com.apple.LoginItems-Settings.extension",                         desc = "Login Items & Extensions" },
+            o = { pref = "x-apple.systempreferences:com.apple.Spotlight-Settings.extension",                         desc = "Spotlight" },
+            r = { pref = "x-apple.systempreferences:com.apple.Wallpaper-Settings.extension",                         desc = "Wallpaper" },
+            c = { pref = "x-apple.systempreferences:com.apple.Lock-Screen-Settings.extension",                       desc = "Lock Screen" },
+            m = { pref = "x-apple.systempreferences:com.apple.Mouse-Settings.extension",                             desc = "Mouse" },
+            t = { pref = "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension",                       desc = "Screen Time" },
+            f = { pref = "x-apple.systempreferences:com.apple.Focus-Settings.extension",                             desc = "Focus" },
+            v = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Display",        desc = "Accessibility: Display" },
+            n = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Motion",         desc = "Accessibility: Motion" },
+            i = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?PointerControl", desc = "Accessibility: Pointer Control" }
         }
     },
     
