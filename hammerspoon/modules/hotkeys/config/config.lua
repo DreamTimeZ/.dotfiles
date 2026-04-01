@@ -191,7 +191,8 @@ config.modals = {
             f = { pref = "x-apple.systempreferences:com.apple.Focus-Settings.extension",                             desc = "Focus" },
             v = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Display",        desc = "Accessibility: Display" },
             n = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Motion",         desc = "Accessibility: Motion" },
-            i = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?PointerControl", desc = "Accessibility: Pointer Control" }
+            i = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?PointerControl", desc = "Accessibility: Pointer Control" },
+            j = { pref = "x-apple.systempreferences:com.apple.Profiles-Settings.extension",                  desc = "Device Management" }
         }
     },
     
