@@ -180,7 +180,7 @@ if zdotfiles_has_command eza; then
     alias ll='eza -l --color=auto --group-directories-first --icons=auto'
     alias la='eza -lA --color=auto --group-directories-first --icons=auto'
     alias ld='eza -lD --color=auto --icons=auto'
-    alias tree='eza --tree --level=2 --color=auto --icons=auto'
+    alias lt='eza --tree --level=2 --color=auto --icons=auto'
     alias ltree='eza --tree --level=3 --color=auto --icons=auto'
     # lh: list hidden files only (function required to handle empty case)
     # - .[^.]*(N) matches hidden files excluding . and ..
