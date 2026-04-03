@@ -8,8 +8,16 @@ local macrosModal = config.modals.macros
 
 -- Macro registry for dynamic management
 local macros = {
-    ["Auto-Clicker"] = require("modules.hotkeys.macros.auto-clicker")
+    ["Auto-Clicker"] = require("modules.hotkeys.macros.auto-clicker"),
 }
+
+-- Optional local macros (loaded from dotfiles-private)
+local localMacros = {}
+
+for name, modulePath in pairs(localMacros) do
+    local ok, mod = pcall(require, modulePath)
+    if ok then macros[name] = mod end
+end
 
 -- Core functions
 local function stopAll()
