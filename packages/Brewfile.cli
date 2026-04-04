@@ -12,5 +12,5 @@ brew "tree"             # directory tree listing
 brew "btop"             # modern htop
 brew "dust"             # modern du
 brew "duf"              # modern df
-brew "p7zip"            # 7-zip archive tool
+brew "sevenzip"         # 7-zip archive tool (official upstream)
 brew "grc"              # generic colorizer

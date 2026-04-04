@@ -459,6 +459,14 @@ if zdotfiles_has_command claude; then
 fi
 
 # ===============================
+# ARCHIVE TOOLS
+# ===============================
+# sevenzip installs as 7zz; alias for compatibility with scripts expecting 7z
+if zdotfiles_has_command 7zz && ! zdotfiles_has_command 7z; then
+    alias 7z='7zz'
+fi
+
+# ===============================
 # SYSTEM AND UTILITY
 # ===============================
 # his='history' - removed, conflicts with atuin
