@@ -6,5 +6,8 @@ curl
 git
 file
 procps
+# Build dependencies for cargo crates (OpenSSL, pkg-config)
+pkg-config
+libssl-dev
 zsh
 tmux
