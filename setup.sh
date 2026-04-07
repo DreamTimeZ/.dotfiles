@@ -4,12 +4,12 @@
 #
 # Usage:
 #   ./setup.sh                    Interactive setup (select categories)
-#   ./setup.sh --all              Install all packages + create symlinks
+#   ./setup.sh -a | --all         Install all packages + create symlinks
 #   ./setup.sh core cli           Install specific categories only
-#   ./setup.sh --link-only        Only create symlinks (no packages)
-#   ./setup.sh --packages-only    Only install packages (no symlinks)
-#   ./setup.sh --doctor           System health check
-#   ./setup.sh --unlink           Remove all managed symlinks
+#   ./setup.sh -l | --link-only   Only create symlinks (no packages)
+#   ./setup.sh -p | --packages-only  Only install packages (no symlinks)
+#   ./setup.sh -d | --doctor      System health check
+#   ./setup.sh -u | --unlink      Remove all managed symlinks
 #
 # Package categories: core, cli, dev, extra, macos (macOS only)
 
@@ -85,16 +85,16 @@ show_help() {
 Usage: ./setup.sh [options] [categories...]
 
 Options:
-  --all            Install all package categories
-  --skip GROUP     Skip symlink group (repeatable, see groups below)
-  --only GROUP     Only link these symlink groups (repeatable, mutually exclusive with --skip)
-  --link-only      Only create symlinks, skip packages
-  --packages-only  Only install packages, skip symlinks
-  --doctor         Check system health and symlink integrity
-  --unlink         Remove all managed symlinks
-  --dry-run        Show what would be done without making changes
-  --force          Overwrite existing files and symlinks
-  -h, --help       Show this help message
+  -a, --all            Install all package categories
+  -s, --skip GROUP     Skip symlink group (repeatable, see groups below)
+  -o, --only GROUP     Only link these symlink groups (repeatable, mutually exclusive with --skip)
+  -l, --link-only      Only create symlinks, skip packages
+  -p, --packages-only  Only install packages, skip symlinks
+  -d, --doctor         Check system health and symlink integrity
+  -u, --unlink         Remove all managed symlinks
+  -n, --dry-run        Show what would be done without making changes
+  -f, --force          Overwrite existing files and symlinks
+  -h, --help           Show this help message
 
 Package categories:
   core      Shell essentials: zsh, git, tmux, sheldon, fzf, zoxide, atuin
@@ -141,18 +141,18 @@ parse_args() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --all)            INSTALL_ALL=1 ;;
-            --link-only)      LINK_ONLY=1 ;;
-            --packages-only)  PACKAGES_ONLY=1 ;;
-            --doctor)         DO_DOCTOR=1 ;;
-            --unlink)         DO_UNLINK=1 ;;
-            --skip)
-                if [[ $# -lt 2 || "$2" == --* ]]; then
+            -a|--all)            INSTALL_ALL=1 ;;
+            -l|--link-only)      LINK_ONLY=1 ;;
+            -p|--packages-only)  PACKAGES_ONLY=1 ;;
+            -d|--doctor)         DO_DOCTOR=1 ;;
+            -u|--unlink)         DO_UNLINK=1 ;;
+            -s|--skip)
+                if [[ $# -lt 2 || "$2" == -* ]]; then
                     log_error "--skip requires at least one group name"
                     exit 1
                 fi
                 shift
-                while [[ $# -gt 0 && "$1" != --* ]]; do
+                while [[ $# -gt 0 && "$1" != -* ]]; do
                     local _lower
                     _lower="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
                     if [[ ${#valid_groups[@]} -gt 0 ]]; then
@@ -170,13 +170,13 @@ parse_args() {
                 done
                 continue  # skip outer shift, $1 is already the next flag
                 ;;
-            --only)
-                if [[ $# -lt 2 || "$2" == --* ]]; then
+            -o|--only)
+                if [[ $# -lt 2 || "$2" == -* ]]; then
                     log_error "--only requires at least one group name"
                     exit 1
                 fi
                 shift
-                while [[ $# -gt 0 && "$1" != --* ]]; do
+                while [[ $# -gt 0 && "$1" != -* ]]; do
                     local _lower
                     _lower="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
                     if [[ ${#valid_groups[@]} -gt 0 ]]; then
@@ -194,8 +194,8 @@ parse_args() {
                 done
                 continue  # skip outer shift, $1 is already the next flag
                 ;;
-            --dry-run)        DRY_RUN=1 ;;
-            --force)          FORCE=1 ;;
+            -n|--dry-run)        DRY_RUN=1 ;;
+            -f|--force)          FORCE=1 ;;
             -h|--help)        show_help; exit 0 ;;
             core|cli|dev|extra|macos)
                 CATEGORIES+=("$1")
