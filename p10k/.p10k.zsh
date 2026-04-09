@@ -60,6 +60,7 @@
   # Left prompt segments.
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
     virtualenv                # python virtual environment
+    anaconda                  # conda environment
     context                   # user@host
     dir                       # current directory
     vcs                       # git status
@@ -105,6 +106,12 @@
   # Don't show Python version.
   typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=
   typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
+
+  # Conda environment (same style as virtualenv).
+  typeset -g POWERLEVEL9K_ANACONDA_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_ANACONDA_CONTENT_EXPANSION='${${${CONDA_DEFAULT_ENV:#base}:+(${${CONDA_DEFAULT_ENV}:t})}}'
+  typeset -g POWERLEVEL9K_ANACONDA_SHOW_PYTHON_VERSION=
+  typeset -g POWERLEVEL9K_ANACONDA_{LEFT,RIGHT}_DELIMITER=
 
   # Blue current directory.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$sky_blue
