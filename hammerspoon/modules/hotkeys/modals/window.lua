@@ -32,8 +32,8 @@ local OVERLAY_AUTO_HIDE_TIME = 5
 local OVERLAY_TEXT_Y_POS = 45
 
 -- Constants for default window sizing (optimized for Ghostty/iTerm2 122x29 characters)
-local DEFAULT_WIDTH_PERCENT = 0.58
-local DEFAULT_HEIGHT_PERCENT = 0.50
+local DEFAULT_WIDTH_PERCENT = 0.5125
+local DEFAULT_HEIGHT_PERCENT = 0.4943
 
 -- Helper function to create window operations - optimized for performance
 local function windowOperation(fn)
