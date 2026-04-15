@@ -8,7 +8,7 @@ if zdotfiles_has_command ollama; then
     ollama-start() {
         if ! pgrep -x ollama >/dev/null; then
             echo "Starting Ollama service..."
-            ollama serve > /dev/null 2>&1 &
+            ollama serve > /dev/null &
             sleep 2
             echo "Ollama service started"
         else
