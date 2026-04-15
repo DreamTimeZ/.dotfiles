@@ -11,7 +11,7 @@ bindkey '^[[1;3C' forward-word        # Alt+Right
 bindkey '^[[1;3D' backward-word       # Alt+Left
 
 # Delete character forward
-bindkey '^[[3~' delete-char            # Delete
+bindkey '^[[3~' delete-char           # Delete
 
 # Word deletion: forward
 bindkey '^[[3;5~' kill-word           # Ctrl+Delete
