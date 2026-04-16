@@ -56,6 +56,16 @@ local function toggleNaturalScroll()
     return true
 end
 
+local function addNewDesktop()
+    logging.info("Adding new desktop space")
+    local ok, err = hs.spaces.addSpaceToScreen()
+    if not ok then
+        logging.error("Failed to add desktop space: " .. tostring(err))
+        return false
+    end
+    return true
+end
+
 -- Define system actions mapping
 local systemMappings = {
     c = { action = actions.handlers.clearNotifications, desc = "Clear Notifications" },
@@ -63,6 +73,7 @@ local systemMappings = {
     s = { action = shutdownSystem, desc = "Shutdown System" },
     r = { action = restartSystem, desc = "Restart System" },
     h = { action = reloadHammerspoon, desc = "Reload Hammerspoon" },
+    d = { action = addNewDesktop, desc = "New Desktop" },
 }
 
 -- Store the mappings in the modal definition
