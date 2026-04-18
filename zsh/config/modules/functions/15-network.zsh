@@ -171,7 +171,7 @@ USAGE
         return 1
     fi
 
-    echo "Scanning ${prefix}.0/24${iface:+ via $iface}..."
+    echo "Scanning ${prefix}.0/24${iface:+ via $iface}..." >&2
 
     # -W on macOS is milliseconds, on Linux is seconds
     if zdotfiles_is_macos; then
@@ -192,7 +192,7 @@ USAGE
     done
 
     if (( ${#live_ips[@]} == 0 )); then
-        echo "No responders on ${prefix}.0/24"
+        echo "No responders on ${prefix}.0/24" >&2
         return 0
     fi
 
@@ -249,7 +249,8 @@ USAGE
         vendor_by_ip[$ip_addr]="$vendor"
     done
 
-    # Pass 2: format and print, applying tags that need cross-row knowledge
+    # Pass 2: build raw rows (TSV) with cross-row tags, sort, then format
+    local -a raw_rows
     for ip_addr in "${live_ips[@]}"; do
         mac="${mac_by_ip[$ip_addr]}"
         vendor="${vendor_by_ip[$ip_addr]}"
@@ -279,10 +280,23 @@ USAGE
         esac
 
         tags="${gw_tag}${self_tag}${vm_tag}${rand_tag}${dup_tag}"
-        printf "\033[1;36m%-15s\033[0m \033[1;90m%-17s\033[0m %-35s %s\n" "$ip_addr" "${mac:-?}" "$vendor" "$tags"
-    done | sort -t. -k4 -n
+        raw_rows+=("${ip_addr}"$'\t'"${mac:-?}"$'\t'"${vendor}"$'\t'"${tags}")
+    done
 
-    echo "${#live_ips[@]} responders on ${prefix}.0/24"
+    # Colors only when stdout is a TTY (so pipes/redirections get clean data)
+    local cyan="" gray="" reset=""
+    if [[ -t 1 ]]; then
+        cyan=$'\033[1;36m'
+        gray=$'\033[1;90m'
+        reset=$'\033[0m'
+    fi
+
+    local row_ip row_mac row_vendor row_tags
+    printf '%s\n' "${raw_rows[@]}" | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | while IFS=$'\t' read -r row_ip row_mac row_vendor row_tags; do
+        printf "${cyan}%-15s${reset} ${gray}%-17s${reset} %-35s %s\n" "$row_ip" "$row_mac" "$row_vendor" "$row_tags"
+    done
+
+    echo "${#live_ips[@]} responders on ${prefix}.0/24" >&2
 }
 
 # Only define network functions if required tools are available
