@@ -14,3 +14,4 @@ brew "dust"             # modern du
 brew "duf"              # modern df
 brew "sevenzip"         # 7-zip archive tool (official upstream)
 brew "grc"              # generic colorizer
+brew "watch"            # re-run a command periodically
