@@ -104,7 +104,7 @@ EOF
         fd_args+=(--exclude '.nvm' --exclude '.pyenv' --exclude '.rustup' --exclude '.local')
         fd_args+=(--exclude 'go/pkg' --exclude '.gradle' --exclude '.m2' --exclude '.gem')
         fd_args+=(--exclude '.vscode-server' --exclude '.cursor-server' --exclude '.claude' --exclude 'Library')
-        fd_args+=(--exclude '.Trash' --exclude '.var' --exclude '.cpan')
+        fd_args+=(--exclude '.Trash' --exclude '.var' --exclude '.cpan' --exclude 'OneDrive')
         repos=("${(@f)$(fd "${fd_args[@]}" "$target" 2>/dev/null)}")
     else
         local maxdepth=""
@@ -119,7 +119,8 @@ EOF
             -not -path '*/.vscode-server/*' -not -path '*/.cursor-server/*' \
             -not -path '*/.claude/*' \
             -not -path '*/Library/*' -not -path '*/.Trash/*' \
-            -not -path '*/.var/*' -not -path '*/.cpan/*' 2>/dev/null)}")
+            -not -path '*/.var/*' -not -path '*/.cpan/*' \
+            -not -path '*/OneDrive/*' 2>/dev/null)}")
     fi
 
     (( ${#repos} )) || { echo "No git repositories found"; return 0; }
