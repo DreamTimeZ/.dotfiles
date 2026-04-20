@@ -1,7 +1,6 @@
 local M = {}
 
 local binary = os.getenv("HOME") .. "/.local/bin/rec"
-local binaryAvailable = hs.fs.attributes(binary, "mode") ~= nil
 
 -- hs.task:setEnvironment REPLACES env (not extends), so inherited vars must
 -- be carried forward explicitly. Local config may override or add REC_* vars.
@@ -16,11 +15,19 @@ if ok and type(localCfg) == "table" and type(localCfg.env) == "table" then
     for k, v in pairs(localCfg.env) do env[k] = v end
 end
 
+-- Check lazily: if the user installs the binary after Hammerspoon loads,
+-- the first call picks it up without needing a config reload.
+local function binaryExists()
+    return hs.fs.attributes(binary) ~= nil
+end
+
 local function spawn(args, callback)
-    if not binaryAvailable then
+    if not binaryExists() then
         hs.alert.show("rec: binary not found at " .. binary)
         return
     end
+    -- hs.task.new(path, callback, args): third arg dispatches on type
+    -- (table → arguments, function → streamCallback). Tested in this shape.
     local task = hs.task.new(binary, callback, args)
     task:setEnvironment(env)
     task:start()
@@ -61,10 +68,14 @@ end
 function M.isRunning()
     -- Delegate to the script; it owns session-tag verification and orphan
     -- recovery, avoiding PID-reuse false positives and the post-fork
-    -- pid-file write window.
-    if not binaryAvailable then return false end
-    local _, success = hs.execute("'" .. binary .. "' status", false)
-    return success
+    -- pid-file write window. Uses hs.task argv form (not hs.execute + sh -c)
+    -- so the binary path isn't subject to shell quoting rules.
+    if not binaryExists() then return false end
+    local task = hs.task.new(binary, nil, {"status"})
+    task:setEnvironment(env)
+    if not task:start() then return false end
+    task:waitUntilExit()
+    return task:terminationStatus() == 0
 end
 
 function M.start() pickTargetAndStart() end
