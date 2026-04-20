@@ -81,11 +81,24 @@ update() {
         echo "$outdated_apps"
         # Try mas upgrade, fall back to App Store if it fails
         # (mas has a known bug: https://github.com/mas-cli/mas/issues/1029)
-        if mas upgrade 2>&1 | grep -q "PKInstallErrorDomain"; then
+        local mas_output mas_exit
+        mas_output=$(mas upgrade 2>&1)
+        mas_exit=$?
+        [[ -n "$mas_output" ]] && echo "$mas_output"
+        # Check PK substring before exit code: mas #1029 can exit 0 despite
+        # the PKInstallErrorDomain failure, so an exit-code-first gate would
+        # silently misreport those cases as success.
+        if [[ "$mas_output" == *"PKInstallErrorDomain"* ]]; then
+          success=false
+          errors+=("App Store apps upgrade failed (PK error)")
           echo -e "\033[1;33m⚠ mas upgrade failed. Opening App Store for manual update.\033[0m"
           open "macappstore://showUpdatesPage"
+        elif (( mas_exit != 0 )); then
+          success=false
+          errors+=("App Store apps upgrade failed")
+          echo -e "\033[1;31m✗ Error upgrading App Store apps.\033[0m"
         else
-          echo "✓ App Store apps updated successfully."
+          echo "✓ App Store apps upgraded successfully."
         fi
       fi
     else
@@ -146,4 +159,4 @@ update() {
     done
   fi
   echo -e "╚═══════════════════════════════════════════════════════╝\033[0m"
-} 
+}
