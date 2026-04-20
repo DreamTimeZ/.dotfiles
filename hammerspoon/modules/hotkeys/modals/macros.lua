@@ -9,6 +9,7 @@ local macrosModal = config.modals.macros
 -- Macro registry for dynamic management
 local macros = {
     ["Auto-Clicker"] = require("modules.hotkeys.macros.auto-clicker"),
+    ["Recording"]   = require("modules.hotkeys.macros.rec"),
 }
 
 -- Optional local macros (loaded from dotfiles-private)
@@ -20,29 +21,40 @@ for name, modulePath in pairs(localMacros) do
 end
 
 -- Core functions
+-- Fires stop on every macro unconditionally (each macro.stop is idempotent:
+-- auto-clicker early-returns when not running, rec's script short-circuits
+-- on "not recording"). Avoiding a pre-check loop eliminates both the O(N)
+-- synchronous rec-status spawn and the "reported-stopped-before-async-
+-- resolved" race. Per-macro outcome detail is still surfaced by each
+-- macro's own alerts; the aggregate here confirms the batch fired.
 local function stopAll()
     logging.info("Stopping all macros")
-    for name, macro in pairs(macros) do
+    for _, macro in pairs(macros) do
         if macro.stop then macro.stop() end
     end
+    hs.alert.show("Stopped all macros")
     return true
 end
 
 local function showStatus()
     logging.info("Showing macro status")
     local ui = require("modules.hotkeys.ui.ui")
-    local config = require("modules.hotkeys.config.config")
-    
+
+    -- Sort names for deterministic display (pairs order is undefined).
+    local names = {}
+    for name in pairs(macros) do table.insert(names, name) end
+    table.sort(names)
+
     local statusLines = {}
-    
-    for name, macro in pairs(macros) do
+    for _, name in ipairs(names) do
+        local macro = macros[name]
         local status = "ERROR"
         if macro.isRunning then
             status = macro.isRunning() and "ON" or "OFF"
         end
-        table.insert(statusLines, string.format(config.ui.keyFormat, name:sub(1,1):lower(), name .. " (" .. status .. ")"))
+        table.insert(statusLines, name .. ": " .. status)
     end
-    
+
     hs.timer.doAfter(0.1, function()
         hs.alert.closeAll()
         ui.showFormattedAlert(statusLines, "Macro Status:")
@@ -50,7 +62,7 @@ local function showStatus()
             hs.alert.closeAll()
         end)
     end)
-    
+
     return true
 end
 
@@ -86,6 +98,7 @@ local function loadMappings()
         logging.warn("Using default macro mappings")
         return {
             a = { fn = actionHandlers.toggleAutoClicker, desc = "Toggle Auto-Clicker" },
+            r = { fn = actionHandlers.toggleRecording, desc = "Toggle Recording" },
             s = { fn = actionHandlers.stopAll, desc = "Stop All Macros" },
             i = { fn = actionHandlers.showStatus, desc = "Show Macro Status" }
         }
@@ -99,6 +112,8 @@ local function loadMappings()
                 fn = actionHandlers[mapping.action],
                 desc = mapping.desc or mapping.action
             }
+        else
+            logging.warn("Unknown macro action '" .. tostring(mapping.action) .. "' for key '" .. tostring(key) .. "'")
         end
     end
 

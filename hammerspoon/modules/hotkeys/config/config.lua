@@ -233,15 +233,15 @@ config.globalShortcuts = {
     { key = "m", modal = "macros",   desc = "Macros Modal" },
     
     -- Direct app shortcuts
-    { 
-        key = "return", 
+    {
+        key = "return",
         handler = {
             field = "app",
             action = "launchOrFocus"
         },
         mapping = { app = "Ghostty", desc = "Launch Ghostty" }
     },
-    
+
 }
 
 -- Configuration loading logic
