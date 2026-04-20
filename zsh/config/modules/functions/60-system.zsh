@@ -46,7 +46,25 @@ update_sheldon() {
 
 # Function: update
 # Updates: Homebrew, App Store (macOS), mise tools, Rust, Sheldon plugins, and macOS system updates
+# Flags:
+#   -f, --force   Install macOS system updates and restart without confirmation
 update() {
+  local force=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f|--force) force=true; shift ;;
+      -h|--help)
+        echo "Usage: update [-f|--force]"
+        echo "  -f, --force   Install macOS system updates and restart without confirmation"
+        return 0
+        ;;
+      *)
+        echo -e "\033[1;31m✗ Unknown option: $1\033[0m" >&2
+        return 1
+        ;;
+    esac
+  done
+
   local platform_label="$(zdotfiles_detect_platform)"
   echo -e "\033[1;34m╔═══════════════════════════════════════════════════════╗"
   printf "║          Starting update process on %-17s ║\n" "${platform_label}..."
@@ -54,7 +72,20 @@ update() {
 
   local success=true
   local errors=()
+  local sudo_keepalive_pid=
 
+  # Prompt for sudo once upfront on macOS and keep the timestamp alive in the
+  # background so later softwareupdate calls don't re-prompt mid-run.
+  if zdotfiles_is_macos; then
+    if ! sudo -v; then
+      echo -e "\033[1;31m✗ sudo authentication failed.\033[0m" >&2
+      return 1
+    fi
+    ( while true; do sudo -n true 2>/dev/null; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &!
+    sudo_keepalive_pid=$!
+  fi
+
+  {
   # 1. Update Homebrew formulas and casks
   if zdotfiles_has_command brew; then
     echo -e "\n\033[1;32m◆ Updating Homebrew...\033[0m"
@@ -133,25 +164,41 @@ update() {
   fi
 
   # 6. Check and install macOS system updates (macOS only)
+  # softwareupdate -l lists pending updates (no sudo needed); writes status to
+  # stderr and updates to stdout. --list-full-installers is the wrong predicate
+  # (lists full macOS installer apps, not pending patches) and returns 0 almost
+  # always, which would cause the confirm prompt below to fire on up-to-date Macs.
   if zdotfiles_is_macos; then
     echo -e "\n\033[1;32m◆ Checking for macOS system updates...\033[0m"
-    if sudo softwareupdate --list-full-installers &>/dev/null; then
-      if sudo softwareupdate -i -a --restart; then
-        echo "✓ System updates installed successfully and will restart when ready."
-      else
-        success=false
-        errors+=("System update failed")
-        echo -e "\033[1;31m✗ Error installing system updates.\033[0m"
-      fi
-    else
+    local sw_list
+    sw_list=$(softwareupdate -l 2>&1)
+    if echo "$sw_list" | grep -q "^No new software"; then
       echo "✓ No system updates available."
+    else
+      echo "$sw_list"
+      local proceed=true
+      if ! $force; then
+        if ! confirm "Install macOS system updates and restart now?"; then
+          proceed=false
+          echo "Skipped macOS system updates."
+        fi
+      fi
+      if $proceed; then
+        if sudo softwareupdate -i -a --restart --agree-to-license; then
+          echo "✓ System updates installed. Restart scheduled."
+        else
+          success=false
+          errors+=("System update failed")
+          echo -e "\033[1;31m✗ Error installing system updates.\033[0m"
+        fi
+      fi
     fi
   fi
 
   # Summary
   echo -e "\n\033[1;34m╔═══════════════════════════════════════════════════════╗"
   if $success; then
-    echo -e "║          System update process completed!             ║"
+    echo -e "║          Update process completed!                    ║"
   else
     echo -e "║      Update process completed with some errors:       ║"
     for error in "${errors[@]}"; do
@@ -159,4 +206,7 @@ update() {
     done
   fi
   echo -e "╚═══════════════════════════════════════════════════════╝\033[0m"
+  } always {
+    [[ -n "$sudo_keepalive_pid" ]] && kill "$sudo_keepalive_pid" 2>/dev/null
+  }
 }
