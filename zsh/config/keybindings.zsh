@@ -31,6 +31,9 @@ bindkey '^[^?' backward-kill-word     # Alt+Backspace
 bindkey '^[[127;5u' backward-kill-word  # Ctrl+Backspace (kitty)
 bindkey '^[[127;3u' backward-kill-word  # Alt+Backspace (kitty)
 
+# Line deletion: backward. Override zsh default (kill-whole-line) to match macOS Cocoa.
+bindkey '^U' backward-kill-line       # Ctrl+U / Cmd+Backspace via Ghostty
+
 # macOS: xterm Meta modifier (standard, works across terminals)
 bindkey '^[[3;9~' kill-line           # Fn+Cmd+Delete
 # iTerm2 proprietary sequence
