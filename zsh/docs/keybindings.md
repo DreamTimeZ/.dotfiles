@@ -38,6 +38,8 @@
 | `ESC + n`   | History search forward               |
 | `ESC + <`   | Beginning of history buffer          |
 | `ESC + >`   | End of history buffer                |
+| `Alt+Up`    | Same as `ESC + <` (via Ghostty)      |
+| `Alt+Down`  | Same as `ESC + >` (via Ghostty)      |
 
 ---
 
