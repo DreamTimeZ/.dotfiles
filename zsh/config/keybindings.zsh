@@ -4,6 +4,14 @@ bindkey -e
 # Redo (not bound by default in zsh; undo is already ^Xu / ^X^U)
 bindkey '^[r' redo                    # Alt+r
 
+# Line navigation: Home/End (all three common escape forms for portability)
+bindkey '^[[H'  beginning-of-line     # Home (xterm normal)
+bindkey '^[[F'  end-of-line           # End  (xterm normal)
+bindkey '^[OH'  beginning-of-line     # Home (xterm application cursor)
+bindkey '^[OF'  end-of-line           # End  (xterm application cursor)
+bindkey '^[[1~' beginning-of-line     # Home (VT220)
+bindkey '^[[4~' end-of-line           # End  (VT220)
+
 # Word navigation: Ctrl/Alt + Arrow
 bindkey '^[[1;5C' forward-word        # Ctrl+Right
 bindkey '^[[1;5D' backward-word       # Ctrl+Left

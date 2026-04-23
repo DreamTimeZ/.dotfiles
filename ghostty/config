@@ -21,10 +21,6 @@ confirm-close-surface = false
 keybind = page_up=scroll_page_up
 keybind = page_down=scroll_page_down
 
-# Home/End: move to beginning/end of line
-keybind = home=text:\x01
-keybind = end=text:\x05
-
 # Option+Backspace: send ESC+DEL (backward-kill-word)
 # Removed as default in Ghostty 1.2+ (PR #7320)
 keybind = opt+backspace=text:\x1b\x7f
