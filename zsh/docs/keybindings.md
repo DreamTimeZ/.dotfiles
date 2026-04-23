@@ -103,6 +103,14 @@
 
 ---
 
+## External Editor
+
+| Key             | Function                         |
+|-----------------|----------------------------------|
+| `Ctrl+X Ctrl+E` | Edit command line in `$EDITOR`   |
+
+---
+
 ## 📦 Special Functions (fzf-tab, vi-mode)
 
 | Key            | Function                              |

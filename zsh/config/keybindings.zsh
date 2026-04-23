@@ -4,6 +4,11 @@ bindkey -e
 # Redo (not bound by default in zsh; undo is already ^Xu / ^X^U)
 bindkey '^[r' redo                    # Alt+r
 
+# Edit command line in $EDITOR (not bound by default in zsh; matches bash C-x C-e)
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line      # Ctrl+X Ctrl+E
+
 # Line navigation: Home/End (all three common escape forms for portability)
 bindkey '^[[H'  beginning-of-line     # Home (xterm normal)
 bindkey '^[[F'  end-of-line           # End  (xterm normal)
