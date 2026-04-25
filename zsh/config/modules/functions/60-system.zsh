@@ -101,6 +101,7 @@ update() {
   fi
 
   # 2. Update Mac App Store apps via 'mas' (macOS only)
+  # mas uses its own auth path; the early sudo cache does not cover it.
   if zdotfiles_is_macos; then
     if zdotfiles_has_command mas; then
       echo -e "\n\033[1;32m◆ Upgrading Mac App Store apps...\033[0m"
