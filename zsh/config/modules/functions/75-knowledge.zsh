@@ -132,6 +132,57 @@ Choose a better directory based on the latest feedback.}"
         return 1
     }
 
+    _yt2note_suggest_title() {
+        local original_title="$1" channel="$2" preview="$3" history="${4:-}"
+
+        local style_rules=""
+        [[ -n "${YT2NOTE_TITLE_PROMPT:-}" && -f "$YT2NOTE_TITLE_PROMPT" ]] && \
+            style_rules=$(<"$YT2NOTE_TITLE_PROMPT")
+
+        local system_prompt
+        if [[ -n "$style_rules" ]]; then
+            system_prompt="${style_rules}
+
+Output exactly the title, one line, no quotes, no commentary."
+        else
+            system_prompt="Suggest a short, descriptive vault note title from a YouTube video. Max 60 chars. Title Case. No clickbait, no exclamation marks, no all-caps emphasis. Preserve source language. Output exactly the title, one line, no quotes, no commentary."
+        fi
+
+        local user_prompt="YouTube title: \"${original_title}\"
+Channel: ${channel}
+Content preview: ${preview}${history:+
+
+Refinement history:${history}
+Suggest a better title based on the latest feedback.}"
+
+        local result
+        result=$(print -r -- "$user_prompt" | claude -p --no-session-persistence --system-prompt "$system_prompt" 2>/dev/null)
+        result="${result//$'\r'}"               # strip CR
+        result="${result//\`}"                  # strip backticks
+        result="${result#"${result%%[^$'\n']*}"}" # skip leading blank lines
+        result="${result%%$'\n'*}"              # first line only
+        result="${result#"${result%%[^ ]*}"}"   # trim leading spaces
+        result="${result%"${result##*[^ ]}"}"   # trim trailing spaces
+        result="${result#\"}"                   # strip leading double quote
+        result="${result%\"}"                   # strip trailing double quote
+        result="${result#\'}"                   # strip leading single quote
+        result="${result%\'}"                   # strip trailing single quote
+        result="${result#"${result%%[^ ]*}"}"   # trim leading spaces (post-quote, in case quotes wrapped padded text)
+        result="${result%"${result##*[^ ]}"}"   # trim trailing spaces (post-quote)
+
+        if (( ${#result} > 80 )); then
+            zdotfiles_warn "yt2note: AI title exceeded 80 chars, truncating"
+            result="${result:0:80}"
+            result="${result% *}"               # back off to last word boundary if any
+        fi
+
+        if [[ -n "$result" ]]; then
+            print -r -- "$result"
+            return 0
+        fi
+        return 1
+    }
+
     _yt2note_render() {
         local template="$1" title="$2" date="$3" source="$4" channel="$5" duration="$6" tags="$7" content="$8" links="$9"
 
@@ -392,7 +443,7 @@ EOF
     }
 
     yt2note() {
-        local -i raw=0 dry_run=0 open_after=0
+        local -i raw=0 dry_run=0 open_after=0 title_overridden=0 raw_title=0
         local dir="${YT2NOTE_DIR:-}" title="" url="" cookies_browser=""
 
         while [[ $# -gt 0 ]]; do
@@ -406,7 +457,8 @@ Create an Obsidian note from a YouTube video with optional AI summary.
 Options:
   -r, --raw                Save raw transcript, skip AI summary
   -d, --dir SUBDIR         Target subdirectory in vault (skip AI placement)
-  -t, --title TITLE        Override note title
+  -t, --title TITLE        Override note title (skip AI title suggestion)
+      --raw-title          Use YouTube title verbatim (skip AI title suggestion)
   -b, --browser BROWSER    Read cookies from BROWSER (firefox, chrome, brave,
                            chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
   -n, --dry-run            Print to stdout instead of saving
@@ -421,6 +473,7 @@ Environment variables:
   OBSIDIAN_VAULT           Path to vault root (required)
   YT2NOTE_PROMPT           Path to system prompt for AI summary (required unless --raw)
   YT2NOTE_PLACEMENT_PROMPT Path to placement rules for AI directory selection
+  YT2NOTE_TITLE_PROMPT     Path to style rules for AI title suggestion
   YT2NOTE_TEMPLATE         Path to custom note template file
   YT2NOTE_DIR              Default subdirectory (skips AI placement)
   YT2NOTE_COOKIES_BROWSER  Browser to read cookies from (firefox, chrome, brave,
@@ -435,10 +488,11 @@ EOF
                     ;;
                 -r|--raw) raw=1; shift ;;
                 -d|--dir) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; dir="$2"; shift 2 ;;
-                -t|--title) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; title="$2"; shift 2 ;;
+                -t|--title) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; title="$2"; title_overridden=1; shift 2 ;;
                 -b|--browser) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
                 -n|--dry-run) dry_run=1; shift ;;
                 -o|--open) open_after=1; shift ;;
+                --raw-title) raw_title=1; shift ;;
                 -[rnoh]*)
                     local flags="${1#-}"; shift
                     local i
@@ -575,6 +629,52 @@ ${transcript}"
             zdotfiles_warn "yt2note: AI did not emit valid tags for \"${title}\", note will have only #youtube tag"
         fi
 
+        # AI title suggestion (skipped when -t override, --raw-title, --raw, or AI body failed)
+        if (( _ai_ok && ! title_overridden && ! raw_title )); then
+            _yt2note_timer_start "yt2note: suggesting title..."
+            local suggested_title
+            suggested_title=$(_yt2note_suggest_title "$title" "$channel" "${content:0:500}") || suggested_title=""
+            _yt2note_timer_stop
+            [[ -n "$suggested_title" ]] && title="$suggested_title"
+
+            if (( ! dry_run )); then
+                local title_history="" title_reply manual_title new_title
+                while true; do
+                    printf "\n  Title: %s\n\n" "$title"
+                    title_reply=""
+                    while read -t 0 -k 1 2>/dev/null; do :; done
+                    vared -p "  [Enter=accept / e=edit / n=cancel / feedback to refine] " title_reply
+                    title_reply="${title_reply#"${title_reply%%[^ ]*}"}"  # trim leading spaces
+                    title_reply="${title_reply%"${title_reply##*[^ ]}"}"  # trim trailing spaces
+                    case "$title_reply" in
+                        ""|[yY]) break ;;
+                        [nN]) zdotfiles_info "yt2note: cancelled"; return 0 ;;
+                        e|E)
+                            manual_title=""
+                            vared -p "  Title: " manual_title
+                            manual_title="${manual_title#"${manual_title%%[^ ]*}"}"  # trim leading spaces
+                            manual_title="${manual_title%"${manual_title##*[^ ]}"}"  # trim trailing spaces
+                            if [[ -n "$manual_title" ]]; then
+                                title="$manual_title"
+                                break
+                            fi
+                            ;;
+                        *)
+                            title_history+="
+Previously suggested: ${title}. User feedback: ${title_reply}"
+                            zdotfiles_info "yt2note: refining title..."
+                            new_title=$(_yt2note_suggest_title "$title" "$channel" "${content:0:500}" "$title_history") || new_title=""
+                            if [[ -n "$new_title" ]]; then
+                                title="$new_title"
+                            else
+                                zdotfiles_warn "yt2note: title refinement failed, try again"
+                            fi
+                            ;;
+                    esac
+                done
+            fi
+        fi
+
         local target_dir=""
         if [[ -n "$dir" ]]; then
             target_dir="$dir"
@@ -666,6 +766,9 @@ status:
 {{content}}'
         fi
 
+        # Canonicalize title once so H1, filename, and template all align (sanitize strips filename-unsafe chars and caps length)
+        title=$(_yt2note_sanitize "$title")
+
         local safe_channel="${channel//\"/\\\"}"
 
         local note
@@ -676,9 +779,8 @@ status:
             return 0
         fi
 
-        local safe_name
-        safe_name=$(_yt2note_sanitize "$title")
-        local filepath="${vault_path}/${safe_name}.md"
+        # title was canonicalized via _yt2note_sanitize before render, so filename matches H1
+        local filepath="${vault_path}/${title}.md"
 
         if [[ -f "$filepath" ]]; then
             local _reply=""
