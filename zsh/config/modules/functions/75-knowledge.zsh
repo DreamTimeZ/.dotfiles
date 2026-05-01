@@ -10,6 +10,19 @@ if zdotfiles_has_command yt-dlp; then
         else print -rn -- "$1"; fi
     }
 
+    # Populate a caller-named array with --cookies-from-browser args if configured.
+    # Why: YouTube serves a bot challenge to unauthenticated requests; yt-dlp
+    # needs real browser cookies to authenticate.
+    # Usage: _yt2note_cookies_args ARRAY_NAME
+    _yt2note_cookies_args() {
+        local arr_name="$1"
+        if [[ -n "${YT2NOTE_COOKIES_BROWSER:-}" ]]; then
+            set -A "$arr_name" --cookies-from-browser "$YT2NOTE_COOKIES_BROWSER"
+        else
+            set -A "$arr_name"
+        fi
+    }
+
     _yt2note_sanitize() {
         local name="$1"
         name="${name//[\/\\\\:*?\"<>|]/}"
@@ -146,12 +159,14 @@ Choose a better directory based on the latest feedback.}"
             zdotfiles_warn "yt2note: jq not found, subtitle language detection may fail"
             return 1
         }
+        local -a cookies_args
+        _yt2note_cookies_args cookies_args
         if [[ -n "$lang" ]]; then
-            yt-dlp -j --no-download --no-playlist "$url" 2>/dev/null | \
+            yt-dlp "${cookies_args[@]}" -j --no-download --no-playlist "$url" 2>/dev/null | \
                 jq -r --arg l "$lang" \
                 '[.automatic_captions // {} | keys[] | select(startswith($l))] | sort_by(length) | .[0] // empty' 2>/dev/null
         else
-            yt-dlp -j --no-download --no-playlist "$url" 2>/dev/null | \
+            yt-dlp "${cookies_args[@]}" -j --no-download --no-playlist "$url" 2>/dev/null | \
                 jq -r '((.language | strings | select(length > 0) | split("-")[0]) // "en") as $l |
                     [.automatic_captions // {} | keys[] | select(startswith($l))] |
                     sort_by(length) | .[0] // empty' 2>/dev/null
@@ -166,7 +181,10 @@ Choose a better directory based on the latest feedback.}"
         local sub_langs
         [[ -n "$lang" ]] && sub_langs="${lang}-orig,${lang}" || sub_langs='.*-orig'
 
-        yt-dlp --write-auto-subs --skip-download --no-playlist --sub-format vtt \
+        local -a cookies_args
+        _yt2note_cookies_args cookies_args
+
+        yt-dlp "${cookies_args[@]}" --write-auto-subs --skip-download --no-playlist --sub-format vtt \
             --sub-langs "$sub_langs" -o "${tmpdir}/%(id)s.%(ext)s" "$url" >/dev/null 2>&1 || true
 
         local -a vtt_files=("${tmpdir}"/*.vtt(N))
@@ -176,7 +194,7 @@ Choose a better directory based on the latest feedback.}"
             local orig_key
             orig_key=$(_yt2note_resolve_sub_lang "$url" "$lang")
             if [[ -n "$orig_key" ]]; then
-                yt-dlp --write-auto-subs --skip-download --no-playlist --sub-format vtt \
+                yt-dlp "${cookies_args[@]}" --write-auto-subs --skip-download --no-playlist --sub-format vtt \
                     --sub-langs "$orig_key" -o "${tmpdir}/%(id)s.%(ext)s" "$url" >/dev/null 2>&1 || true
                 vtt_files=("${tmpdir}"/*.vtt(N))
             fi
@@ -325,13 +343,16 @@ EOF
             return 1
         }
 
+        local -a cookies_args
+        _yt2note_cookies_args cookies_args
+
         local transcript
         transcript=$(_yt2note_fetch_transcript "$url") || {
             print -u2 "ytc: no transcript available"; return 1
         }
 
         {
-            yt-dlp --print "Title: %(title)s" --print "Channel: %(channel)s" \
+            yt-dlp "${cookies_args[@]}" --print "Title: %(title)s" --print "Channel: %(channel)s" \
                    --print "Duration: %(duration_string)s" \
                    --print "Description: %(description).300s" \
                    --no-download "$url" 2>/dev/null
@@ -370,6 +391,9 @@ Environment variables:
   YT2NOTE_PLACEMENT_PROMPT Path to placement rules for AI directory selection
   YT2NOTE_TEMPLATE         Path to custom note template file
   YT2NOTE_DIR              Default subdirectory (skips AI placement)
+  YT2NOTE_COOKIES_BROWSER  Browser to read cookies from (firefox, chrome, brave,
+                           chromium, edge, safari). Required when YouTube serves
+                           a bot challenge for unauthenticated requests.
 
 Files:
   $OBSIDIAN_VAULT/.yt2note-exclude   Directories to hide from AI placement
@@ -434,8 +458,10 @@ EOF
         local _t0=$EPOCHREALTIME _YT2NOTE_TIMER_PID="" _YT2NOTE_TIMER_START=""
         TRAPEXIT() { local _ret=$?; _yt2note_timer_stop; stty echo 2>/dev/null; return $_ret }
         _yt2note_timer_start "yt2note: fetching metadata..."
+        local -a cookies_args
+        _yt2note_cookies_args cookies_args
         local meta_raw
-        meta_raw=$(yt-dlp --print "%(title)s" --print "%(channel)s" --print "%(duration_string)s" --no-download "$url" 2>/dev/null)
+        meta_raw=$(yt-dlp "${cookies_args[@]}" --print "%(title)s" --print "%(channel)s" --print "%(duration_string)s" --no-download "$url" 2>/dev/null)
         if [[ -z "$meta_raw" ]]; then
             _yt2note_timer_stop
             zdotfiles_error "yt2note: failed to fetch video metadata"
