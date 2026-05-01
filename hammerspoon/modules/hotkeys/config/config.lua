@@ -253,6 +253,15 @@ config.globalShortcuts = {
         mapping = { app = "Ghostty", desc = "Launch Ghostty" }
     },
 
+    -- Mic mute toggle (Karabiner: F5 -> F18 -> Hammerspoon)
+    -- mods = {} disables hyper modifier (see framework contract in hotkeys/init.lua).
+    {
+        key = "f18",
+        mods = {},
+        fn = function() require("modules.mic_mute").toggle() end,
+        desc = "Toggle Mic Mute"
+    },
+
 }
 
 -- Configuration loading logic

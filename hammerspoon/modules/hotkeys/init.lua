@@ -93,7 +93,8 @@ local function createKeyBindings()
     local validCount = 0
     
     for _, shortcut in ipairs(config.globalShortcuts) do
-        local mods = config.modifiers.hyper
+        -- Per-shortcut modifier override: nil/missing -> hyper, {} -> no modifier.
+        local mods = shortcut.mods or config.modifiers.hyper
         local key = shortcut.key
         
         if not key then
