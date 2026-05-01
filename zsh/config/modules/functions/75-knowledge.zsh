@@ -264,9 +264,9 @@ Choose a better directory based on the latest feedback.}"
     }
 
     # Extract YouTube transcript to stdout or clipboard
-    # Usage: ytt [-l lang] [-r] [-c] URL
+    # Usage: ytt [-l lang] [-r] [-c] [-b browser] URL
     ytt() {
-        local lang="" raw=0 copy=0
+        local lang="" raw=0 copy=0 cookies_browser=""
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -h|--help)
@@ -276,13 +276,16 @@ Usage: ytt [OPTIONS] URL
 Extract YouTube transcript to stdout.
 
 Options:
-  -l, --lang LANG   Subtitle language (default: original)
-  -r, --raw         Output raw VTT (no cleanup)
-  -c, --copy        Copy to clipboard instead of printing
-  -h, --help        Show help
+  -l, --lang LANG       Subtitle language (default: original)
+  -r, --raw             Output raw VTT (no cleanup)
+  -c, --copy            Copy to clipboard instead of printing
+  -b, --browser BROWSER Read cookies from BROWSER (firefox, chrome, brave,
+                        chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
+  -h, --help            Show help
 EOF
                     return 0 ;;
                 -l|--lang) [[ $# -lt 2 ]] && { print -u2 "ytt: $1 requires an argument"; return 1; }; lang="$2"; shift 2 ;;
+                -b|--browser) [[ $# -lt 2 ]] && { print -u2 "ytt: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
                 -r|--raw) raw=1; shift ;;
                 -c|--copy) copy=1; shift ;;
                 -[rc]*)
@@ -301,8 +304,9 @@ EOF
             esac
         done
 
-        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] [-c] URL"; return 1; }
+        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] [-c] [-b browser] URL"; return 1; }
         local url="$1"
+        [[ -n "$cookies_browser" ]] && local YT2NOTE_COOKIES_BROWSER="$cookies_browser"
 
         local output
         if (( raw )); then
@@ -332,9 +336,30 @@ EOF
     if zdotfiles_has_command claude; then
 
     # YouTube transcript → Claude summary to stdout
-    # Usage: ytc "URL" [prompt_file]  (default: $YT2NOTE_PROMPT)
+    # Usage: ytc [-b browser] "URL" [prompt_file]  (default: $YT2NOTE_PROMPT)
     ytc() {
-        [[ -z "$1" ]] && { print -u2 "Usage: ytc \"URL\" [prompt_file]"; return 1; }
+        local cookies_browser=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -h|--help)
+                    cat <<'EOF'
+Usage: ytc [OPTIONS] URL [PROMPT_FILE]
+
+Send YouTube transcript with metadata to Claude for summarization.
+
+Options:
+  -b, --browser BROWSER Read cookies from BROWSER (firefox, chrome, brave,
+                        chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
+  -h, --help            Show help
+EOF
+                    return 0 ;;
+                -b|--browser) [[ $# -lt 2 ]] && { print -u2 "ytc: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
+                -*) print -u2 "ytc: unknown option: $1"; return 1 ;;
+                *) break ;;
+            esac
+        done
+
+        [[ -z "$1" ]] && { print -u2 "Usage: ytc [-b browser] \"URL\" [prompt_file]"; return 1; }
 
         local url="$1"
         local prompt_file="${2:-${YT2NOTE_PROMPT:-}}"
@@ -343,6 +368,7 @@ EOF
             return 1
         }
 
+        [[ -n "$cookies_browser" ]] && local YT2NOTE_COOKIES_BROWSER="$cookies_browser"
         local -a cookies_args
         _yt2note_cookies_args cookies_args
 
@@ -363,7 +389,7 @@ EOF
 
     yt2note() {
         local -i raw=0 dry_run=0 open_after=0
-        local dir="${YT2NOTE_DIR:-}" title="" url=""
+        local dir="${YT2NOTE_DIR:-}" title="" url="" cookies_browser=""
 
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -377,6 +403,8 @@ Options:
   -r, --raw                Save raw transcript, skip AI summary
   -d, --dir SUBDIR         Target subdirectory in vault (skip AI placement)
   -t, --title TITLE        Override note title
+  -b, --browser BROWSER    Read cookies from BROWSER (firefox, chrome, brave,
+                           chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
   -n, --dry-run            Print to stdout instead of saving
   -o, --open               Open note in $EDITOR after creation
   -h, --help               Show help
@@ -404,6 +432,7 @@ EOF
                 -r|--raw) raw=1; shift ;;
                 -d|--dir) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; dir="$2"; shift 2 ;;
                 -t|--title) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; title="$2"; shift 2 ;;
+                -b|--browser) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
                 -n|--dry-run) dry_run=1; shift ;;
                 -o|--open) open_after=1; shift ;;
                 -[rnoh]*)
@@ -457,6 +486,10 @@ EOF
         setopt local_options no_monitor
         local _t0=$EPOCHREALTIME _YT2NOTE_TIMER_PID="" _YT2NOTE_TIMER_START=""
         TRAPEXIT() { local _ret=$?; _yt2note_timer_stop; stty echo 2>/dev/null; return $_ret }
+        # CLI -b/--browser overrides env var for this invocation. Dynamic scoping
+        # propagates the local through subshells (command substitution) so the
+        # transcript and sub-lang helpers pick it up without parameter threading.
+        [[ -n "$cookies_browser" ]] && local YT2NOTE_COOKIES_BROWSER="$cookies_browser"
         _yt2note_timer_start "yt2note: fetching metadata..."
         local -a cookies_args
         _yt2note_cookies_args cookies_args
