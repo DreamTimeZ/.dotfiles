@@ -377,14 +377,18 @@ EOF
             print -u2 "ytc: no transcript available"; return 1
         }
 
+        local meta_err
+        meta_err=$(mktemp /tmp/ytc-err.XXXXXX)
         {
             yt-dlp "${cookies_args[@]}" --print "Title: %(title)s" --print "Channel: %(channel)s" \
                    --print "Duration: %(duration_string)s" \
                    --print "Description: %(description).300s" \
-                   --no-download "$url" 2>/dev/null
+                   --no-download "$url" 2>"$meta_err"
             print ""
             print -r -- "$transcript"
         } | claude -p --no-session-persistence --system-prompt "$(<"$prompt_file")"
+        [[ -s "$meta_err" ]] && grep -E '^ERROR:' "$meta_err" >&2
+        rm -f "$meta_err"
     }
 
     yt2note() {
@@ -493,13 +497,17 @@ EOF
         _yt2note_timer_start "yt2note: fetching metadata..."
         local -a cookies_args
         _yt2note_cookies_args cookies_args
-        local meta_raw
-        meta_raw=$(yt-dlp "${cookies_args[@]}" --print "%(title)s" --print "%(channel)s" --print "%(duration_string)s" --no-download "$url" 2>/dev/null)
+        local meta_raw meta_err
+        meta_err=$(mktemp /tmp/yt2note-err.XXXXXX)
+        meta_raw=$(yt-dlp "${cookies_args[@]}" --print "%(title)s" --print "%(channel)s" --print "%(duration_string)s" --no-download "$url" 2>"$meta_err")
         if [[ -z "$meta_raw" ]]; then
             _yt2note_timer_stop
             zdotfiles_error "yt2note: failed to fetch video metadata"
+            grep -E '^ERROR:' "$meta_err" >&2
+            rm -f "$meta_err"
             return 1
         fi
+        rm -f "$meta_err"
 
         local vid_title channel duration
         { IFS= read -r vid_title; IFS= read -r channel; IFS= read -r duration; } <<< "$meta_raw"
