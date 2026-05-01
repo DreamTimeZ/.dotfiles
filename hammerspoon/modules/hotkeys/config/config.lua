@@ -217,7 +217,17 @@ config.modals = {
         customModule = "modules.hotkeys.modals.macros"
         -- mappings defined in macros.lua
     },
-    
+
+    -- Routines modal (compound app workflows)
+    routines = {
+        title = "Routines:",
+        handler = {
+            field = "steps",
+            action = "runSteps"
+        },
+        mappings = {}
+        -- private mappings loaded from local/routines_mappings.lua
+    },
 
 }
 
@@ -231,7 +241,8 @@ config.globalShortcuts = {
     { key = "s", modal = "settings", desc = "Settings Modal" },
     { key = "space", modal = "window", desc = "Window Management Modal" },
     { key = "m", modal = "macros",   desc = "Macros Modal" },
-    
+    { key = "r", modal = "routines", desc = "Routines Modal" },
+
     -- Direct app shortcuts
     {
         key = "return",

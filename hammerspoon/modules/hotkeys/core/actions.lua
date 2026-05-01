@@ -144,6 +144,37 @@ function M.openSystemPreferencePane(url)
     return true
 end
 
+function M.runSteps(steps)
+    if not validation.validate(steps, {name = "steps"}) then return false end
+    if type(steps) ~= "table" then
+        return validation.handleError("Steps must be a table", true)
+    end
+
+    local function executeStep(index)
+        if index > #steps then return end
+        local step = steps[index]
+        local function fire()
+            if step.url then
+                hs.urlevent.openURL(step.url)
+            elseif step.keys then
+                -- Shape: {modifiers_table, character_string}, e.g. {{"cmd"}, "c"} or {{}, "f1"}
+                hs.eventtap.keyStroke(step.keys[1], step.keys[2])
+            elseif step.fn then
+                step.fn()
+            end
+            executeStep(index + 1)
+        end
+        if step.delay and step.delay > 0 then
+            hs.timer.doAfter(step.delay, fire)
+        else
+            fire()
+        end
+    end
+
+    executeStep(1)
+    return true
+end
+
 -- Map of action handlers for better performance and maintainability
 local ACTION_HANDLERS = {
     launchOrFocus = M.launchOrFocus,
@@ -160,7 +191,8 @@ local ACTION_HANDLERS = {
             return fn()
         end
         return validation.handleError("Invalid function provided to functionCall handler", true)
-    end
+    end,
+    runSteps = M.runSteps,
 }
 
 -- Export action handlers
