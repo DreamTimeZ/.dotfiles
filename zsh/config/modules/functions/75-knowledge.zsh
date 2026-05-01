@@ -571,6 +571,10 @@ ${transcript}"
             fi
         fi
 
+        if (( _ai_ok && ${#_ai_tags} == 0 )); then
+            zdotfiles_warn "yt2note: AI did not emit valid tags for \"${title}\", note will have only #youtube tag"
+        fi
+
         local target_dir=""
         if [[ -n "$dir" ]]; then
             target_dir="$dir"
