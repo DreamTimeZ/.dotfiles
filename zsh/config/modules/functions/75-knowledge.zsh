@@ -259,21 +259,23 @@ Suggest a better title based on the latest feedback.}"
 
     _yt2note_fetch_transcript() {
         emulate -L zsh
-        local url="$1" ts_flag="${2:---transcript}" lang="${3:-}"
+        local url="$1" lang="${3:-}"
+        local -i timestamps="${2:-0}"
         local tmpdir=$(mktemp -d /tmp/yt2note-vtt.XXXXXX)
         trap "rm -rf $tmpdir" EXIT
 
         local vtt
         vtt=$(_yt2note_download_vtt "$url" "$tmpdir" "$lang") || return 1
 
-        if [[ $ts_flag == "--transcript-with-timestamps" ]]; then
+        if (( timestamps )); then
             awk '
             /^WEBVTT/ || /^Kind:/ || /^Language:/ || /^NOTE/ || /^STYLE/ || /^$/ || /^[0-9]+$/ { next }
             /^[0-9][0-9]:[0-9][0-9].*-->/ { split($1, t, "."); ts = "[" t[1] "]"; next }
             {
                 gsub(/<[^>]+>/, ""); gsub(/^ +| +$/, "")
-                if ($0 != "" && !seen[$0]++) print ts " " $0
-            }' "$vtt"
+                if ($0 != "" && !seen[$0]++) { print ts " " $0; n++ }
+            }
+            END { exit (n == 0) }' "$vtt"
         else
             awk '
             /^WEBVTT/ || /^Kind:/ || /^Language:/ || /^NOTE/ || /^STYLE/ || /^$/ || /^[0-9]+$/ { next }
@@ -282,7 +284,7 @@ Suggest a better title based on the latest feedback.}"
                 gsub(/<[^>]+>/, ""); gsub(/^ +| +$/, "")
                 if ($0 != "" && !seen[$0]++) out = out (out ? " " : "") $0
             }
-            END { print out }' "$vtt"
+            END { if (out) print out; else exit 1 }' "$vtt"
         fi
     }
 
@@ -315,9 +317,9 @@ Suggest a better title based on the latest feedback.}"
     }
 
     # Extract YouTube transcript to stdout or clipboard
-    # Usage: ytt [-l lang] [-r] [-c] [-b browser] URL
+    # Usage: ytt [-l lang] [-r] [-c] [-T] [-b browser] URL
     ytt() {
-        local lang="" raw=0 copy=0 cookies_browser=""
+        local lang="" raw=0 copy=0 cookies_browser="" timestamps=0
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -h|--help)
@@ -329,6 +331,7 @@ Extract YouTube transcript to stdout.
 Options:
   -l, --lang LANG       Subtitle language (default: original)
   -r, --raw             Output raw VTT (no cleanup)
+  -T, --timestamps      Prefix each line with [HH:MM:SS] (no effect with --raw)
   -c, --copy            Copy to clipboard instead of printing
   -b, --browser BROWSER Read cookies from BROWSER (firefox, chrome, brave,
                         chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
@@ -339,14 +342,16 @@ EOF
                 -b|--browser) [[ $# -lt 2 ]] && { print -u2 "ytt: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
                 -r|--raw) raw=1; shift ;;
                 -c|--copy) copy=1; shift ;;
-                -[rc]*)
+                -T|--timestamps) timestamps=1; shift ;;
+                -[rcT]*)
                     local flags="${1#-}"; shift
                     local i
                     for (( i=0; i<${#flags}; i++ )); do
                         case "${flags:$i:1}" in
                             r) set -- "-r" "$@" ;;
                             c) set -- "-c" "$@" ;;
-                            *) print -u2 "ytt: unknown flag: -${flags:$i:1}"; return 1 ;;
+                            T) set -- "-T" "$@" ;;
+                            *) print -u2 "ytt: -${flags:$i:1} cannot be bundled (takes a value or is unknown)"; return 1 ;;
                         esac
                     done
                     ;;
@@ -355,7 +360,7 @@ EOF
             esac
         done
 
-        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] [-c] [-b browser] URL"; return 1; }
+        [[ -z "$1" ]] && { print -u2 "Usage: ytt [-l lang] [-r] [-c] [-T] [-b browser] URL"; return 1; }
         local url="$1"
         [[ -n "$cookies_browser" ]] && local YT2NOTE_COOKIES_BROWSER="$cookies_browser"
 
@@ -367,7 +372,7 @@ EOF
             vtt=$(_yt2note_download_vtt "$url" "$tmpdir" "$lang") || { print -u2 "ytt: no subtitles found"; return 1; }
             output=$(<"$vtt")
         else
-            output=$(_yt2note_fetch_transcript "$url" "--transcript" "$lang") || {
+            output=$(_yt2note_fetch_transcript "$url" "$timestamps" "$lang") || {
                 print -u2 "ytt: no transcript available"; return 1
             }
         fi
@@ -387,9 +392,9 @@ EOF
     if zdotfiles_has_command claude; then
 
     # YouTube transcript → Claude summary to stdout
-    # Usage: ytc [-b browser] "URL" [prompt_file]  (default: $YT2NOTE_PROMPT)
+    # Usage: ytc [-T] [-b browser] "URL" [prompt_file]  (default: $YT2NOTE_PROMPT)
     ytc() {
-        local cookies_browser=""
+        local cookies_browser="" timestamps=0
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -h|--help)
@@ -399,18 +404,20 @@ Usage: ytc [OPTIONS] URL [PROMPT_FILE]
 Send YouTube transcript with metadata to Claude for summarization.
 
 Options:
+  -T, --timestamps      Prefix each transcript line with [HH:MM:SS]
   -b, --browser BROWSER Read cookies from BROWSER (firefox, chrome, brave,
                         chromium, edge, safari). Overrides YT2NOTE_COOKIES_BROWSER.
   -h, --help            Show help
 EOF
                     return 0 ;;
                 -b|--browser) [[ $# -lt 2 ]] && { print -u2 "ytc: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
+                -T|--timestamps) timestamps=1; shift ;;
                 -*) print -u2 "ytc: unknown option: $1"; return 1 ;;
                 *) break ;;
             esac
         done
 
-        [[ -z "$1" ]] && { print -u2 "Usage: ytc [-b browser] \"URL\" [prompt_file]"; return 1; }
+        [[ -z "$1" ]] && { print -u2 "Usage: ytc [-T] [-b browser] \"URL\" [prompt_file]"; return 1; }
 
         local url="$1"
         local prompt_file="${2:-${YT2NOTE_PROMPT:-}}"
@@ -424,9 +431,11 @@ EOF
         _yt2note_cookies_args cookies_args
 
         local transcript
-        transcript=$(_yt2note_fetch_transcript "$url") || {
-            print -u2 "ytc: no transcript available"; return 1
-        }
+        transcript=$(_yt2note_fetch_transcript "$url" "$timestamps")
+        if [[ -z "$transcript" ]]; then
+            print -u2 "ytc: no transcript available"
+            return 1
+        fi
 
         local meta_err
         meta_err=$(mktemp /tmp/ytc-err.XXXXXX)
@@ -443,7 +452,7 @@ EOF
     }
 
     yt2note() {
-        local -i raw=0 dry_run=0 open_after=0 title_overridden=0 raw_title=0
+        local -i raw=0 dry_run=0 open_after=0 title_overridden=0 raw_title=0 timestamps=0
         local dir="${YT2NOTE_DIR:-}" title="" url="" cookies_browser=""
 
         while [[ $# -gt 0 ]]; do
@@ -456,6 +465,7 @@ Create an Obsidian note from a YouTube video with optional AI summary.
 
 Options:
   -r, --raw                Save raw transcript, skip AI summary
+  -T, --timestamps         Prefix transcript lines with [HH:MM:SS] (passed to AI in summary mode, saved verbatim with --raw)
   -d, --dir SUBDIR         Target subdirectory in vault (skip AI placement)
   -t, --title TITLE        Override note title (skip AI title suggestion)
       --raw-title          Use YouTube title verbatim (skip AI title suggestion)
@@ -487,13 +497,14 @@ EOF
                     return 0
                     ;;
                 -r|--raw) raw=1; shift ;;
+                -T|--timestamps) timestamps=1; shift ;;
                 -d|--dir) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; dir="$2"; shift 2 ;;
                 -t|--title) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; title="$2"; title_overridden=1; shift 2 ;;
                 -b|--browser) [[ $# -lt 2 ]] && { zdotfiles_error "yt2note: $1 requires an argument"; return 1; }; cookies_browser="$2"; shift 2 ;;
                 -n|--dry-run) dry_run=1; shift ;;
                 -o|--open) open_after=1; shift ;;
                 --raw-title) raw_title=1; shift ;;
-                -[rnoh]*)
+                -[rnohT]*)
                     local flags="${1#-}"; shift
                     local i
                     for (( i=0; i<${#flags}; i++ )); do
@@ -502,7 +513,8 @@ EOF
                             n) set -- "-n" "$@" ;;
                             o) set -- "-o" "$@" ;;
                             h) set -- "-h" "$@" ;;
-                            *) zdotfiles_error "yt2note: unknown flag: -${flags:$i:1}"; return 1 ;;
+                            T) set -- "-T" "$@" ;;
+                            *) zdotfiles_error "yt2note: -${flags:$i:1} cannot be bundled (takes a value or is unknown)"; return 1 ;;
                         esac
                     done
                     ;;
@@ -572,7 +584,7 @@ EOF
 
         _yt2note_timer_start "yt2note: downloading transcript..."
         local transcript
-        transcript=$(_yt2note_fetch_transcript "$url")
+        transcript=$(_yt2note_fetch_transcript "$url" "$timestamps")
         if [[ -z "$transcript" ]]; then
             _yt2note_timer_stop
             zdotfiles_warn "yt2note: no transcript available for this video"
