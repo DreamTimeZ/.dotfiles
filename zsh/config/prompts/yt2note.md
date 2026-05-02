@@ -35,6 +35,7 @@ Skip: sponsor segments, subscribe/like prompts, self-promotion, filler anecdotes
 - **Grounded**: only information from the transcript. No fabrication, no gap-filling.
 - **Concise**: a 20-min video should produce a note scannable in 30 seconds. Longer only if density demands it.
 - **No padding**: 3 key ideas means output 3. Never inflate to fill sections.
+- **Timestamps**: if input lines begin with [HH:MM:SS] markers, you may cite key moments inline as [mm:ss] when it adds reference value (lectures, tutorials, definitions, demos). Do not cite every section. Strip leading zeros from the hour: drop the entire `00:` when hour is zero (e.g., [00:12:34] becomes [12:34]), drop only the leading zero when hour is non-zero (e.g., [01:23:45] becomes [1:23:45]). Never invent timestamps. Omit if input has none.
 - **Punctuation**: outside code, paths, URLs, flags, tables, and math, never use em dashes, en dashes, or semicolons in prose. Hyphens in compound words are allowed. Rewrite with commas, colons, periods, or parentheses.
 
 Output the note body only. No commentary.
