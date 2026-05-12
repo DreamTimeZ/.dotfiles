@@ -988,6 +988,14 @@ run_doctor() {
     # ── Recommended tools ──
     printf "\n${BOLD}Recommended tools${NC}\n"
     local -a recommended_tools=(bat eza fd rg jq zoxide atuin glow nvim mise lazygit gh uv ffmpeg tesseract)
+    # Private extension: append tools listed in ~/.dotfiles-private/shared/doctor-tools.txt if present.
+    local private_tools_file="${DOTFILES_PRIVATE}/shared/doctor-tools.txt"
+    if [[ -f "$private_tools_file" ]]; then
+        while IFS= read -r _line; do
+            [[ -z "$_line" || "$_line" =~ ^[[:space:]]*# ]] && continue
+            recommended_tools+=("$_line")
+        done < "$private_tools_file"
+    fi
     for tool in "${recommended_tools[@]}"; do
         if command -v "$tool" &>/dev/null; then
             log_success "$tool"
