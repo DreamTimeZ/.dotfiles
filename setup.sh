@@ -987,7 +987,7 @@ run_doctor() {
 
     # ── Recommended tools ──
     printf "\n${BOLD}Recommended tools${NC}\n"
-    local -a recommended_tools=(bat eza fd rg jq zoxide atuin glow nvim mise lazygit gh uv)
+    local -a recommended_tools=(bat eza fd rg jq zoxide atuin glow nvim mise lazygit gh uv ffmpeg tesseract)
     for tool in "${recommended_tools[@]}"; do
         if command -v "$tool" &>/dev/null; then
             log_success "$tool"

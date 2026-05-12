@@ -11,3 +11,5 @@ pkg-config
 libssl-dev
 zsh
 tmux
+ffmpeg
+tesseract-ocr
