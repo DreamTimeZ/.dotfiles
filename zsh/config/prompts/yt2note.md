@@ -12,7 +12,7 @@ Distill a YouTube video transcript into a concise Obsidian note for future refer
 
 # STRUCTURE
 
-1. **Summary**: 1-2 sentences on what and why it matters
+1. **Takeaways**: 3-5 bullets capturing the core ideas worth remembering
 2. **Body**: adapt to content type:
    - Structured (tutorials, listicles): preserve creator's organization
    - Conceptual (deep dives): one H2 per major concept with key takeaways
