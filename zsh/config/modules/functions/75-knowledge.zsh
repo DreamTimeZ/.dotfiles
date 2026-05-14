@@ -184,7 +184,7 @@ Suggest a better title based on the latest feedback.}"
     }
 
     _yt2note_render() {
-        local template="$1" title="$2" date="$3" source="$4" channel="$5" duration="$6" tags="$7" content="$8" links="$9"
+        local template="$1" title="$2" date="$3" source="$4" channel="$5" duration="$6" tags="$7" content="$8" links="$9" fileclass="${10}"
 
         # Strip leading blank lines from content to avoid double spacing after title
         content="${content#"${content%%[^$'\n']*}"}"
@@ -196,9 +196,61 @@ Suggest a better title based on the latest feedback.}"
         template="${template//\{\{duration\}\}/$duration}"
         template="${template//\{\{tags\}\}/$tags}"
         template="${template//\{\{links\}\}/$links}"
+        template="${template//\{\{fileclass\}\}/$fileclass}"
         template="${template//\{\{content\}\}/$content}"
 
         print -r -- "$template"
+    }
+
+    # Detect dominant fileClass from sibling notes in a directory.
+    # Why: each vault folder has a convention (Reference, Lecture, etc.); yt2note
+    # must match it so notes show up in folder-scoped Bases.
+    # Excludes *MOC.md (MOCs are always Global and would skew the mode).
+    # Prints detected fileClass on stdout, or empty if no signal.
+    _yt2note_detect_fileclass() {
+        local dir="${1%/}"
+        [[ -d "$dir" ]] || return 0
+
+        local -a sibling_files=("${dir}"/*.md(N))
+        (( ${#sibling_files} )) || return 0
+
+        local -A fc_count=()
+        local f fc
+        for f in "${sibling_files[@]}"; do
+            [[ "${f:t}" == *MOC.md ]] && continue
+            fc=$(awk '
+                /^---[[:space:]]*$/ {
+                    if (in_fm == 0) { in_fm = 1; next }
+                    else { exit }
+                }
+                in_fm && /^fileClass:[[:space:]]+/ {
+                    sub(/^fileClass:[[:space:]]+/, "")
+                    gsub(/^"|"$/, "")
+                    gsub(/[[:space:]]+$/, "")
+                    print
+                    exit
+                }
+            ' "$f" 2>/dev/null)
+            [[ -n "$fc" ]] && (( fc_count[$fc]++ ))
+        done
+
+        (( ${#fc_count} )) || return 0
+
+        local key
+        local -i max_count=0
+        for key in ${(k)fc_count}; do
+            (( fc_count[$key] > max_count )) && max_count=$fc_count[$key]
+        done
+
+        # Tiebreak: prefer non-Global, then alphabetical (deterministic)
+        local best_fc=""
+        for key in ${(ok)fc_count}; do
+            (( fc_count[$key] == max_count )) || continue
+            if [[ -z "$best_fc" || ( "$best_fc" == "Global" && "$key" != "Global" ) ]]; then
+                best_fc=$key
+            fi
+        done
+        print -r -- "$best_fc"
     }
 
     # Resolve the original auto-caption language key for a video.
@@ -478,6 +530,10 @@ Options:
 Directory placement:
   Without -d, AI suggests a directory and prompts for confirmation.
   Enter to accept, 'n' to cancel, or type feedback to refine the suggestion.
+
+fileClass:
+  Detected from sibling notes in the target directory (mode, excluding *MOC.md).
+  Falls back to Global if the directory has no non-MOC notes.
 
 Environment variables:
   OBSIDIAN_VAULT           Path to vault root (required)
@@ -759,12 +815,17 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
             fi
         fi
 
+        # Auto-detect fileClass from sibling notes; fall back to Global
+        local fileclass
+        fileclass=$(_yt2note_detect_fileclass "$vault_path")
+        [[ -z "$fileclass" ]] && fileclass="Global"
+
         local template
         if [[ -n "${YT2NOTE_TEMPLATE:-}" && -f "$YT2NOTE_TEMPLATE" ]]; then
             template=$(<"$YT2NOTE_TEMPLATE")
         else
             template='---
-fileClass: Global
+fileClass: {{fileclass}}
 created: "{{date}}"
 source: "{{source}}"
 channel: "{{channel}}"
@@ -784,7 +845,7 @@ status:
         local safe_channel="${channel//\"/\\\"}"
 
         local note
-        note=$(_yt2note_render "$template" "$title" "$date" "$url" "$safe_channel" "$duration" "$tags" "$content" "$links_yaml")
+        note=$(_yt2note_render "$template" "$title" "$date" "$url" "$safe_channel" "$duration" "$tags" "$content" "$links_yaml" "$fileclass")
 
         if (( dry_run )); then
             print -r -- "$note"
