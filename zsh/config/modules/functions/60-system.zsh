@@ -89,7 +89,7 @@ update() {
   # 1. Update Homebrew formulas and casks
   if zdotfiles_has_command brew; then
     echo -e "\n\033[1;32m◆ Updating Homebrew...\033[0m"
-    if brew update && brew upgrade && brew cleanup; then
+    if brew update && brew upgrade --greedy-auto-updates && brew cleanup; then
       echo "✓ Homebrew packages updated successfully."
     else
       success=false
