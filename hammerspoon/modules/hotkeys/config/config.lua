@@ -49,6 +49,8 @@ config.logging = {
 -- Timing constants
 config.delays = {
     appActivation = 0.1,     -- Delay after launching app to ensure it's ready for activation
+    ghosttyLaunchPoll = 0.1, -- Poll interval while waiting for a new Ghostty instance to register
+    ghosttyLaunchMaxAttempts = 30, -- Stop polling after this many tries (~3s at the poll interval)
 }
 
 -- UI settings
@@ -251,6 +253,18 @@ config.globalShortcuts = {
             action = "launchOrFocus"
         },
         mapping = { app = "Ghostty", desc = "Launch Ghostty" }
+    },
+
+    -- Transparent Ghostty: single separate instance so normal windows stay opaque.
+    -- Keycode 42 is the key physically next to Return (# on German ISO),
+    -- bound by code because "#" is not a named key in Hammerspoon's keymap.
+    {
+        key = 42,
+        handler = {
+            field = "opacity",
+            action = "launchGhosttyTransparent"
+        },
+        mapping = { opacity = "0.18", desc = "Transparent Ghostty (launch or focus)" }
     },
 
     -- Mic mute toggle (Karabiner: F5 -> F18 -> Hammerspoon)

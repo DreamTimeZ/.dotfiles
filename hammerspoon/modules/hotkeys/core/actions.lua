@@ -52,6 +52,94 @@ function M.launchOrFocusPath(appPath)
     return true
 end
 
+-- Bundle id shared by every Ghostty process (normal and transparent alike).
+local GHOSTTY_BUNDLE_ID = "com.mitchellh.ghostty"
+
+-- hs.settings key persisting the transparent instance PID across Hammerspoon
+-- reloads, so a reload does not orphan tracking and spawn a duplicate instance.
+local TRANSPARENT_PID_KEY = "transparentGhosttyPid"
+
+-- In-flight guard so a rapid double-press cannot spawn a second instance before
+-- the first one has registered its PID.
+local transparentGhosttyLaunching = false
+
+-- Return the live transparent Ghostty app, or nil. Validates the bundle id so a
+-- recycled PID belonging to an unrelated process is never mistaken for it.
+local function liveTransparentGhostty()
+    local pid = hs.settings.get(TRANSPARENT_PID_KEY)
+    if not pid then return nil end
+    local app = hs.application.applicationForPID(pid)
+    if app and app:bundleID() == GHOSTTY_BUNDLE_ID then return app end
+    hs.settings.clear(TRANSPARENT_PID_KEY)
+    return nil
+end
+
+-- Focus the transparent Ghostty instance, launching it once if needed.
+-- macOS Ghostty has no per-window opacity and toggle_background_opacity only
+-- flips between the configured opacity and opaque, so the only SIP-safe way to
+-- keep normal windows opaque while having transparent ones is a dedicated
+-- instance whose background-opacity is overridden via --args. It reuses the
+-- normal config (font, keybinds, ...) and quits once its last window closes.
+function M.launchGhosttyTransparent(opacity)
+    if not validation.validate(opacity, {name = "opacity"}) then return false end
+
+    -- Rebuild the value from a number so it can never inject into the shell.
+    local opacityNum = tonumber(opacity)
+    if not opacityNum then
+        return validation.handleError("Invalid opacity value: " .. tostring(opacity), true)
+    end
+
+    -- Reuse the existing transparent instance if it is still alive.
+    local existing = liveTransparentGhostty()
+    if existing then
+        existing:activate()
+        return true
+    end
+
+    -- A launch is already in flight; avoid spawning a second instance.
+    if transparentGhosttyLaunching then return true end
+    transparentGhosttyLaunching = true
+
+    -- All Ghostty processes share one bundle id, so the freshly launched
+    -- instance can only be identified by diffing the PID set before and after.
+    local before = {}
+    for _, app in ipairs(hs.application.applicationsForBundleID(GHOSTTY_BUNDLE_ID)) do
+        before[app:pid()] = true
+    end
+
+    hs.execute(string.format(
+        'open -na Ghostty.app --args --background-opacity=%.2f '
+            .. '--background-opacity-cells=true --quit-after-last-window-closed=true',
+        opacityNum
+    ))
+
+    local attempts = 0
+    local found = false
+    hs.timer.doUntil(
+        function()
+            return found or attempts >= config.delays.ghosttyLaunchMaxAttempts
+        end,
+        function()
+            attempts = attempts + 1
+            for _, app in ipairs(hs.application.applicationsForBundleID(GHOSTTY_BUNDLE_ID)) do
+                if not before[app:pid()] then
+                    hs.settings.set(TRANSPARENT_PID_KEY, app:pid())
+                    app:activate()
+                    found = true
+                    break
+                end
+            end
+            -- Release the guard once the instance is found or the search gives up.
+            if found or attempts >= config.delays.ghosttyLaunchMaxAttempts then
+                transparentGhosttyLaunching = false
+            end
+        end,
+        config.delays.ghosttyLaunchPoll
+    )
+
+    return true
+end
+
 function M.openFinderFolder(path)
     if not validation.validate(path, {name = "path"}) then return false end
     
@@ -179,6 +267,7 @@ end
 local ACTION_HANDLERS = {
     launchOrFocus = M.launchOrFocus,
     launchOrFocusPath = M.launchOrFocusPath,
+    launchGhosttyTransparent = M.launchGhosttyTransparent,
     openURL = M.openURL,
     openFinderFolder = M.openFinderFolder,
     openSystemPreferencePane = M.openSystemPreferencePane,
