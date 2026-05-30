@@ -2,6 +2,11 @@
 window-width = 122
 window-height = 29
 
+# Window position on the primary monitor, in points from the top-left.
+# Horizontally centered; vertically between the top edge and the center.
+window-position-x = 480
+window-position-y = 120
+
 # Font
 font-family = "MesloLGS Nerd Font Mono"
 
