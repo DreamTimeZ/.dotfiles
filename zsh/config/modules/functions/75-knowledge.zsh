@@ -32,6 +32,14 @@ if zdotfiles_has_command yt-dlp; then
         print -r -- "$name"
     }
 
+    # True if a vault-relative path tries to escape via '..' components.
+    # Single source of truth for the traversal check used at both the AI source
+    # and the write sink (-d / $YT2NOTE_DIR also reach that sink).
+    _yt2note_has_traversal() {
+        local p="$1"
+        [[ "$p" == ".." || "$p" == "../"* || "$p" == *"/.." || "$p" == *"/../"* ]]
+    }
+
     _yt2note_vault_tree() {
         local vault="${1%/}"
 
@@ -124,11 +132,17 @@ Choose a better directory based on the latest feedback.}"
         result="${result%"${result##*[^ ]}"}" # trim all trailing spaces
         result="${result#/}"
         result="${result%/}"
+        # Reject path traversal early (better UX in the refinement loop); the
+        # write sink re-checks since -d / $YT2NOTE_DIR bypass this path.
+        if _yt2note_has_traversal "$result"; then
+            zdotfiles_warn "yt2note: AI returned a path containing '..' (rejected): $result"
+            return 1
+        fi
         if [[ -n "$result" && -d "${vault}/${result}" ]]; then
             print -r -- "$result"
             return 0
         fi
-        zdotfiles_warn "yt2note: AI returned '${result:-<empty>}' (not a valid directory)" >&2
+        zdotfiles_warn "yt2note: AI returned '${result:-<empty>}' (not a valid directory)"
         return 1
     }
 
@@ -599,6 +613,13 @@ EOF
             return 1
         fi
 
+        # Fail fast on -d/$YT2NOTE_DIR traversal before any network/AI work; the
+        # write sink re-checks as the authoritative chokepoint.
+        if [[ -n "$dir" ]] && _yt2note_has_traversal "$dir"; then
+            zdotfiles_error "yt2note: -d/\$YT2NOTE_DIR contains '..' (refusing to write outside vault): $dir"
+            return 1
+        fi
+
         if (( ! dry_run )) && [[ -n "$dir" && ! -d "${OBSIDIAN_VAULT%/}/${dir}" ]]; then
             zdotfiles_error "yt2note: target directory not found: ${OBSIDIAN_VAULT%/}/${dir}"
             return 1
@@ -786,6 +807,14 @@ Previously suggested: ${target_dir}. User feedback: ${reply}"
                         ;;
                 esac
             done
+        fi
+
+        # Traversal backstop at the chokepoint: target_dir converges here from
+        # the AI path, -d, and $YT2NOTE_DIR (env, e.g. a direnv .envrc); the last
+        # two never pass the AI-path check above.
+        if _yt2note_has_traversal "$target_dir"; then
+            zdotfiles_error "yt2note: target directory contains '..' (refusing to write outside vault): $target_dir"
+            return 1
         fi
 
         local vault_path="${OBSIDIAN_VAULT%/}"
