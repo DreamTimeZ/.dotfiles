@@ -1,0 +1,14 @@
+{
+  // Only deviations from defaults; ignores live in .markdownlint-cli2.jsonc.
+
+  // Source line length doesn't affect rendered output; the limit mainly nags
+  // about long URLs and tables you can't break, so most configs disable it.
+  "MD013": false,
+
+  // GitHub renders collapsible <details>/<summary>; the default blocks all inline HTML.
+  "MD033": { "allowed_elements": ["details", "summary"] },
+
+  // On by default but not auto-fixable, and table styling is a formatter's job
+  // (tables render the same regardless of pipe spacing).
+  "MD060": false
+}

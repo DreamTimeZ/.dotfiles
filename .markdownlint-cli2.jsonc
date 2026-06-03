@@ -1,0 +1,7 @@
+{
+  // markdownlint-cli2 options (rules live in .markdownlint.jsonc).
+  // gitignore: also skip .gitignore'd paths (affects direct cli2 runs; pre-commit only sends tracked files).
+  "gitignore": true,
+  // .claude/** + CLAUDE*.md: Claude Code config/context. zsh/config/prompts/*.md: AI prompt payloads (not docs).
+  "ignores": ["**/.claude/**", "**/CLAUDE*.md", "zsh/config/prompts/**"]
+}

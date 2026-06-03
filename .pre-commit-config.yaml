@@ -1,0 +1,39 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.(bat|vbs|nss)$'   # Windows-native, CRLF-sensitive
+      - id: end-of-file-fixer
+        exclude: '\.(bat|vbs|nss)$'
+      - id: check-yaml
+      - id: check-toml                 # mise/*.toml etc.
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict        # macOS/Linux/WSL case-fold safety
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: detect-private-key         # dotfiles carry ssh/gpg material
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.22.1
+    hooks:
+      - id: markdownlint-cli2
+        args: [--fix]   # ignore patterns live in .markdownlint-cli2.jsonc
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        # identify tags .zsh (and zsh-shebang scripts) as both `shell` AND
+        # `zsh`; shellcheck cannot parse zsh. The zsh -n hook covers those.
+        exclude_types: [zsh]
+
+  - repo: local
+    hooks:
+      - id: zsh-syntax-check
+        name: zsh -n
+        entry: bash -c 'for f in "$@"; do zsh -n "$f" || exit 1; done' --
+        language: system
+        types: [zsh]                   # zsh -n parses one file; wrapper loops
