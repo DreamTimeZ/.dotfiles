@@ -37,6 +37,8 @@ serve() {
   local mode="auto"        # 'auto' chooses node if available, else python.
   local port=8000          # Default port.
   local directory="."      # Default directory.
+  local bind_addr="127.0.0.1"  # Loopback-only by default; opt into LAN with --public.
+  local public=0
   local extra_opts=()
 
   # If the first argument is not an option, treat it as the directory.
@@ -62,12 +64,15 @@ serve() {
           print -u2 "Missing argument for $1"; return 1
         fi
         ;;
+      -P|--public)
+        public=1; shift
+        ;;
       --)
         shift; extra_opts=("$@"); break
         ;;
       *)
         print -u2 "Unknown option: $1"
-        print -u2 "Usage: serve [directory] [-m mode] [-p port] [-- extra options]"
+        print -u2 "Usage: serve [directory] [-m mode] [-p port] [-P|--public] [-- extra options]"
         return 1
         ;;
     esac
@@ -81,6 +86,9 @@ serve() {
     print -u2 "serve: directory '$directory' does not exist"; return 1
   fi
 
+  # Loopback by default so a dev server is never silently exposed to the LAN.
+  (( public )) && bind_addr="0.0.0.0"
+
   # Choose mode if set to auto.
   if [[ "$mode" == "auto" ]]; then
     if zdotfiles_has_command nodemon; then
@@ -90,7 +98,7 @@ serve() {
     fi
   fi
 
-  local url="http://localhost:$port"
+  local url="http://127.0.0.1:$port"
 
   # Build a fancy banner.
   local width=65
@@ -102,6 +110,7 @@ serve() {
   print -P "%B%F{blue}╚${border}╝%f%b"
 
   # Print the URL inline on the same line as "URL:".
+  (( public )) && print -P "%B%F{yellow}WARNING: bound to all interfaces (0.0.0.0), reachable from your LAN.%f%b"
   print -Pn "%B%F{green}URL: %f%b"
   _print_clickable_url "$url"
   print
@@ -111,13 +120,13 @@ serve() {
     if ! zdotfiles_has_command nodemon; then
       print -u2 "serve: nodemon is not installed"; return 1
     fi
-    local cmd=(pnpm dlx serve "$directory" -l "$port" ${extra_opts[@]})
+    local cmd=(pnpm dlx serve "$directory" -l "tcp://${bind_addr}:$port" "${extra_opts[@]}")
     nodemon --watch "$directory" -e js,html,css --exec "${cmd[@]}"
   elif [[ "$mode" == "python" ]]; then
     if ! zdotfiles_has_command python3; then
       print -u2 "serve: python3 is not installed"; return 1
     fi
-    python3 -m http.server "$port" --directory "$directory" ${extra_opts[@]} 2>&1 | _format_logs
+    python3 -m http.server "$port" --bind "$bind_addr" --directory "$directory" "${extra_opts[@]}" 2>&1 | _format_logs
   else
     print -u2 "serve: unknown mode '$mode' (use 'auto', 'node', or 'python')"; return 1
   fi
