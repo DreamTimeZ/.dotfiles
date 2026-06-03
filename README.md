@@ -105,6 +105,16 @@ For detailed information on each component:
 - Ubuntu or Debian WSL distribution
 - Windows Terminal (recommended)
 
+## 🧹 Linting
+
+Pre-commit hooks keep the repo clean (config: `.pre-commit-config.yaml`). Install once with `pre-commit install`, lint everything with `pre-commit run --all-files`, and update hook versions with `pre-commit autoupdate`.
+
+- **Hygiene**: trailing whitespace, end-of-file, YAML/JSON syntax, merge- and case-conflict guards, large-file and private-key detection.
+- **Markdown** (`markdownlint-cli2`): rules in `.markdownlint.jsonc`. `CLAUDE*.md` and `zsh/config/prompts/*.md` are excluded (context files and AI prompt payloads, not docs).
+- **Shell**: `shellcheck` for bash (`setup.sh` and the bash scripts in `bin/`). Shellcheck cannot parse zsh, so `.zsh` files get a `zsh -n` syntax check instead.
+
+`pre-commit` is the only extra prerequisite; the hook repos provide shellcheck, markdownlint, and node.
+
 ## 🗺️ Roadmap
 
 - Backup and restore system

@@ -1,5 +1,4 @@
 # CLAUDE.md
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands
@@ -23,9 +22,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `:TSUpdate` - Update Treesitter parsers
 
 ### Installation and Linking
-- `ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc` - Link zsh configuration
-- `ln -sf ~/.dotfiles/tmux/.tmux.conf ~/.tmux.conf` - Link tmux configuration
-- `ln -sf ~/.dotfiles/nvim/init.lua ~/.config/nvim/init.lua` - Link neovim configuration
+- `./setup.sh --all` - Install packages and create all symlinks
+- `./setup.sh --link-only` - Create symlinks only (no package installs)
+- `./setup.sh --unlink` - Remove all managed symlinks
+- `./setup.sh --doctor` - Verify the setup
+- Symlink mappings live in `symlinks.conf` (grouped: shell, tmux, editor, git, ssh, ...). Edit there; `setup.sh` creates parent dirs and backs up existing files, which manual `ln` does not.
+
+### Linting
+- `pre-commit install` - Activate the git pre-commit hook (one-time)
+- `pre-commit run --all-files` - Run all lint hooks (markdownlint, shellcheck, zsh -n, hygiene)
+- `pre-commit autoupdate` - Bump hook versions
+- shellcheck covers bash only; `.zsh` files get `zsh -n` instead (shellcheck cannot parse zsh)
 
 ## Architecture
 
@@ -34,10 +41,12 @@ The Zsh configuration uses a highly modular architecture:
 
 - **Core files in `zsh/config/`**:
   - `exports.zsh` - Environment variables and shell options
+  - `helpers.zsh` - PATH helpers and the `zdotfiles_info/warn/error` logging functions
   - `plugins.zsh` - Plugin initialization via Sheldon
-  - `modules.zsh` - Loads modular functions from `modules/` directory
+  - `modules.zsh` - Loads numerically-prefixed function modules from `modules/functions/`
   - `keybindings.zsh` - Custom key bindings
   - `aliases.zsh` - Command aliases
+  - `local.zsh` - Sources machine-specific overrides from `modules/local/`
 
 - **Plugin management via Sheldon** (`zsh/sheldon/`):
   - `plugins.toml` - Declarative plugin configuration with load order
@@ -45,12 +54,8 @@ The Zsh configuration uses a highly modular architecture:
   - Custom configuration files for complex plugins (fzf-tab-config.zsh)
 
 - **Modular functions** (`zsh/config/modules/functions/`):
-  - `00-core.zsh` - Core utilities and logging functions
-  - `10-navigation.zsh` - Directory navigation helpers
-  - `20-git.zsh` - Git workflow automation
-  - `30-process.zsh` - Process management utilities
-  - `50-webserver.zsh` - Development server helpers
-  - `60-system.zsh` - System administration tools
+  - `NN-*.zsh` files auto-loaded in numeric order by `modules.zsh`. Run `ls zsh/config/modules/functions/` for the current set (e.g. `00-core`, `20-git`, `40-python`, `60-system`, `75-knowledge`).
+  - Core utilities are in `00-core.zsh`; the logging functions themselves live in `zsh/config/helpers.zsh`.
 
 - **Local overrides** (`zsh/config/modules/local/`):
   - Machine-specific configurations that override defaults
@@ -65,14 +70,14 @@ The Zsh configuration uses a highly modular architecture:
 ### Neovim Lazy Loading
 - Uses lazy.nvim for efficient plugin management
 - Minimal core configuration with essential plugins
-- Treesitter for syntax highlighting with "all" language support
+- Treesitter for syntax highlighting (curated parser list in init.lua, auto_install fetches others on demand via the tree-sitter CLI)
 - Telescope for fuzzy finding, NvimTree for file exploration
 
 ### Hammerspoon Modular System
 - Entry point in `hammerspoon/init.lua`
 - Modular hotkey system in `hammerspoon/modules/hotkeys/`
 - Configuration system with local overrides in `modules/hotkeys/config/local/`
-- Separated concerns: validation, logging, modals, actions, UI
+- Separated concerns across subdirectories: `core/`, `modals/`, `macros/`, `ui/`, `utils/`
 
 ### SSH Configuration
 - Split configuration with `ssh/config` for general settings
@@ -103,44 +108,25 @@ The Zsh configuration uses a highly modular architecture:
 - Template files show examples of common customizations
 
 ## Key Design Principles
-
 - **Modularity**: Each component can be used independently
-- **Lazy Loading**: Tools like NVM, PyEnv only initialize when needed
+- **Lazy Loading**: Tools initialize on demand via Sheldon; runtime versions are managed by mise (`zsh/sheldon/mise.zsh`)
 - **Local Overrides**: Machine-specific settings don't interfere with main config
 - **Cross-platform**: Primary macOS focus with Linux/WSL compatibility considerations
 - **Performance**: Optimized loading order and lazy initialization for fast shell startup
-- **Documentation**: Each major component has its own documentation file
+- **Documentation**: Substantial components ship their own README/docs (zsh/, tmux/, nvim/, hammerspoon/, gpg/), read on demand
 
-## Logging Best Practices
+## Hammerspoon Hotkeys Logging
 
-### Production Logging Configuration
-The logging system follows industry standards for production environments:
+### Configuration
+The hotkeys logger lives in `hammerspoon/modules/hotkeys/core/logging.lua` with config in `config/config.lua`:
 
 #### **Log Levels (Default: ERROR only)**
 - `ERROR (1)`: Critical failures requiring immediate attention
-- `WARN (2)`: Warning conditions that should be monitored  
+- `WARN (2)`: Warning conditions that should be monitored
 - `INFO (3)`: General information (disabled in production)
 - `DEBUG (4)`: Detailed debugging (disabled in production)
 
-#### **Security & Performance Features**
-- **Rate Limiting**: Max 10 messages/second to prevent log spam
-- **Message Sanitization**: Removes control characters, limits message length
-- **Input Validation**: Type checking and safe parameter handling
-- **Error Resilience**: Uses `pcall` to prevent logging from crashing app
-
-#### **Configuration Examples**
-```lua
--- Enable debug logging for development
-logging.setLogLevel("DEBUG")
-
--- Production settings (default)
-logging.setLogLevel("ERROR")
-logging.setLoggingEnabled(true)
-
--- Monitor logging stats
-local stats = logging.getLogStats()
-print("Log level: " .. stats.levelName)
-```
+Public API in `logging.lua`: `setLogLevel`, `setLoggingEnabled`, `getLogStats`. Rate-limited, message-sanitized, and `pcall`-guarded; see the source for internals.
 
 #### **Usage Guidelines**
 - Use `ERROR` for critical failures only
