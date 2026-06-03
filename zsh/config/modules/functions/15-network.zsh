@@ -308,13 +308,13 @@ if zdotfiles_has_command tcpdump; then
             echo "Example: sniff 80"
             return 1
         fi
-        
+
         # Validate port number
         if ! [[ "$1" =~ ^[0-9]+$ ]] || (( $1 < 1 || $1 > 65535 )); then
             zdotfiles_error "Invalid port number: $1 (must be 1-65535)"
             return 1
         fi
-        
+
         echo "Starting packet capture on port $1..."
         sudo tcpdump -i any port "$1"
     }
@@ -328,13 +328,13 @@ if zdotfiles_has_command nmap; then
             echo "Example: nscan 192.168.1.1"
             return 1
         fi
-        
+
         # Basic target validation (prevent command injection)
-        if [[ "$1" =~ [;&|] ]]; then
+        if [[ "$1" =~ "[;&|]" ]]; then
             zdotfiles_error "Invalid characters in target: $1"
             return 1
         fi
-        
+
         echo "Scanning target: $1"
         sudo nmap -sS -Pn "$1"
     }
