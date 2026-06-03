@@ -37,7 +37,7 @@ end
 --- Starts the auto-clicker
 function M.start()
     if isRunning then return end
-    
+
     timer = hs.timer.doEvery(config.interval, M.click)
     isRunning = true
     showAlert("ON")
@@ -46,7 +46,7 @@ end
 --- Stops the auto-clicker
 function M.stop()
     if not isRunning or not timer then return end
-    
+
     timer:stop()
     timer = nil
     isRunning = false

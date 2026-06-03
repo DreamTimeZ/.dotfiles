@@ -20,7 +20,7 @@ exec zsh
 ## ✨ Key Features
 
 - **🎯 Smart Defaults**: `cd` uses zoxide, `ls` uses eza by default
-- **🔧 Modular Design**: Functions organized in logical modules  
+- **🔧 Modular Design**: Functions organized in logical modules
 - **⚡ Fast Startup**: Optimized loading with lazy initialization
 - **🛡️ Non-Breaking**: Modern tools with graceful fallbacks
 - **📦 Rich Utilities**: Productivity functions and aliases included

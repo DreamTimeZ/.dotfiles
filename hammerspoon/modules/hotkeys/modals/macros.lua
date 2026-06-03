@@ -72,7 +72,7 @@ local function createActionHandlers()
         stopAll = stopAll,
         showStatus = showStatus
     }
-    
+
     -- Auto-generate toggle actions for each macro
     for name, macro in pairs(macros) do
         if macro.toggle then
@@ -84,7 +84,7 @@ local function createActionHandlers()
             end
         end
     end
-    
+
     return handlers
 end
 
@@ -103,7 +103,7 @@ local function loadMappings()
             i = { fn = actionHandlers.showStatus, desc = "Show Macro Status" }
         }
     end
-    
+
     -- Convert mappings
     local convertedMappings = {}
     for key, mapping in pairs(mappings) do

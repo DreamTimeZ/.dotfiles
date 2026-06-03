@@ -11,7 +11,7 @@ The configuration is organized into a modular structure:
 ```markdown
 hammerspoon/
 ├── init.lua                # Main entry point
-├── modules/               
+├── modules/
 │   └── hotkeys/           # Hotkeys module
 │       ├── config/        # Configuration files
 │       │   └── local/     # User customizations

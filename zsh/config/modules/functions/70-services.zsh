@@ -15,7 +15,7 @@ if zdotfiles_has_command ollama; then
             echo "Ollama service already running"
         fi
     }
-    
+
     # Stop Ollama service
     ollama-stop() {
         if pgrep -x ollama >/dev/null; then
@@ -26,7 +26,7 @@ if zdotfiles_has_command ollama; then
             echo "Ollama service not running"
         fi
     }
-    
+
     # Check Ollama service status
     ollama-status() {
         if pgrep -x ollama >/dev/null; then

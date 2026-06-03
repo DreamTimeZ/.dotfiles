@@ -25,29 +25,29 @@ config.loadLocalConfigs(false, {
 -- Function to create a modal module
 local function createModal(modalName)
     local modal = config.modals[modalName]
-    
+
     if not modal then
         logging.error("Unknown modal: " .. modalName)
         return nil
     end
-    
+
     -- Handle modules with custom implementations
     if modal.customModule then
         return require(modal.customModule)
     end
-    
+
     -- Check for required fields
     if not modal.handler or not modal.handler.field or not modal.handler.action then
         logging.error("Invalid modal definition for " .. modalName .. ": missing handler information")
         return nil
     end
-    
+
     -- Use mappings directly from the modal definition
     local mappings = modal.mappings or {}
     if not next(mappings) then
         logging.warn("No mappings found for modal: " .. modalName)
     end
-    
+
     -- Create standard modal using the configuration
     return modals.createModalModule(
         mappings,
@@ -70,13 +70,13 @@ end
 local function loadModules()
     logging.info("Loading modal modules")
     local moduleCount = 0
-    
+
     for modalName, _ in pairs(config.modals) do
         logging.debug("Loading modal: " .. modalName)
         modules[modalName] = createModal(modalName)
         moduleCount = moduleCount + 1
     end
-    
+
     logging.info("Loaded " .. moduleCount .. " modals")
 end
 
@@ -86,24 +86,24 @@ local function createKeyBindings()
     for _, hotkey in ipairs(globalHotkeys) do
         hotkey:delete()
     end
-    
+
     globalHotkeys = {}
     logging.info("Creating key bindings from configuration")
-    
+
     local validCount = 0
-    
+
     for _, shortcut in ipairs(config.globalShortcuts) do
         -- Per-shortcut modifier override: nil/missing -> hyper, {} -> no modifier.
         local mods = shortcut.mods or config.modifiers.hyper
         local key = shortcut.key
-        
+
         if not key then
             logging.warn("Skipping shortcut without key")
             goto continue
         end
-        
+
         local callback
-        
+
         if shortcut.modal and modules[shortcut.modal] then
             -- Modal activator
             callback = function()
@@ -130,15 +130,15 @@ local function createKeyBindings()
             logging.warn("Skipping invalid shortcut for key '" .. key .. "'")
             goto continue
         end
-        
+
         -- Bind the hotkey and store it for later management
         local hotkey = hs.hotkey.bind(mods, key, callback)
         table.insert(globalHotkeys, hotkey)
         validCount = validCount + 1
-        
+
         ::continue::
     end
-    
+
     logging.info("Created " .. validCount .. " global hotkeys")
 end
 

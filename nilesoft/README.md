@@ -6,7 +6,7 @@ Windows context menu customizer. Docs: <https://nilesoft.org/docs/>
 
 Installed at `%ProgramFiles%\Nilesoft Shell`:
 
-```
+```text
 Nilesoft Shell/
 ├── shell.nss               * Entrypoint — settings, imports, menu items
 └── imports/

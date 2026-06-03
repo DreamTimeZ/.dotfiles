@@ -8,12 +8,14 @@
 ## Context
 
 The dotfiles system uses a two-repo architecture:
+
 - `~/.dotfiles` (public) contains all tool configurations
 - `~/.dotfiles-private` (private) contains sensitive and machine-specific overrides
 
 Private configs are layered (`shared/` > `platform/` > `machines/hostname/`) and symlinked into the public repo's `local/` directories via `link.sh`. Public configs are then symlinked from `~/.dotfiles/` into `$HOME`.
 
 The missing pieces were:
+
 - Automated symlinks from public repo to `$HOME` (was manual `ln -sf` commands)
 - Package installation with category selection
 - System health checks
@@ -23,6 +25,7 @@ The missing pieces were:
 ### chezmoi
 
 **Advantages:**
+
 - One-command bootstrap (`chezmoi init --apply`)
 - Built-in encryption (age/gpg) and 17+ password manager integrations
 - Drift detection (`chezmoi verify`), diagnostics (`chezmoi doctor`)
@@ -62,7 +65,9 @@ Technical drawbacks (annoyances, not dealbreakers on their own):
 Three new files fill the gaps without introducing new tool dependencies:
 
 ### `setup.sh`
+
 Single entry point for bootstrapping and managing dotfiles.
+
 - Installs packages by category (interactive selection or flags)
 - Creates symlinks from declarative config
 - Runs `~/.dotfiles-private/link.sh` if the private repo exists
@@ -72,17 +77,19 @@ Single entry point for bootstrapping and managing dotfiles.
 - Idempotent (safe to run repeatedly)
 
 ### `symlinks.conf`
+
 Declarative symlink map. Each line: `source  target  [platform_filter]`.
 Plain text, auditable, no templating. Platform filter restricts to `macos`, `linux`, or `wsl`.
 
 ### `packages/`
+
 Package lists by category (Brewfile format for brew, plain text for apt/cargo).
 Categories: `core`, `cli`, `dev`, `extra`, `macos`.
 `setup.sh` runs `brew bundle` for each selected category's Brewfile.
 
 ## Flow
 
-```
+```text
 Fresh machine:
   1. git clone <public-repo> ~/.dotfiles
   2. cd ~/.dotfiles && ./setup.sh --all
@@ -97,7 +104,7 @@ Existing machine:
 
 ## Symlink chain
 
-```
+```text
 ~/.dotfiles-private/shared/git/local/.gitconfig.local   [real file]
          |
          | link.sh (private -> public)

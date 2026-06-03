@@ -22,4 +22,4 @@
 # }
 
 # Work-specific configurations
-# source "$HOME/work/work-config.sh" 
+# source "$HOME/work/work-config.sh"

@@ -22,7 +22,7 @@ end
 function M.validate(params, options)
     options = options or {}
     local isFatal = options.isFatal or false
-    
+
     -- Handle single parameter validation
     if type(params) ~= "table" or options.singleParam then
         local name = options.name or "parameter"
@@ -31,14 +31,14 @@ function M.validate(params, options)
         end
         return true
     end
-    
+
     -- Handle multiple parameters validation
     for name, value in pairs(params) do
         if not value then
             return handleError("Missing required " .. name, isFatal)
         end
     end
-    
+
     return true
 end
 
@@ -48,22 +48,22 @@ function M.validateBinding(binding, modal)
     if not binding or not modal then
         return false, "Invalid binding or modal configuration"
     end
-    
+
     -- Validate modal structure
     if not modal.handler or not modal.handler.field then
         return false, "Invalid modal handler configuration"
     end
-    
+
     -- Check required field in binding
     local requiredField = modal.handler.field
     if not binding[requiredField] then
         return false, "Missing " .. requiredField .. " field in binding"
     end
-    
+
     return true, nil
 end
 
 -- Export error handler
 M.handleError = handleError
 
-return M 
+return M

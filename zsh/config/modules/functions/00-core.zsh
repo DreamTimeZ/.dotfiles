@@ -38,11 +38,11 @@ retry() {
     zdotfiles_error "Usage: retry <command> [args...]"
     return 1
   fi
-  
+
   local max_attempts=5
   local delay=2
   local attempt=1
-  
+
   # Parse options
   while [[ $1 == -* ]]; do
     case $1 in
@@ -51,22 +51,22 @@ retry() {
       *) zdotfiles_error "Unknown option: $1"; return 1 ;;
     esac
   done
-  
+
   local cmd=("$@")
-  
+
   while (( attempt <= max_attempts )); do
     if "${cmd[@]}"; then
       return 0
     fi
-    
+
     if (( attempt < max_attempts )); then
       echo "Attempt $attempt failed. Retrying in ${delay}s..."
       sleep "$delay"
     fi
-    
+
     ((attempt++))
   done
-  
+
   zdotfiles_error "Command failed after $max_attempts attempts: ${cmd[*]}"
   return 1
 }
@@ -77,7 +77,7 @@ mkdirp() {
     zdotfiles_error "Usage: mkdirp <directory> [directories...]"
     return 1
   fi
-  
+
   mkdir -pv "$@"
 }
 
@@ -87,4 +87,4 @@ confirm() {
   echo -n "$prompt [y/N]: "
   read -r response
   [[ "$response" =~ ^[Yy]$ ]]
-} 
+}

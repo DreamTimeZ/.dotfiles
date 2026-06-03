@@ -49,4 +49,3 @@
 - **Resource Usage**: Reduced memory and CPU usage
 - **Profile Mode**: Built-in profiling capabilities
 - **Conditional Loading**: Skip unnecessary components based on environment
-  

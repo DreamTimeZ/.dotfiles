@@ -11,7 +11,7 @@ hammerspoon/modules/hotkeys/
 ├── config/                # Configuration-related files
 │   ├── config.lua         # Central configuration for hotkeys and modals
 │   └── init.lua           # Re-exports config for backward compatibility
-├── core/                  # Core functionality 
+├── core/                  # Core functionality
 │   ├── actions.lua        # Action handlers for hotkeys and modals
 │   ├── logging.lua        # Logging functionality
 │   ├── modals.lua         # Modal management functionality
@@ -189,10 +189,10 @@ To add new action types, extend the `actions.lua` module:
     ```lua
     function M.myCustomHandler(data)
         if not validation.validate(data, {name = "custom data"}) then return false end
-        
+
         -- Your custom implementation
         logging.info("Handling custom action with data: " .. tostring(data))
-        
+
         -- Return success/failure
         return true
     end

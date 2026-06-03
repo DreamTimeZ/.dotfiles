@@ -11,8 +11,8 @@ local systemModal = config.modals.system
 local function shutdownSystem()
     logging.info("Shutdown requested, showing confirmation dialog")
     local button = hs.dialog.blockAlert(
-        "Confirm Shutdown", 
-        "Are you sure you want to shut down your computer?", 
+        "Confirm Shutdown",
+        "Are you sure you want to shut down your computer?",
         "Shutdown", "Cancel", "NSCriticalAlertStyle"
     )
     if button == "Shutdown" then
@@ -28,8 +28,8 @@ end
 local function restartSystem()
     logging.info("Restart requested, showing confirmation dialog")
     local button = hs.dialog.blockAlert(
-        "Confirm Restart", 
-        "Are you sure you want to restart your computer?", 
+        "Confirm Restart",
+        "Are you sure you want to restart your computer?",
         "Restart", "Cancel", "NSCriticalAlertStyle"
     )
     if button == "Restart" then

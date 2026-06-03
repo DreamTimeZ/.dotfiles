@@ -24,16 +24,16 @@ zdotfiles_validate_dir() {
 # Helper to load all .zsh files in a directory with error handling
 zdotfiles_load_dir() {
   local dir="$1"
-  
+
   if ! zdotfiles_validate_dir "$dir"; then
     return 1
   fi
-  
+
   # First load all numerically-prefixed files in order (00-99)
   for module in "$dir"/[0-9][0-9]-*.zsh(N-on); do
     source "$module" 2>/dev/null
   done
-  
+
   # Load any remaining modules without numerical prefix
   for module in "$dir"/*.zsh(N); do
     # Skip if file has a numerical prefix (already loaded)
@@ -41,7 +41,7 @@ zdotfiles_load_dir() {
       source "$module" 2>/dev/null
     fi
   done
-  
+
   return 0
 }
 
@@ -59,4 +59,4 @@ zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/functions"
 # to ensure they can override keybindings and aliases, not just functions.
 
 # Don't expose loader internals
-unset -f zdotfiles_load_dir zdotfiles_validate_dir 
+unset -f zdotfiles_load_dir zdotfiles_validate_dir

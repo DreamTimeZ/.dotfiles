@@ -40,7 +40,7 @@ config.logging = {
     -- Level name lookup
     levelNames = {
         [1] = "ERROR",
-        [2] = "WARN", 
+        [2] = "WARN",
         [3] = "INFO",
         [4] = "DEBUG"
     }
@@ -114,7 +114,7 @@ config.modals = {
             z = { app = "System Settings",       desc = "Settings" }
         }
     },
-    
+
     -- Window management modal
     window = {
         title = "Window Management:",
@@ -125,7 +125,7 @@ config.modals = {
         customModule = "modules.hotkeys.modals.window"
         -- mappings defined in window.lua
     },
-    
+
     -- Finder locations modal
     finder = {
         title = "Finder:",
@@ -147,7 +147,7 @@ config.modals = {
             i = { path = "~/Library/CloudStorage/iCloud Drive", desc = "iCloud" }
         }
     },
-    
+
     -- Websites modal
     websites = {
         title = "Websites:",
@@ -166,7 +166,7 @@ config.modals = {
             y = { url = "https://www.youtube.com",       desc = "YouTube" }
         }
     },
-    
+
     -- System Settings panes modal
     settings = {
         title = "Settings:",
@@ -197,7 +197,7 @@ config.modals = {
             j = { pref = "x-apple.systempreferences:com.apple.Profiles-Settings.extension",                  desc = "Device Management" }
         }
     },
-    
+
     -- System actions modal
     system = {
         title = "System Actions:",
@@ -208,7 +208,7 @@ config.modals = {
         customModule = "modules.hotkeys.modals.system"
         -- mappings defined in system.lua
     },
-    
+
     -- Macros modal (auto-clicker functionality)
     macros = {
         title = "Macros:",
@@ -295,7 +295,7 @@ end
 -- Safely require a module with error handling
 local function safeRequire(modulePath, logFn)
     local status, result = pcall(require, modulePath)
-    
+
     if status and type(result) == "table" then
         return result
     elseif logFn then
@@ -305,7 +305,7 @@ local function safeRequire(modulePath, logFn)
             logFn("Module " .. modulePath .. " did not return a valid table")
         end
     end
-    
+
     return nil
 end
 
@@ -313,41 +313,41 @@ end
 function config.loadLocalConfigs(forceReload, utils)
     -- Skip if already initialized and not forcing reload
     if configCache.isInitialized and not forceReload then return end
-    
+
     -- Loading local configurations
-    
+
     -- Load local mappings for all defined modals
     for modalName, modal in pairs(config.modals) do
         -- Skip if we've already loaded this modal's mappings and not forcing reload
         if not forceReload and configCache.localMappingsLoaded[modalName] then goto continue end
-        
+
         -- Only try to load local mappings if this isn't a custom implementation
         if not modal.customModule then
             local localPath = getLocalModulePath(modalName)
-            
+
             -- Load the local mappings
             local localMappings = safeRequire(localPath, nil)
-            
+
             -- If local mappings loaded successfully, replace the defaults
             if localMappings and next(localMappings) ~= nil then
                 -- Using local mappings for " .. modalName
                 modal.mappings = localMappings
             end
         end
-        
+
         configCache.localMappingsLoaded[modalName] = true
-        
+
         ::continue::
     end
-    
+
     -- Load custom global shortcuts if available
     local localGlobalShortcuts = safeRequire(getLocalModulePath("global_shortcuts"), nil)
-    
+
     if localGlobalShortcuts and next(localGlobalShortcuts) ~= nil then
         -- Using local global shortcuts configuration
         config.globalShortcuts = localGlobalShortcuts
     end
-    
+
     configCache.isInitialized = true
     -- Configuration loading complete
 end
@@ -355,23 +355,23 @@ end
 -- Force reload of configuration files
 function config.reloadConfigs(utils)
     -- Forcing configuration reload
-    
+
     -- Clear package.loaded cache for all module mappings
     for modalName, _ in pairs(config.modals) do
         package.loaded[getLocalModulePath(modalName)] = nil
     end
-    
+
     -- Clear global shortcuts module from cache
     package.loaded[getLocalModulePath("global_shortcuts")] = nil
-    
+
     -- Reset cache state
     configCache.isInitialized = false
     configCache.localMappingsLoaded = {}
-    
+
     -- Reload all configurations
     config.loadLocalConfigs(true, utils)
-    
+
     -- Configuration reload complete
 end
 
-return config 
+return config

@@ -18,12 +18,12 @@ if zdotfiles_has_command git; then
     alias gsta='git stash push'
     alias gstp='git stash pop'
     alias grmc='git rm --cached'
-    
+
     # Repository management
     alias gi='git init'
     alias gcl='git clone'
     alias grao='git remote add origin'
-    
+
     # Branch management
     alias gb='git branch'
     alias gsw='git switch'
@@ -31,18 +31,18 @@ if zdotfiles_has_command git; then
     alias gbd='git branch -d'
     alias gbD='git branch -D'
     alias gbrd='git push origin --delete'
-    
+
     # Commits
     alias gc='git commit'
     alias gcmsg='git commit -m'
     alias gca='git commit --amend'
     alias gundo='git reset --soft HEAD~1'
-    
+
     # Push/Pull with safety
     alias gpl='git pull'
     alias gps='git push'
     alias gpsf='git push --force-with-lease'
-    
+
     # Logs and history
     alias glog='git log'
     alias glo='git log --oneline --decorate'
@@ -50,7 +50,7 @@ if zdotfiles_has_command git; then
     alias ghist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
     alias glast='git log -1 HEAD'
     alias gsh='git show'
-    
+
     # Diffs and changes
     alias gd='git diff'
     alias gds='git diff --staged'
@@ -66,7 +66,7 @@ if zdotfiles_has_command git; then
     alias grbc='git rebase --continue'
     alias grba='git rebase --abort'
     alias gfa='git fetch --all --prune'
-    
+
     # Tags
     alias gtags='git tag -l'
     alias gtagd='git tag -d'
@@ -271,7 +271,7 @@ if zdotfiles_has_command docker; then
     alias di='docker images'
     alias dex='docker exec -it'
     alias dlogs='docker logs -f'
-    
+
     # Docker Compose - prefer new syntax
     alias dc='docker compose'
     alias dcup='docker compose up -d'
@@ -279,7 +279,7 @@ if zdotfiles_has_command docker; then
     alias dcdown='docker compose down'
     alias dcdownrm='docker compose down --remove-orphans'
     alias dclogs='docker compose logs -f'
-    
+
     # Cleanup operations
     alias dprune='docker system prune'
     alias dprune-all='docker system prune -a'

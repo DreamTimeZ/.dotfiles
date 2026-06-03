@@ -23,6 +23,7 @@ Distill a YouTube video transcript into a concise Obsidian note for future refer
 # WHAT TO EXTRACT
 
 Focus on what's worth revisiting months later:
+
 - Actionable methods, frameworks, mental models
 - Non-obvious claims with their reasoning
 - Specific tools, configurations, implementation details

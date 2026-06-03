@@ -4,7 +4,7 @@ Cross-platform text expander. Docs: <https://espanso.org/docs/>
 
 ## Structure
 
-```
+```text
 espanso/
 ├── templates/          Starter configs, copy into local/ to use
 │   ├── default.yml     Global espanso settings

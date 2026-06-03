@@ -60,13 +60,13 @@ validate_environment() {
 setup_module_profiling() {
   local modules_file="$ZDOTFILES_CONFIG_DIR/modules.zsh"
   local backup_file="$modules_file.bak"
-  
+
   # Create backup if it doesn't exist
   if [[ ! -f $backup_file ]]; then
     cp "$modules_file" "$backup_file"
     echo "Created backup of modules.zsh at $backup_file"
   fi
-  
+
   # Create profiling version of modules.zsh
   cat > "$modules_file" << 'EOF'
 # ===============================
@@ -94,14 +94,14 @@ zdotfiles_load_dir() {
   local dir="$1"
   local dir_name=$(basename "$dir")
   local dir_start=$(($(date +%s%N)/1000000))
-  
+
   if ! zdotfiles_validate_dir "$dir"; then
     return 1
   fi
-  
+
   # Silent operation - log to file only, no console output
   echo "dir:$dir_name:start:$dir_start" >> "$ZDOTFILES_PROFILE_LOG"
-  
+
   # First load all numerically-prefixed files in order (00-99)
   for module in "$dir"/[0-9][0-9]-*.zsh(N.on); do
     local mod_name=$(basename "$module")
@@ -111,7 +111,7 @@ zdotfiles_load_dir() {
     local elapsed=$((end-start))
     echo "file:$dir_name:$mod_name:$elapsed" >> "$ZDOTFILES_PROFILE_LOG"
   done
-  
+
   # Load any remaining modules without numerical prefix
   for module in "$dir"/*.zsh(N); do
     # Skip if file has a numerical prefix (already loaded)
@@ -124,11 +124,11 @@ zdotfiles_load_dir() {
       echo "file:$dir_name:$mod_name:$elapsed" >> "$ZDOTFILES_PROFILE_LOG"
     fi
   done
-  
+
   local dir_end=$(($(date +%s%N)/1000000))
   local dir_elapsed=$((dir_end-dir_start))
   echo "dir:$dir_name:end:$dir_elapsed" >> "$ZDOTFILES_PROFILE_LOG"
-  
+
   return 0
 }
 
@@ -149,7 +149,7 @@ zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/plugins"
 zdotfiles_load_dir "$ZDOTFILES_MODULES_BASE/local"
 
 # Don't expose loader internals
-unset -f zdotfiles_load_dir zdotfiles_validate_dir 
+unset -f zdotfiles_load_dir zdotfiles_validate_dir
 EOF
 }
 
@@ -157,13 +157,13 @@ EOF
 setup_sheldon_profiling() {
   local sheldon_file="$ZDOTFILES_CONFIG_DIR/plugins.zsh"
   local backup_file="$sheldon_file.bak"
-  
+
   # Create backup if it doesn't exist
   if [[ ! -f $backup_file ]]; then
     cp "$sheldon_file" "$backup_file"
     echo "Created backup of plugins.zsh at $backup_file"
   fi
-  
+
   # Create a safer profiling version of sheldon loader
   # Fixed: Use process substitution to avoid subshell issues
   cat > "$sheldon_file" << 'EOF'
@@ -377,7 +377,7 @@ parse_sheldon_logs() {
 generate_recommendations() {
   local -a slow_plugins=()
   local -a slow_modules=()
-  
+
   # Find slow plugins
   if [[ -f "$SHELDON_PROFILE_LOG" ]]; then
     while IFS=: read -r type plugin_name time_str; do
@@ -386,7 +386,7 @@ generate_recommendations() {
       fi
     done < "$SHELDON_PROFILE_LOG"
   fi
-  
+
   # Find slow modules
   if [[ -f "$ZDOTFILES_PROFILE_LOG" ]]; then
     while IFS=: read -r type dir_name file_name time_str; do
@@ -395,9 +395,9 @@ generate_recommendations() {
       fi
     done < "$ZDOTFILES_PROFILE_LOG"
   fi
-  
+
   echo "${BOLD}Recommendations for Improvement:${NC}"
-  
+
   # General recommendations
   echo "${BLUE}General optimizations:${NC}"
   echo "1. Use ${BOLD}sheldon inline lazy plugins${NC} for slow plugins:"
@@ -413,7 +413,7 @@ generate_recommendations() {
   echo "   '''"
   echo "2. Consider using ${BOLD}fast-syntax-highlighting${NC} instead of zsh-syntax-highlighting"
   echo "3. Use ${BOLD}POWERLEVEL9K_INSTANT_PROMPT=quiet${NC} to avoid warnings"
-  
+
   # Plugin-specific recommendations
   if (( ${#slow_plugins} > 0 )); then
     echo "\n${BLUE}Slow plugins to optimize:${NC}"
@@ -421,7 +421,7 @@ generate_recommendations() {
       echo "- Lazy-load $plugin"
     done
   fi
-  
+
   # Module-specific recommendations
   if (( ${#slow_modules} > 0 )); then
     echo "\n${BLUE}Slow modules to optimize:${NC}"
@@ -441,7 +441,7 @@ run_zsh_with_profiling() {
     # Only show zprof output, no errors
     zprof -c 2>/dev/null || true
   ' > /tmp/zsh_zprof_output.log 2>/dev/null
-  
+
   # Extract the top 15 time-consuming functions, safely
   if [[ -f /tmp/zsh_zprof_output.log ]]; then
     grep -v "total" /tmp/zsh_zprof_output.log 2>/dev/null | head -15 || echo "No profiling data available"
@@ -494,4 +494,4 @@ do_profiling() {
 }
 
 # Run the profiling
-do_profiling 
+do_profiling

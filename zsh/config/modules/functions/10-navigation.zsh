@@ -25,7 +25,7 @@ if zdotfiles_has_command fzf; then
         if zdotfiles_has_command bat; then
             preview_cmd='bat --style=numbers --color=always {} 2>/dev/null || cat {}'
         fi
-        
+
         find . -type f 2>/dev/null | fzf --preview "$preview_cmd"
     }
 
@@ -34,4 +34,4 @@ if zdotfiles_has_command fzf; then
         local dir
         dir=$(find . -type d 2>/dev/null | fzf +m) && builtin cd "$dir"
     }
-fi 
+fi

@@ -20,7 +20,7 @@ source ~/.zshrc
 Get API keys from:
 
 - **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-- **Gemini**: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)  
+- **Gemini**: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
 - **Claude**: [console.anthropic.com/account/keys](https://console.anthropic.com/account/keys)
 
 ## Commands

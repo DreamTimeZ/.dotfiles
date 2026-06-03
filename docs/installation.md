@@ -93,6 +93,7 @@ done
 ## Health Check
 
 Run `./setup.sh --doctor` to verify:
+
 - All expected symlinks exist and point to correct targets
 - Required and recommended tools are installed
 - Private repo is linked
