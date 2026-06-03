@@ -17,7 +17,8 @@ set -euo pipefail
 
 # ── Constants ──────────────────────────────────────────────────────
 
-readonly DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly DOTFILES_DIR
 readonly DOTFILES_PRIVATE="${HOME}/.dotfiles-private"
 readonly SYMLINKS_CONF="${DOTFILES_DIR}/symlinks.conf"
 readonly PACKAGES_DIR="${DOTFILES_DIR}/packages"
@@ -553,7 +554,12 @@ install_cargo_packages() {
         if cargo install --list 2>/dev/null | grep -q "^${pkg} "; then
             log_skip "Already installed: $pkg"
         else
-            cargo install "$pkg" 2>/dev/null && log_success "$pkg" || { log_warn "Failed: $pkg"; PACKAGES_WARNED=$((PACKAGES_WARNED + 1)); }
+            if cargo install "$pkg" 2>/dev/null; then
+                log_success "$pkg"
+            else
+                log_warn "Failed: $pkg"
+                PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
+            fi
         fi
     done
 }
@@ -788,9 +794,11 @@ post_install() {
                 log_info "[dry-run] Would run: sheldon lock --update"
             else
                 log_info "Updating sheldon plugins..."
-                sheldon lock --update 2>/dev/null \
-                    && log_success "Sheldon plugins locked" \
-                    || log_warn "sheldon lock failed (run manually: sheldon lock --update)"
+                if sheldon lock --update 2>/dev/null; then
+                    log_success "Sheldon plugins locked"
+                else
+                    log_warn "sheldon lock failed (run manually: sheldon lock --update)"
+                fi
             fi
         fi
     else
@@ -805,9 +813,11 @@ post_install() {
                 log_info "[dry-run] Would install TPM"
             else
                 log_info "Installing TPM..."
-                git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_dir" 2>/dev/null \
-                    && log_success "TPM installed (press prefix+I in tmux to install plugins)" \
-                    || log_warn "TPM install failed"
+                if git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_dir" 2>/dev/null; then
+                    log_success "TPM installed (press prefix+I in tmux to install plugins)"
+                else
+                    log_warn "TPM install failed"
+                fi
             fi
         fi
     else
@@ -821,9 +831,11 @@ post_install() {
                 log_info "[dry-run] Would run: mise install"
             else
                 log_info "Installing mise-managed tools..."
-                mise install --yes 2>/dev/null \
-                    && log_success "Mise tools installed" \
-                    || log_warn "mise install failed (run manually: mise install)"
+                if mise install --yes 2>/dev/null; then
+                    log_success "Mise tools installed"
+                else
+                    log_warn "mise install failed (run manually: mise install)"
+                fi
             fi
         fi
     else
@@ -837,9 +849,11 @@ post_install() {
                 log_info "[dry-run] Would sync neovim plugins"
             else
                 log_info "Syncing neovim plugins..."
-                nvim --headless "+Lazy! sync" +qa 2>/dev/null \
-                    && log_success "Neovim plugins synced" \
-                    || log_warn "Neovim plugin sync failed (open nvim to install manually)"
+                if nvim --headless "+Lazy! sync" +qa 2>/dev/null; then
+                    log_success "Neovim plugins synced"
+                else
+                    log_warn "Neovim plugin sync failed (open nvim to install manually)"
+                fi
             fi
         fi
     else
@@ -902,7 +916,7 @@ run_doctor() {
     log_header "Dotfiles health check"
 
     # ── Symlinks ──
-    printf "${BOLD}Symlinks${NC}\n"
+    printf '%bSymlinks%b\n' "$BOLD" "$NC"
     if [[ -f "$SYMLINKS_CONF" ]]; then
         while IFS= read -r line; do
             [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
@@ -974,7 +988,7 @@ run_doctor() {
     fi
 
     # ── Required tools ──
-    printf "\n${BOLD}Required tools${NC}\n"
+    printf '\n%bRequired tools%b\n' "$BOLD" "$NC"
     local -a required_tools=(git zsh tmux sheldon fzf)
     for tool in "${required_tools[@]}"; do
         if command -v "$tool" &>/dev/null; then
@@ -986,7 +1000,7 @@ run_doctor() {
     done
 
     # ── Recommended tools ──
-    printf "\n${BOLD}Recommended tools${NC}\n"
+    printf '\n%bRecommended tools%b\n' "$BOLD" "$NC"
     local -a recommended_tools=(bat eza fd rg jq zoxide atuin glow nvim mise lazygit gh uv ffmpeg tesseract)
     # Private extension: append tools listed in ~/.dotfiles-private/shared/doctor-tools.txt if present.
     local private_tools_file="${DOTFILES_PRIVATE}/shared/doctor-tools.txt"
@@ -1005,7 +1019,7 @@ run_doctor() {
     done
 
     # ── Private repo ──
-    printf "\n${BOLD}Private dotfiles${NC}\n"
+    printf '\n%bPrivate dotfiles%b\n' "$BOLD" "$NC"
     if [[ -d "$DOTFILES_PRIVATE" ]]; then
         log_success "Private repo found"
         if [[ -f "${DOTFILES_PRIVATE}/link.sh" ]]; then
@@ -1019,12 +1033,15 @@ run_doctor() {
     fi
 
     # ── Permissions ──
-    printf "\n${BOLD}Permissions${NC}\n"
+    printf '\n%bPermissions%b\n' "$BOLD" "$NC"
+    # ~/.ssh and ~/.gnupg are literal display labels (3rd arg), not paths to expand.
+    # shellcheck disable=SC2088
     check_dir_permissions "${HOME}/.ssh" "700" "~/.ssh" || issues=$((issues + 1))
+    # shellcheck disable=SC2088
     check_dir_permissions "${HOME}/.gnupg" "700" "~/.gnupg" || issues=$((issues + 1))
 
     # ── Plugin managers ──
-    printf "\n${BOLD}Plugin managers${NC}\n"
+    printf '\n%bPlugin managers%b\n' "$BOLD" "$NC"
     if [[ -f "${HOME}/.local/share/sheldon/plugins.lock" ]]; then
         log_success "Sheldon lockfile"
     else
@@ -1041,7 +1058,7 @@ run_doctor() {
 
     # ── Mise tools ──
     if command -v mise &>/dev/null; then
-        printf "\n${BOLD}Mise tools${NC}\n"
+        printf '\n%bMise tools%b\n' "$BOLD" "$NC"
         if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
             log_success "Global config"
         else
