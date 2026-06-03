@@ -13,19 +13,19 @@ ZDOTFILES_CMD_CACHE=()            # Clear on re-source to detect newly installed
 
 # Print informational message (blue) - only if log level is info or higher
 zdotfiles_info() {
-  [[ $ZDOTFILES_LOG_LEVEL -ge 3 ]] && echo -e "\033[1;34m==>\033[0m \033[1m$*\033[0m"
+  [[ $ZDOTFILES_LOG_LEVEL -ge 3 ]] && echo -e "\033[1;34m==>\033[0m \033[1m$*\033[0m" >&2
   return 0
 }
 
 # Print warning message (yellow) - only if log level is warn or higher
 zdotfiles_warn() {
-  [[ $ZDOTFILES_LOG_LEVEL -ge 2 ]] && echo -e "\033[1;33m==>\033[0m \033[1m$*\033[0m"
+  [[ $ZDOTFILES_LOG_LEVEL -ge 2 ]] && echo -e "\033[1;33m==>\033[0m \033[1m$*\033[0m" >&2
   return 0
 }
 
 # Print error message (red) - only if log level is error or higher
 zdotfiles_error() {
-  [[ $ZDOTFILES_LOG_LEVEL -ge 1 ]] && echo -e "\033[1;31m==>\033[0m \033[1m$*\033[0m"
+  [[ $ZDOTFILES_LOG_LEVEL -ge 1 ]] && echo -e "\033[1;31m==>\033[0m \033[1m$*\033[0m" >&2
   return 0
 }
 
@@ -36,11 +36,11 @@ zdotfiles_error() {
 # Returns: 0 on success, 1 if directory doesn't exist
 zdotfiles_path_append() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
-  
+
   local dir="$1"
   # Remove existing occurrence first (prevent duplicates)
   PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
-  
+
   export PATH="$PATH:$dir"
   zdotfiles_info "Added to PATH: $dir"
   return 0
@@ -51,11 +51,11 @@ zdotfiles_path_append() {
 # Returns: 0 on success, 1 if directory doesn't exist
 zdotfiles_path_prepend() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
-  
+
   local dir="$1"
   # Remove existing occurrence first (prevent duplicates)
   PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
-  
+
   export PATH="$dir:$PATH"
   zdotfiles_info "Prepended to PATH: $dir"
   return 0
@@ -186,7 +186,7 @@ zdotfiles_lazy_load() {
     zdotfiles_is_wsl
     zdotfiles_lazy_load
   )
-  
+
   # Export each function
   local func
   for func in "${public_funcs[@]}"; do
@@ -195,4 +195,4 @@ zdotfiles_lazy_load() {
 } &>/dev/null
 
 # Don't export this helper file's local variables
-unset func public_funcs 
+unset func public_funcs
