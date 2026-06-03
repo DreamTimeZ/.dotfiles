@@ -12,6 +12,10 @@ dirty() {
     local -i fetch=0 verbose=0 all_flag=0
     local timeout_sec="${DIRTY_FETCH_TIMEOUT:-30}"
     local connect_timeout="${DIRTY_CONNECT_TIMEOUT:-5}"
+    # Both are interpolated into a sh -c body below; a non-numeric value (e.g.
+    # from a malicious direnv .envrc) would inject shell. Enforce numeric.
+    [[ "$timeout_sec" =~ ^[0-9]+$ ]] || { zdotfiles_error "DIRTY_FETCH_TIMEOUT must be numeric: $timeout_sec"; return 1; }
+    [[ "$connect_timeout" =~ ^[0-9]+$ ]] || { zdotfiles_error "DIRTY_CONNECT_TIMEOUT must be numeric: $connect_timeout"; return 1; }
 
     # Parse arguments (supports combined short flags like -afv)
     while [[ $# -gt 0 ]]; do
@@ -306,10 +310,10 @@ if zdotfiles_has_command git && zdotfiles_has_command fzf; then
             zdotfiles_error "Not in a git repository"
             return 1
         fi
-        
+
         local branch
         branch=$(git branch --all | fzf --preview "git log --oneline --decorate --graph --color=always {}" | sed 's/^[* ]*//;s#remotes/[^/]*/##')
-        
+
         if [[ -n "$branch" ]]; then
             git checkout "$branch"
         fi
@@ -322,17 +326,17 @@ if zdotfiles_has_command git && zdotfiles_has_command fzf; then
             zdotfiles_error "Not in a git repository"
             return 1
         fi
-        
+
         local preview_cmd='cat {}'
         if zdotfiles_has_command bat; then
             preview_cmd='bat --style=numbers --color=always {}'
         fi
-        
+
         local files
         files=$(git ls-files | fzf --multi --preview "$preview_cmd")
-        
+
         if [[ -n "$files" ]]; then
             echo "$files" | xargs -r "${EDITOR:-vim}"
         fi
     }
-fi 
+fi
