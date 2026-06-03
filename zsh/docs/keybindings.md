@@ -1,147 +1,176 @@
-# 🧠 Zsh Keybindings Overview (Categorized & Fancy)
+# Zsh Keybindings
 
-> 💡 Tip: `^X` = Ctrl+X, `^[` = ESC (Meta/Option), `^` = Ctrl, `M-` = Meta
+Emacs mode (`bindkey -e`). Notation: `Ctrl+X`, `Alt+X` (Alt is the Meta/ESC
+prefix and is case-insensitive for letters).
 
----
+Two parts: bindings **set by this config** (`zsh/config/keybindings.zsh`, the
+source of truth), then the **zsh emacs-keymap defaults** inherited underneath.
+For zle widget names and the complete list, see `man zshzle` or run `bindkey -e`.
+Verified against zsh 5.9. Run `kb` to view this file.
 
-## 🔤 Basic Line Editing
+## Set by this config
 
-| Key       | Function                             |
-|-----------|--------------------------------------|
-| `Ctrl+A`  | Beginning of line                    |
-| `Ctrl+E`  | End of line                          |
-| `Ctrl+B`  | Move backward one char               |
-| `Ctrl+F`  | Move forward one char                |
-| `Ctrl+U`  | Kill whole line                      |
-| `Ctrl+K`  | Kill to end of line                  |
-| `Ctrl+J`  | Accept line (Enter)                  |
-| `Ctrl+W`  | Backward kill word                   |
-| `Ctrl+H`  | Backward delete char                 |
-| `Ctrl+D`  | Delete char or list completions      |
-| `Ctrl+L`  | Clear screen                         |
-| `Ctrl+M`  | Accept line (Enter)                  |
-| `Ctrl+N`  | Next line in history                 |
-| `Ctrl+P`  | Previous line in history             |
-| `Ctrl+Y`  | Yank (paste from kill ring)          |
+### Editing
 
----
+| Key | Action |
+| --- | --- |
+| `Alt+r` | Redo |
+| `Ctrl+X Ctrl+E` | Edit the command line in `$EDITOR` |
 
-## 🔄 History Navigation
+### Line and word navigation
 
-> **Note:** History search is handled by Atuin. Press `Ctrl+R` to open interactive history.
+| Key | Action |
+| --- | --- |
+| `Home` / `End` | Beginning / end of line |
+| `Ctrl+Left` / `Ctrl+Right` | Back / forward one word |
+| `Alt+Left` / `Alt+Right` | Back / forward one word |
 
-| Key         | Function                             |
-|-------------|--------------------------------------|
-| `Ctrl+R`    | Atuin history search                 |
-| `Ctrl+S`    | History incremental search forward   |
-| `ESC + p`   | History search backward              |
-| `ESC + n`   | History search forward               |
-| `ESC + <`   | Beginning of history buffer          |
-| `ESC + >`   | End of history buffer                |
-| `Alt+Up`    | Same as `ESC + <` (via Ghostty)      |
-| `Alt+Down`  | Same as `ESC + >` (via Ghostty)      |
+Home and End are bound in xterm-normal, application-cursor, and VT220 escape
+forms for cross-terminal portability.
 
----
+### Deletion
 
-## 🔍 Fuzzy Finder Widgets (fzf)
+| Key | Action |
+| --- | --- |
+| `Delete` | Delete character forward |
+| `Ctrl+Delete` / `Alt+Delete` | Delete word forward |
+| `Ctrl+Backspace` / `Alt+Backspace` | Delete word backward |
+| `Ctrl+U` | Delete backward to start of line |
+| `Fn+Cmd+Delete` | Delete to end of line |
 
-| Key         | Function                |
-|-------------|-------------------------|
-| `Ctrl+I`    | `fzf-tab-complete` ✅ (custom) |
-| `Ctrl+T`    | `fzf-file-widget` ✅ (custom) |
-| `ESC + c`   | `fzf-cd-widget` ✅ (custom) |
-| `ESC + .`   | Insert last word        |
+`Ctrl+U` rebinds the zsh default `kill-whole-line` to `backward-kill-line` to
+match macOS Cocoa. `Ctrl+Backspace` (`^H`) rebinds `backward-delete-char` to
+`backward-kill-word`. `Ctrl+Backspace` and `Alt+Backspace` also have
+kitty-protocol forms. `Fn+Cmd+Delete` has an extra iTerm2-only sequence active
+when `TERM_PROGRAM` is `iTerm.app`. Mac-style keys are translated by Ghostty
+(see below).
 
----
+### Screen
 
-## 🧠 Advanced History / Search
+| Key | Action |
+| --- | --- |
+| `Ctrl+X l` | Clear screen and scrollback |
 
-| Key             | Function                                  |
-|------------------|-------------------------------------------|
-| `Ctrl+O`         | Accept line and go to next history item   |
-| `Ctrl+Q`         | Push line (Flow control unless `stty -ixon`) |
-| `ESC + /`        | Expand history                            |
-| `ESC + !`        | Expand history                            |
+Inside tmux this also clears the tmux history.
 
----
+## Plugin-provided
 
-## 🔠 Word & Character Manipulation
+Not set in `keybindings.zsh`. Provided by plugins.
 
-| Key           | Function                  |
-|---------------|---------------------------|
-| `ESC + b`     | Backward word             |
-| `ESC + f`     | Forward word              |
-| `ESC + d`     | Kill word                 |
-| `ESC + u`     | Uppercase word            |
-| `ESC + l`     | Lowercase word            |
-| `ESC + c`     | Capitalize word           |
-| `ESC + t`     | Transpose words           |
+| Key | Action |
+| --- | --- |
+| `Ctrl+R` | History search (Atuin) |
+| `Tab` | Fuzzy completion menu (fzf-tab) |
 
----
+Inside the fzf-tab menu: `<` and `>` switch completion groups, `/` triggers
+continuous completion, and `Ctrl+Space` toggles selection. Atuin is initialized
+with `--disable-up-arrow`, so Up keeps normal previous-command behavior instead
+of opening Atuin search.
 
-## 📋 Clipboard / Kill Ring
+## Ghostty key translations
 
-| Key           | Function                        |
-|---------------|----------------------------------|
-| `ESC + w`     | Copy region as kill              |
-| `ESC + y`     | Yank-pop                         |
-| `Ctrl+X Ctrl+K` | Kill buffer                    |
-| `Ctrl+X u`      | Undo                           |
-| `Alt+r`         | Redo                           |
+Ghostty (`ghostty/config`) translates these Mac-style keys into the editing
+actions above. `Cmd+Backspace` depends on the `Ctrl+U` rebinding. `Cmd+Delete`
+and `Alt+Up`/`Alt+Down` reach zsh defaults.
 
----
+| Key | Action |
+| --- | --- |
+| `Cmd+Backspace` | Delete to start of line (`Ctrl+U`) |
+| `Cmd+Delete` | Delete to end of line (`Ctrl+K`) |
+| `Alt+Up` / `Alt+Down` | Start / end of buffer |
 
-## 🖥️ Screen / Terminal Control
+## zsh emacs-keymap defaults
 
-| Key         | Function                          |
-|-------------|-----------------------------------|
-| `Ctrl+X l`  | Clear screen and scrollback       |
-| `ESC + L`   | Clear screen                      |
-| `ESC + ?`   | Which command                     |
-| `ESC + =`   | What cursor position              |
-| `ESC + ^H`  | Backward kill word                |
-| `ESC + ^L`  | Clear screen (alt binding)        |
-| `ESC + ^M`  | Self-insert-unmeta (Meta+Enter)   |
+Provided by zsh's emacs keymap, not by this config. Keys this config or its
+plugins rebind (`Ctrl+U`, `Ctrl+H`, `Ctrl+R`, `Tab`) behave as documented above.
+Full list and widget names: `man zshzle`.
 
----
+### Movement
 
-## External Editor
+| Key | Action |
+| --- | --- |
+| `Ctrl+A` / `Ctrl+E` | Beginning / end of line |
+| `Ctrl+B` / `Ctrl+F` | Back / forward one character |
+| `Alt+b` / `Alt+f` | Back / forward one word |
+| `Alt+<` / `Alt+>` | Start / end of buffer |
 
-| Key             | Function                         |
-|-----------------|----------------------------------|
-| `Ctrl+X Ctrl+E` | Edit command line in `$EDITOR`   |
+Arrow keys move by character (Left/Right) and through history (Up/Down).
 
----
+### Editing and undo
 
-## 📦 Special Functions (fzf-tab, vi-mode)
+| Key | Action |
+| --- | --- |
+| `Backspace` | Delete previous character |
+| `Ctrl+D` | Delete next char, or list completions |
+| `Ctrl+T` | Transpose characters |
+| `Alt+t` | Transpose words |
+| `Alt+u` / `Alt+l` | Uppercase / lowercase word |
+| `Alt+c` | Capitalize word |
+| `Ctrl+V` | Insert next keypress literally |
+| `Ctrl+X Ctrl+O` | Toggle overwrite mode |
+| `Ctrl+_` , `Ctrl+X u` | Undo |
+| `Alt+s` | Spell-correct the current word |
 
-| Key            | Function                              |
-|----------------|---------------------------------------|
-| `Ctrl+X Ctrl+J` | vi-join                              |
-| `Ctrl+X Ctrl+F` | vi-find-next-char                    |
-| `Ctrl+X Ctrl+B` | vi-match-bracket                     |
-| `Ctrl+X Ctrl+N` | Infer next history                   |
-| `Ctrl+X Ctrl+V` | Enter vi-cmd-mode                    |
-| `ESC + \|`      | vi-goto-column                       |
-| `ESC + *`       | Expand word                          |
+### Kill and yank
 
----
+| Key | Action |
+| --- | --- |
+| `Ctrl+K` | Kill to end of line |
+| `Ctrl+W` | Kill previous word |
+| `Alt+d` | Kill next word |
+| `Ctrl+Y` | Yank, paste last kill |
+| `Alt+y` | Cycle the kill ring after a yank |
+| `Alt+w` | Copy region to the kill ring |
+| `Ctrl+Space` | Set mark |
+| `Ctrl+X Ctrl+X` | Swap cursor and mark |
+| `Ctrl+X Ctrl+K` | Kill the whole buffer |
 
-## 📂 Bracketed Paste / Misc
+### History
 
-| Key             | Function                          |
-|------------------|-----------------------------------|
-| `^[[200~`        | Bracketed paste                   |
-| `^[[3~`          | Delete char                       |
-| `^[[3;9~`        | Kill line                         |
-| `^[[79~`         | Custom: Backward kill to beginning|
-| `^[[99~`         | Custom: Kill line                 |
+| Key | Action |
+| --- | --- |
+| `Ctrl+P` / `Ctrl+N` | Previous / next history line |
+| `Alt+p` / `Alt+n` | Prefix history search back / forward |
+| `Alt+.` , `Alt+_` | Insert last word of previous command |
+| `Ctrl+O` | Accept line, fetch next from history |
+| `Alt+a` | Accept line, keep for re-editing |
+| `Alt+q` | Stash line, run next, then restore |
 
----
+The zsh default for `Ctrl+R` is incremental search backward, replaced here by
+Atuin (see Plugin-provided).
 
-## 🔢 Digit Arguments / Input Control
+### Completion and expansion
 
-| Key         | Function              |
-|-------------|-----------------------|
-| `ESC + 0-9` | Digit argument input  |
-| `ESC + -`   | Negative argument     |
+| Key | Action |
+| --- | --- |
+| `Alt+x` | Run a ZLE widget by name |
+| `Alt+z` | Repeat the last named widget |
+| `Ctrl+X *` | Expand glob / parameter in place |
+| `Ctrl+X g` | Preview what an expansion produces |
+| `Alt+!` , `Alt+Space` | Expand history references |
+| `Alt+?` | Show which command a word runs |
+
+The zsh default for `Tab` is expand-or-complete; here it is fzf-tab.
+
+### Arguments and control
+
+| Key | Action |
+| --- | --- |
+| `Alt+0` .. `Alt+9` | Numeric repeat count |
+| `Alt+-` | Negative argument |
+| `Ctrl+L` | Clear screen |
+| `Ctrl+G` | Abort the current operation |
+| `Enter` | Accept the line (`Ctrl+M` / `Ctrl+J`) |
+
+### Less common
+
+Bound by default but rarely used day to day. See `man zshzle` for the rest.
+
+| Key | Action |
+| --- | --- |
+| `Alt+h` | Run `run-help` for the command |
+| `Alt+g` | Push buffer, fetch next line |
+| `Alt+'` / `Alt+"` | Quote whole line / region |
+| `Ctrl+X Ctrl+V` | Switch to vi command mode |
+| `Ctrl+X Ctrl+J/F/B` | vi join / find-char / match-bracket |
+| `Ctrl+X Ctrl+N` | Insert next line after history match |
