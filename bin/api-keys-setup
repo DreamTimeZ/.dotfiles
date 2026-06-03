@@ -168,13 +168,13 @@ readonly ALL_SERVICES=("${(@k)SERVICE_ENV_VARS}")
 _get_services_by_category() {
   local category="$1"
   local services=()
-  
+
   for service in "${ALL_SERVICES[@]}"; do
     if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
       services+=("$service")
     fi
   done
-  
+
   echo "${services[@]}"
 }
 
@@ -186,17 +186,17 @@ _list_services() {
   echo "Available Services"
   echo "------------------"
   echo
-  
+
   for category in "${CATEGORY_ORDER[@]}"; do
     local services=()
-    
+
     # Get services for this category directly
     for service in "${ALL_SERVICES[@]}"; do
       if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
         services+=("$service")
       fi
     done
-    
+
     if [[ ${#services[@]} -gt 0 ]]; then
       echo "${CATEGORY_NAMES[$category]}:"
       for service in "${services[@]}"; do
@@ -209,21 +209,21 @@ _list_services() {
 
 _show_status() {
   local found=0 total=${#ALL_SERVICES}
-  
+
   echo "API Key Status"
   echo "--------------"
   echo
-  
+
   for category in "${CATEGORY_ORDER[@]}"; do
     local services=()
-    
+
     # Get services for this category directly
     for service in "${ALL_SERVICES[@]}"; do
       if [[ "${SERVICE_CATEGORIES[$service]}" == "$category" ]]; then
         services+=("$service")
       fi
     done
-    
+
     if [[ ${#services[@]} -gt 0 ]]; then
       echo "${CATEGORY_NAMES[$category]}:"
       for service in "${services[@]}"; do
@@ -237,9 +237,9 @@ _show_status() {
       echo
     fi
   done
-  
+
   echo "Summary: $found/$total configured"
-  
+
   if [[ $found -eq $total ]]; then
     echo "All keys configured"
   elif [[ $found -gt 0 ]]; then
@@ -253,11 +253,11 @@ _show_status() {
 # CORE FUNCTIONS
 # ===============================
 
-_keychain_exists() { 
+_keychain_exists() {
   security find-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" &>/dev/null
 }
 
-_keychain_set() { 
+_keychain_set() {
   security delete-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" &>/dev/null || true
   security add-generic-password -s "$KEYCHAIN_SERVICE" -a "$1" -w "$2" &>/dev/null
 }
@@ -269,12 +269,12 @@ _keychain_delete() {
 _remove_key() {
   local service="$1"
   local force_mode="${2:-false}"
-  
+
   if ! _keychain_exists "$service"; then
     echo "$service key not found"
     return 1
   fi
-  
+
   if [[ "$force_mode" == "true" ]]; then
     echo "Force removing $service key"
   else
@@ -288,7 +288,7 @@ _remove_key() {
       return 0
     fi
   fi
-  
+
   if _keychain_delete "$service"; then
     echo "$service key removed"
     return 0
@@ -309,27 +309,27 @@ _validate_key() {
   local key="$1" service="$2"
   local min_len="${SERVICE_MIN_LENGTHS[$service]}"
   local prefix="${SERVICE_PREFIXES[$service]:-}"
-  
+
   # Clean the key
   key=$(echo "$key" | tr -d '[:space:]')
-  
+
   # Basic validation
   if [[ -z "$key" ]]; then
     echo "✗ Empty key" >&2
     return 1
   fi
-  
+
   if [[ ${#key} -lt $min_len ]]; then
     echo "✗ Too short (need $min_len+ chars)" >&2
     return 1
   fi
-  
+
   # Prefix check
   if [[ -n "$prefix" && ! "$key" =~ ^${prefix} ]]; then
-    echo "Warning: Expected prefix: $prefix"
-    echo "Continuing anyway..."
+    echo "Warning: Expected prefix: $prefix" >&2
+    echo "Continuing anyway..." >&2
   fi
-  
+
   echo "$key"
   return 0
 }
@@ -339,9 +339,18 @@ _validate_key() {
 # ===============================
 
 _get_input() {
-  local prompt="$1" var_name="$2"
+  local prompt="$1" var_name="$2" silent="${3:-false}"
   printf "%s" "$prompt"
-  read -r "$var_name"
+  if [[ "$silent" == "true" ]]; then
+    # Suppress echo for secrets (API keys); -s also swallows the trailing newline.
+    # Preserve read's exit status (EOF/Ctrl-D) so callers can detect input failure.
+    local _ret=0
+    read -rs "$var_name" || _ret=$?
+    printf "\n"
+    return $_ret
+  else
+    read -r "$var_name"
+  fi
 }
 
 _setup_key() {
@@ -350,7 +359,7 @@ _setup_key() {
   local description="${SERVICE_DESCRIPTIONS[$service]}"
   local prefix="${SERVICE_PREFIXES[$service]:-}"
   local min_len="${SERVICE_MIN_LENGTHS[$service]}"
-  
+
   # Check existing
   if _keychain_exists "$service"; then
     if [[ "$force_mode" == "true" ]]; then
@@ -367,7 +376,7 @@ _setup_key() {
       fi
     fi
   fi
-  
+
   # Setup new key
   echo
   echo "Setting up: $service"
@@ -377,20 +386,20 @@ _setup_key() {
   fi
   echo "Min length: $min_len characters"
   echo
-  
+
   # Get key
   local api_key
-  if ! _get_input "Enter API key: " api_key; then
+  if ! _get_input "Enter API key: " api_key true; then
     echo "✗ Input failed" >&2
     return 1
   fi
-  
+
   # Validate
   local validated_key
   if ! validated_key=$(_validate_key "$api_key" "$service"); then
     return 1
   fi
-  
+
   # Store
   if _keychain_set "$service" "$validated_key"; then
     echo "$service key saved"
@@ -407,7 +416,7 @@ _setup_key() {
 
 _create_config() {
   local force_mode="${1:-false}"
-  
+
   if [[ -f "$CONFIG_FILE" ]]; then
     if [[ "$force_mode" == "true" ]]; then
       echo "Force replacing config"
@@ -424,7 +433,7 @@ _create_config() {
       fi
     fi
   fi
-  
+
   cat > "$CONFIG_FILE" << 'EOF'
 # ===============================
 # API Keys - Secure Integration
@@ -433,16 +442,16 @@ _create_config() {
 if [[ "$OSTYPE" == darwin* ]] && command -v security &>/dev/null; then
   local -A _api_keys=(
 EOF
-  
+
   # Add mappings
   for service in "${ALL_SERVICES[@]}"; do
     local env_var="${SERVICE_ENV_VARS[$service]}"
     echo "    [$env_var]=$service"
   done >> "$CONFIG_FILE"
-  
+
   cat >> "$CONFIG_FILE" << 'EOF'
   )
-  
+
   local env_var service key
   for env_var service in "${(@kv)_api_keys}"; do
     if [[ -z "${(P)env_var:-}" ]]; then
@@ -451,11 +460,11 @@ EOF
       fi
     fi
   done
-  
+
   unset _api_keys env_var service key
 fi
 EOF
-  
+
   echo "Config updated: $CONFIG_FILE"
   return 0
 }
@@ -472,7 +481,7 @@ USAGE: $SCRIPT_NAME [OPTIONS] [SERVICES...]
 
 OPTIONS:
   -s, --status     Show status
-  -l, --list       List services  
+  -l, --list       List services
   -c, --config     Update config
   -r, --remove     Remove keys
   -f, --force      Force mode (skip all prompts)
@@ -497,7 +506,7 @@ EOF
 
 main() {
   local services=() force_mode=false remove_mode=false
-  
+
   # Parse args
   # First pass: check for force mode
   local args=("$@")
@@ -507,7 +516,7 @@ main() {
       break
     fi
   done
-  
+
   while (( $# > 0 )); do
     case "$1" in
       -h|--help) _show_help; exit 0 ;;
@@ -527,7 +536,7 @@ main() {
     esac
     shift
   done
-  
+
   # Interactive mode
   if [[ ${#services} -eq 0 ]]; then
     if [[ "$remove_mode" == "true" ]]; then
@@ -549,11 +558,11 @@ main() {
       echo "  3. Show available services"
       echo
     fi
-    
+
     local choice
     if _get_input "Option [1-3]: " choice; then
       case "$choice" in
-        1) 
+        1)
           if [[ "$remove_mode" == "true" ]]; then
             # Get only configured services
             services=()
@@ -566,7 +575,7 @@ main() {
             services=("${ALL_SERVICES[@]}")
           fi
           ;;
-        2) 
+        2)
           if [[ "$remove_mode" == "true" ]]; then
             _show_status
           else
@@ -580,7 +589,7 @@ main() {
             exit 1
           fi
           ;;
-        3) 
+        3)
           if [[ "$remove_mode" == "true" ]]; then
             _show_status
           else
@@ -594,16 +603,16 @@ main() {
       exit 1
     fi
   fi
-  
+
   # Validate
   _validate_environment || exit 1
-  
+
   # Remove mode
   if [[ "$remove_mode" == "true" ]]; then
     echo
     echo "Removing: ${services[*]}"
     echo
-    
+
     local success=0
     for service in "${services[@]}"; do
       if _remove_key "$service" "$force_mode"; then
@@ -611,10 +620,10 @@ main() {
       fi
       echo
     done
-    
+
     # Update config after removals
     _create_config "$force_mode" || exit 1
-    
+
     echo
     if [[ $success -gt 0 ]]; then
       echo "Removal complete: $success keys removed"
@@ -624,12 +633,12 @@ main() {
     fi
     exit 0
   fi
-  
+
   # Setup
   echo
   echo "Setting up: ${services[*]}"
   echo
-  
+
   local success=0
   for service in "${services[@]}"; do
     if _setup_key "$service" "$force_mode"; then
@@ -637,17 +646,17 @@ main() {
     fi
     echo
   done
-  
+
   # Update config
   _create_config "$force_mode" || exit 1
-  
+
   # Done
   echo
   if [[ $success -gt 0 ]]; then
     echo "Setup complete: $success keys configured"
     echo "Reload: source $CONFIG_FILE"
     echo "Status: $SCRIPT_NAME --status"
-    
+
     # Test if keys are loading
     echo
     if ! source "$CONFIG_FILE" 2>/dev/null; then
