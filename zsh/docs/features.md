@@ -23,6 +23,7 @@
 - **Namespace Protection**: Prevents collision with other scripts
 - **Lazy Loading**: Functions are loaded only when needed
 - **Exported Selectively**: Only necessary functions are exported to child processes
+- **Introspection**: `zh` fzf picker browses and searches every authored alias, function, export, and keybinding
 
 ### Plugin Management
 

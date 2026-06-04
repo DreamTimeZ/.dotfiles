@@ -47,6 +47,7 @@ zsh/
 │   │   │   ├── 45-tmux.zsh        # dev (tmux sessions)
 │   │   │   ├── 50-webserver.zsh   # serve (dev server)
 │   │   │   ├── 60-system.zsh      # update (system updater)
+│   │   │   ├── 65-introspection.zsh # zh (config picker)
 │   │   │   ├── 70-services.zsh    # ollama-* (AI tools)
 │   │   │   ├── 75-knowledge.zsh   # yt2note, ytt, ytc
 │   │   │   └── 80-colorization.zsh # grc setup
@@ -77,6 +78,7 @@ zsh/
 - `serve` → instant dev server (Node.js/Python)
 - `venv` → smart Python environment manager
 - `dirty` → scan git repos for uncommitted changes
+- `zh` → browse/search dotfiles aliases, functions, exports, keybindings
 
 ### Shell History (Atuin)
 

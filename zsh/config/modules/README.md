@@ -18,6 +18,7 @@ modules/
 │   ├── 45-tmux.zsh         - Tmux session management (dev)
 │   ├── 50-webserver.zsh    - Web server (serve - dev server)
 │   ├── 60-system.zsh       - System maintenance (update - system updater)
+│   ├── 65-introspection.zsh - Config introspection (zh - fzf picker)
 │   ├── 70-services.zsh     - Service management (ollama-* functions)
 │   ├── 75-knowledge.zsh    - Knowledge management (yt2note, ytt, ytc)
 │   └── 80-colorization.zsh - Output colorization (grc setup)
