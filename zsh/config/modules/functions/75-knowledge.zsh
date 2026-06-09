@@ -163,7 +163,7 @@ Choose a better directory based on the latest feedback.}"
 
 Output exactly the title, one line, no quotes, no commentary."
         else
-            system_prompt="Suggest a short, descriptive vault note title from a YouTube video. Max 60 chars. Title Case. No clickbait, no exclamation marks, no all-caps emphasis. Preserve source language. Output exactly the title, one line, no quotes, no commentary."
+            system_prompt="Suggest a short, descriptive vault note title from a YouTube video. Max 60 chars. Title Case. No clickbait, no exclamation marks, no all-caps emphasis. Preserve source language by default, but if the latest user feedback requests a different language or a translation, output the title entirely in that language. Output exactly the title, one line, no quotes, no commentary."
         fi
 
         local user_prompt="YouTube title: \"${original_title}\"
