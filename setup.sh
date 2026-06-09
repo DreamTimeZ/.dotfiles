@@ -10,6 +10,7 @@
 #   ./setup.sh -p | --packages-only  Only install packages (no symlinks)
 #   ./setup.sh -d | --doctor      System health check
 #   ./setup.sh -u | --unlink      Remove all managed symlinks
+#   ./setup.sh -U | --update      Update git-cloned Claude skills
 #
 # Package categories: core, cli, dev, extra, macos (macOS only)
 
@@ -49,6 +50,7 @@ LINK_ONLY=0
 PACKAGES_ONLY=0
 DO_DOCTOR=0
 DO_UNLINK=0
+DO_UPDATE=0
 INSTALL_ALL=0
 declare -a CATEGORIES=()
 declare -a SKIP_GROUPS=()
@@ -93,6 +95,7 @@ Options:
   -p, --packages-only  Only install packages, skip symlinks
   -d, --doctor         Check system health and symlink integrity
   -u, --unlink         Remove all managed symlinks
+  -U, --update         Update git-cloned Claude skills (fast-forward only)
   -n, --dry-run        Show what would be done without making changes
   -f, --force          Overwrite existing files and symlinks
   -h, --help           Show this help message
@@ -124,6 +127,7 @@ Examples:
   ./setup.sh --link-only         # Only create symlinks
   ./setup.sh --link-only --force # Recreate all symlinks
   ./setup.sh --doctor            # Check system health
+  ./setup.sh --update            # Update git-cloned Claude skills
   ./setup.sh --dry-run --all     # Preview full setup
 EOF
 }
@@ -147,6 +151,7 @@ parse_args() {
             -p|--packages-only)  PACKAGES_ONLY=1 ;;
             -d|--doctor)         DO_DOCTOR=1 ;;
             -u|--unlink)         DO_UNLINK=1 ;;
+            -U|--update)         DO_UPDATE=1 ;;
             -s|--skip)
                 if [[ $# -lt 2 || "$2" == -* ]]; then
                     log_error "--skip requires at least one group name"
@@ -784,6 +789,124 @@ unlink_espanso_config() {
 
 # ── Post-Install ──────────────────────────────────────────────────
 
+# ── Claude skill management ────────────────────────────────────────
+
+# After a skill updates, re-sync its Python render deps if the venv already exists,
+# so a code change never leaves a stale environment behind.
+reconcile_skill_deps() {
+    local dir="$1" refs="${1}/references"
+    [[ -f "${refs}/pyproject.toml" ]] || return 0
+    if [[ ! -d "${refs}/.venv" ]]; then
+        log_skip "${dir##*/}: code updated but no render venv (uv sync manually in ${refs/#$HOME/~})"
+        return 0
+    fi
+    command -v uv &>/dev/null || return 0
+    if ( cd "$refs" && uv sync --quiet 2>/dev/null ); then
+        log_success "${dir##*/}: render dependencies synced"
+    else
+        log_warn "${dir##*/}: uv sync failed (run manually in ${refs/#$HOME/~})"
+    fi
+}
+
+# Update every git-backed skill under ~/.claude/skills via fast-forward-only pull.
+# Auto-discovers repos, so it covers any skill cloned there and never touches
+# non-skill tools (e.g. TPM) that carry their own updaters. --ff-only plus a
+# clean-tree check guarantee local work is never overwritten.
+update_claude_skills() {
+    log_header "Update Claude skills"
+
+    local skills_dir="${HOME}/.claude/skills"
+    if [[ ! -d "$skills_dir" ]]; then
+        log_skip "No skills directory at ${skills_dir/#$HOME/~}"
+        return 0
+    fi
+    if ! command -v git &>/dev/null; then
+        log_error "git not available, cannot update skills"
+        return 1
+    fi
+
+    local updated=0 current=0 skipped=0 failed=0 found=0
+    local dir name branch before after pull_err
+
+    for dir in "$skills_dir"/*/; do
+        dir="${dir%/}"
+        [[ -d "${dir}/.git" ]] || continue
+        found=$((found + 1))
+        name="${dir##*/}"
+
+        if ! branch="$(git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null)"; then
+            log_skip "${name}: detached HEAD, skipping"
+            skipped=$((skipped + 1)); continue
+        fi
+        if ! git -C "$dir" rev-parse --quiet --verify '@{upstream}' >/dev/null 2>&1; then
+            log_skip "${name}: no upstream for '${branch}', skipping"
+            skipped=$((skipped + 1)); continue
+        fi
+        if [[ -n "$(git -C "$dir" status --porcelain --untracked-files=no)" ]]; then
+            log_warn "${name}: uncommitted local changes, skipping"
+            skipped=$((skipped + 1)); continue
+        fi
+
+        if (( DRY_RUN )); then
+            log_info "[dry-run] Would update ${name} (git pull --ff-only)"
+            continue
+        fi
+
+        before="$(git -C "$dir" rev-parse --short HEAD)"
+        # Non-interactive: fail fast instead of blocking the run on an SSH passphrase / HTTPS credential prompt
+        if ! pull_err="$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
+            git -C "$dir" pull --ff-only --quiet 2>&1)"; then
+            log_warn "${name}: pull failed: ${pull_err##*$'\n'} (manual: git -C ${dir/#$HOME/~} pull --ff-only)"
+            failed=$((failed + 1)); continue
+        fi
+        after="$(git -C "$dir" rev-parse --short HEAD)"
+
+        if [[ "$before" == "$after" ]]; then
+            log_skip "${name}: already up to date"
+            current=$((current + 1))
+        else
+            log_success "${name}: ${before} -> ${after}"
+            updated=$((updated + 1))
+            reconcile_skill_deps "$dir"
+        fi
+    done
+
+    if (( found == 0 )); then
+        log_skip "No git-backed skills in ${skills_dir/#$HOME/~}"
+        return 0
+    fi
+    log_info "Skills: ${updated} updated, ${current} current, ${skipped} skipped, ${failed} failed"
+    return $(( failed > 0 ))
+}
+
+# Excalidraw skill ships a Playwright renderer for visual validation. First-time
+# setup is heavy (chromium ~170 MB) and fully non-fatal: a missing uv or a failed
+# download warns and continues, never aborting provisioning. Idempotent on re-run.
+setup_excalidraw_render_pipeline() {
+    local refs="${HOME}/.claude/skills/excalidraw-diagram/references"
+    [[ -f "${refs}/pyproject.toml" ]] || return 0
+
+    if ! command -v uv &>/dev/null; then
+        log_skip "Excalidraw render pipeline: uv not available"
+        return 0
+    fi
+    if (( DRY_RUN )); then
+        log_info "[dry-run] Would set up Excalidraw render pipeline (uv sync + playwright chromium)"
+        return 0
+    fi
+
+    log_info "Setting up Excalidraw render pipeline..."
+    if ! ( cd "$refs" && uv sync --quiet 2>/dev/null ); then
+        log_warn "Excalidraw render pipeline: uv sync failed (run manually in ${refs/#$HOME/~})"
+        return 0
+    fi
+    if ( cd "$refs" && uv run --quiet playwright install chromium >/dev/null 2>&1 ); then
+        log_success "Excalidraw render pipeline ready"
+    else
+        log_warn "Excalidraw render pipeline: chromium install failed (Linux may need: cd ${refs/#$HOME/~} && uv run playwright install-deps)"
+    fi
+}
+
 post_install() {
     log_header "Post-install"
 
@@ -824,6 +947,31 @@ post_install() {
         log_skip "TPM already installed"
     fi
 
+    # Excalidraw diagram skill (Claude Code) — cloned in place like TPM, from our fork
+    # (DreamTimeZ/excalidraw-diagram-skill), which carries a UMD-bundle render patch
+    # working around intermittent esm.sh 404s. Rebase the fork on upstream to pull updates.
+    # Repo root is the skill (SKILL.md at top level), so the clone dir IS the discovered skill dir.
+    # Render pipeline (Playwright/chromium) is set up after the mise step by setup_excalidraw_render_pipeline().
+    local excalidraw_skill="${HOME}/.claude/skills/excalidraw-diagram"
+    if [[ ! -d "${excalidraw_skill}/.git" ]]; then
+        if command -v git &>/dev/null; then
+            if (( DRY_RUN )); then
+                log_info "[dry-run] Would install Excalidraw diagram skill"
+            else
+                log_info "Installing Excalidraw diagram skill..."
+                if git clone --depth 1 https://github.com/DreamTimeZ/excalidraw-diagram-skill "$excalidraw_skill" 2>/dev/null; then
+                    log_success "Excalidraw diagram skill installed"
+                else
+                    log_warn "Excalidraw diagram skill install failed"
+                fi
+            fi
+        else
+            log_skip "git not available, skipping Excalidraw diagram skill"
+        fi
+    else
+        log_skip "Excalidraw diagram skill already installed (refresh with: ./setup.sh --update)"
+    fi
+
     # Mise: install managed tools
     if command -v mise &>/dev/null; then
         if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
@@ -841,6 +989,9 @@ post_install() {
     else
         log_skip "Mise not installed"
     fi
+
+    # Excalidraw skill render pipeline (needs uv, installed by packages/mise above)
+    setup_excalidraw_render_pipeline
 
     # Neovim plugins
     if command -v nvim &>/dev/null; then
@@ -1126,6 +1277,12 @@ main() {
         remove_symlinks "$platform"
         unlink_espanso_config
         exit 0
+    fi
+
+    # Update mode
+    if (( DO_UPDATE )); then
+        update_claude_skills
+        exit $?
     fi
 
     # Link private repo first (populates local/ dirs for packages and configs)
