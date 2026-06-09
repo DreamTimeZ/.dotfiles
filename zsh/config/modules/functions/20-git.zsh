@@ -127,6 +127,10 @@ EOF
             -not -path '*/OneDrive/*' 2>/dev/null)}")
     fi
 
+    # A scan with no matches substitutes one empty element; drop empties so the
+    # not-found message and the scan count stay accurate
+    repos=("${(@)repos:#}")
+
     (( ${#repos} )) || { echo "No git repositories found"; return 0; }
 
     # Parallel fetch if requested - connect timeout for fast VPN-off detection
