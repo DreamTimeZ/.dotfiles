@@ -45,7 +45,7 @@ update_sheldon() {
 }
 
 # Function: update_claude_skills
-# Updates git-backed Claude skills via setup.sh --update (ff-only, never clobbers)
+# Updates Claude skills via setup.sh --update (git clones ff-only + private tarball skills)
 update_claude_skills() {
   local setup="${ZDOTFILES_DIR:-$HOME/.dotfiles}/setup.sh"
   if [[ ! -x "$setup" ]]; then
