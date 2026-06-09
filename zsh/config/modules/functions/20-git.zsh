@@ -28,6 +28,7 @@ Scan directories for git repos with uncommitted changes or unpushed commits.
 
 Options:
   -a, --all       Scan unlimited depth (default: 2 levels)
+                  Also scans ~/.claude/skills when it is under PATH
   -d, --depth N   Scan N levels deep
   -f, --fetch     Fetch remotes first (parallel, but slower)
   -p, --push      Show only repos with unpushed commits
@@ -97,7 +98,8 @@ EOF
     esac
 
     # Find .git directories (fd is 5-10x faster than find)
-    local -a repos=()
+    # -U dedups paths discovered by both the main scan and the skills scan
+    local -aU repos=()
 
     if (( $+commands[fd] )); then
         local -a fd_args=(--type d --hidden --no-ignore --glob '.git')
@@ -125,6 +127,21 @@ EOF
             -not -path '*/Library/*' -not -path '*/.Trash/*' \
             -not -path '*/.var/*' -not -path '*/.cpan/*' \
             -not -path '*/OneDrive/*' 2>/dev/null)}")
+    fi
+
+    # ~/.claude is excluded above to avoid plugin/cache noise; scan skills
+    # explicitly, but only when they fall under the requested target
+    local skills_dir="$HOME/.claude/skills"
+    if (( all_flag )) && [[ -d "$skills_dir" ]] && \
+        [[ ${skills_dir:A} == ${target:A} || ${skills_dir:A} == ${${target:A}%/}/* ]]; then
+        if (( $+commands[fd] )); then
+            repos+=("${(@f)$(fd "${fd_args[@]}" "$skills_dir" 2>/dev/null)}")
+        else
+            local skills_maxdepth=""
+            [[ "$depth" == "unlimited" ]] || skills_maxdepth="-maxdepth ${depth:-3}"
+            repos+=("${(@f)$(find "$skills_dir" $=skills_maxdepth -type d -name '.git' \
+                -not -path '*/node_modules/*' -not -path '*/vendor/*' 2>/dev/null)}")
+        fi
     fi
 
     # A scan with no matches substitutes one empty element; drop empties so the
