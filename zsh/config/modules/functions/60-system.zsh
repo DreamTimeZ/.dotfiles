@@ -44,8 +44,27 @@ update_sheldon() {
   fi
 }
 
+# Function: update_claude_skills
+# Updates git-backed Claude skills via setup.sh --update (ff-only, never clobbers)
+update_claude_skills() {
+  local setup="${ZDOTFILES_DIR:-$HOME/.dotfiles}/setup.sh"
+  if [[ ! -x "$setup" ]]; then
+    echo -e "\033[1;33m⚠ setup.sh not found. Skipping Claude skill updates.\033[0m"
+    return 1
+  fi
+
+  echo -e "\033[1;32m◆ Updating Claude skills...\033[0m"
+  if "$setup" --update; then
+    echo "✓ Claude skills updated successfully."
+    return 0
+  else
+    echo -e "\033[1;31m✗ Error updating Claude skills.\033[0m"
+    return 1
+  fi
+}
+
 # Function: update
-# Updates: Homebrew, App Store (macOS), mise tools, Rust, Sheldon plugins, and macOS system updates
+# Updates: Homebrew, App Store (macOS), mise tools, Rust, Sheldon plugins, Claude skills, and macOS system updates
 # Flags:
 #   -f, --force   Install macOS system updates and restart without confirmation
 update() {
@@ -55,6 +74,8 @@ update() {
       -f|--force) force=true; shift ;;
       -h|--help)
         echo "Usage: update [-f|--force]"
+        echo "  Update Homebrew, Mac App Store apps, mise tools, Rust, sheldon"
+        echo "  plugins, and Claude skills, then check for macOS system updates."
         echo "  -f, --force   Install macOS system updates and restart without confirmation"
         return 0
         ;;
@@ -164,7 +185,14 @@ update() {
     errors+=("Sheldon plugins update failed")
   fi
 
-  # 6. Check and install macOS system updates (macOS only)
+  # 6. Update Claude skills
+  echo ""
+  if ! update_claude_skills; then
+    success=false
+    errors+=("Claude skills update failed")
+  fi
+
+  # 7. Check and install macOS system updates (macOS only)
   # softwareupdate -l lists pending updates (no sudo needed); writes status to
   # stderr and updates to stdout. --list-full-installers is the wrong predicate
   # (lists full macOS installer apps, not pending patches) and returns 0 almost
