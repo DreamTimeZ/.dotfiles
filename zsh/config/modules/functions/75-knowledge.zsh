@@ -148,6 +148,10 @@ Choose a better directory based on the latest feedback.}"
 
     _yt2note_suggest_title() {
         local original_title="$1" channel="$2" preview="$3" history="${4:-}"
+        # Hard length cap: the prompt asks the model for <=60 (soft target),
+        # 80 is the enforcement tolerance and the cutoff above which a line is
+        # treated as commentary rather than a title.
+        local -r _title_max=80
 
         local style_rules=""
         [[ -n "${YT2NOTE_TITLE_PROMPT:-}" && -f "$YT2NOTE_TITLE_PROMPT" ]] && \
@@ -173,8 +177,34 @@ Suggest a better title based on the latest feedback.}"
         result=$(print -r -- "$user_prompt" | claude -p --no-session-persistence --system-prompt "$system_prompt" 2>/dev/null)
         result="${result//$'\r'}"               # strip CR
         result="${result//\`}"                  # strip backticks
-        result="${result#"${result%%[^$'\n']*}"}" # skip leading blank lines
-        result="${result%%$'\n'*}"              # first line only
+        # Models occasionally ignore "one line" and wrap the title in reasoning
+        # (e.g. German title, then "Wait, the user wants English.", then the
+        # English title). Taking the first line then captures the wrong text.
+        # Pick the last line that still looks like a title (a model emits its
+        # final answer last); fall back to the first non-empty line so a clean
+        # single-line response is unchanged.
+        local -a _result_lines
+        _result_lines=("${(@f)result}")
+        local _rl _rl_trim _title_line="" _title_fallback=""
+        for _rl in "${_result_lines[@]}"; do
+            _rl_trim="${_rl#"${_rl%%[^ ]*}"}"
+            _rl_trim="${_rl_trim%"${_rl_trim##*[^ ]}"}"
+            [[ -z "$_rl_trim" ]] && continue
+            case "$_rl_trim" in
+                *[.,:?!]|*\;) continue ;;               # ends in sentence punctuation
+                \(*\)) continue ;;                       # whole-line parenthetical aside, not a title
+            esac
+            # Title-shaped line. Prefer the last one within the length cap; keep
+            # the last over-length one only as a salvage the truncation step can
+            # rescue. A model emits its final answer last, so last beats first.
+            _title_fallback="$_rl_trim"
+            (( ${#_rl_trim} > _title_max )) && continue
+            _title_line="$_rl_trim"
+        done
+        # No title-shaped line (model refused or returned only commentary) leaves
+        # result empty; the function then reports failure and the caller keeps
+        # the original YouTube title rather than a stray sentence.
+        result="${_title_line:-$_title_fallback}"
         result="${result#"${result%%[^ ]*}"}"   # trim leading spaces
         result="${result%"${result##*[^ ]}"}"   # trim trailing spaces
         result="${result#\"}"                   # strip leading double quote
@@ -184,9 +214,9 @@ Suggest a better title based on the latest feedback.}"
         result="${result#"${result%%[^ ]*}"}"   # trim leading spaces (post-quote, in case quotes wrapped padded text)
         result="${result%"${result##*[^ ]}"}"   # trim trailing spaces (post-quote)
 
-        if (( ${#result} > 80 )); then
-            zdotfiles_warn "yt2note: AI title exceeded 80 chars, truncating"
-            result="${result:0:80}"
+        if (( ${#result} > _title_max )); then
+            zdotfiles_warn "yt2note: AI title exceeded ${_title_max} chars, truncating"
+            result="${result:0:$_title_max}"
             result="${result% *}"               # back off to last word boundary if any
         fi
 
