@@ -10,7 +10,7 @@
 #   ./setup.sh -p | --packages-only  Only install packages (no symlinks)
 #   ./setup.sh -d | --doctor      System health check
 #   ./setup.sh -u | --unlink      Remove all managed symlinks
-#   ./setup.sh -U | --update      Update git-cloned Claude skills
+#   ./setup.sh -U | --update      Update Claude skills (git clones + private skills)
 #
 # Package categories: core, cli, dev, extra, macos (macOS only)
 
@@ -95,7 +95,7 @@ Options:
   -p, --packages-only  Only install packages, skip symlinks
   -d, --doctor         Check system health and symlink integrity
   -u, --unlink         Remove all managed symlinks
-  -U, --update         Update git-cloned Claude skills (fast-forward only)
+  -U, --update         Update Claude skills (git clones ff-only + private tarball skills)
   -n, --dry-run        Show what would be done without making changes
   -f, --force          Overwrite existing files and symlinks
   -h, --help           Show this help message
@@ -127,7 +127,7 @@ Examples:
   ./setup.sh --link-only         # Only create symlinks
   ./setup.sh --link-only --force # Recreate all symlinks
   ./setup.sh --doctor            # Check system health
-  ./setup.sh --update            # Update git-cloned Claude skills
+  ./setup.sh --update            # Update Claude skills
   ./setup.sh --dry-run --all     # Preview full setup
 EOF
 }
@@ -429,7 +429,7 @@ run_private_post_install() {
 
     log_header "Running private post-install"
 
-    local -a cmd=(bash "$script")
+    local -a cmd=(bash "$script" "$@")
     (( DRY_RUN )) && cmd+=(--dry-run)
 
     if ! "${cmd[@]}"; then
@@ -1282,6 +1282,7 @@ main() {
     # Update mode
     if (( DO_UPDATE )); then
         update_claude_skills
+        run_private_post_install --update-skills
         exit $?
     fi
 
