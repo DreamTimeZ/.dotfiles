@@ -88,3 +88,21 @@ confirm() {
   read -r response
   [[ "$response" =~ ^[Yy]$ ]]
 }
+
+# Throwaway markdown scratch file, opened in VS Code, else $EDITOR, else vi.
+# Temp dir + inner .md, not a temp file: BSD mktemp only expands trailing X's,
+# so a "scratch.XXXXXX.md" template would not be unique.
+scratch() {
+  local dir file
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/scratch.XXXXXXXXXX")" || {
+    zdotfiles_error "Failed to create scratch dir"
+    return 1
+  }
+  file="$dir/scratch.md"
+  : > "$file"
+  if zdotfiles_has_command code; then
+    code "$file"
+  else
+    "${EDITOR:-vi}" "$file"
+  fi
+}
