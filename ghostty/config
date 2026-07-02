@@ -7,6 +7,9 @@ window-height = 29
 window-position-x = 480
 window-position-y = 120
 
+# Keep windows on quit, reopen on next launch; forces NSQuitAlwaysKeepsWindows=true
+window-save-state = always
+
 # Font
 font-family = "MesloLGS Nerd Font Mono"
 
