@@ -19,8 +19,8 @@ clipboard-read = allow
 # Disable paste protection (triggers on Espanso multi-line expansions)
 clipboard-paste-protection = false
 
-# No confirm on close (matches iTerm2 setting)
-confirm-close-surface = false
+# Confirm before quitting/closing, even at an idle shell prompt
+confirm-close-surface = always
 
 # Page Up/Down: scroll terminal scrollback
 keybind = page_up=scroll_page_up
