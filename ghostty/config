@@ -19,8 +19,8 @@ clipboard-read = allow
 # Disable paste protection (triggers on Espanso multi-line expansions)
 clipboard-paste-protection = false
 
-# Confirm before quitting/closing, even at an idle shell prompt
-confirm-close-surface = always
+# Confirm before quitting/closing only when a process is running (not at an idle prompt)
+confirm-close-surface = true
 
 # Page Up/Down: scroll terminal scrollback
 keybind = page_up=scroll_page_up
