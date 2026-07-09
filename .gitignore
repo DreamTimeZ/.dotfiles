@@ -5,8 +5,9 @@ tmux/sessions
 **/Brewfile.lock.json
 **/TODO.md
 
-.claude/*
-!.claude/settings.json
+# Claude Code / Codex - private dotfiles symlinked here
+.claude/
+.codex/
 *.local
 .vscode
 .DS_Store
