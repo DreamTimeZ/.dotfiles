@@ -18,6 +18,9 @@ local hs_hotkey = hs.hotkey
 local hs_timer = hs.timer
 local hs_alert = hs.alert
 local hs_geometry = hs.geometry
+local hs_application = hs.application
+local hs_chooser = hs.chooser
+local hs_image = hs.image
 
 -- Constants for window operations
 local RESIZE_DELTA = 25
@@ -30,6 +33,9 @@ local OVERLAY_HALF_SIZE = 35
 local OVERLAY_MAX_COUNT = 9
 local OVERLAY_AUTO_HIDE_TIME = 5
 local OVERLAY_TEXT_Y_POS = 45
+
+-- A freshly unminimized window is not focusable until the AX layer catches up
+local UNMINIMIZE_FOCUS_DELAY = 0.1
 
 -- Constants for default window sizing (optimized for Ghostty/iTerm2 122x29 characters)
 local DEFAULT_WIDTH_PERCENT = 0.5125
@@ -329,7 +335,7 @@ local function showWindowOverlays()
 
                     if windowRef:isMinimized() then
                         windowRef:unminimize()
-                        hs_timer.doAfter(0.1, function()
+                        hs_timer.doAfter(UNMINIMIZE_FOCUS_DELAY, function()
                             windowRef:focus()
                         end)
                     else
@@ -352,6 +358,90 @@ local function showWindowOverlays()
         if showingOverlays then hideWindowOverlays() end
         autoHideTimer = nil
     end)
+
+    return true
+end
+
+-- Reveal one off-screen window: unhide its app and/or unminimize it, then focus.
+local function revealWindow(win)
+    if not win then return end
+
+    local app = win:application()
+    if app and app:isHidden() then app:unhide() end
+
+    if win:isMinimized() then
+        win:unminimize()
+        hs_timer.doAfter(UNMINIMIZE_FOCUS_DELAY, function()
+            win:focus()
+            win:raise()
+        end)
+    else
+        win:focus()
+        win:raise()
+    end
+end
+
+-- Searchable picker for off-screen windows: hidden apps (Cmd+H) and minimized
+-- windows (Cmd+M). These have no on-screen frame, so the number overlays above
+-- cannot reach them; a text chooser can. app:allWindows() still enumerates a
+-- hidden app's windows and an app's minimized ones, which hs_window.allWindows
+-- (on-screen only) does not.
+local hiddenWindowChooser
+local function showHiddenWindows()
+    local candidates = {}
+    local choices = {}
+
+    for _, app in ipairs(hs_application.runningApplications()) do
+        local appHidden = app:isHidden()
+        local appName = app:name() or "Unknown"
+        -- One icon per app (bundle id can be nil for accessoryless processes).
+        local bundleID = app:bundleID()
+        local icon = bundleID and hs_image.imageFromAppBundle(bundleID) or nil
+        for _, win in ipairs(app:allWindows()) do
+            if win:isStandard() then
+                local minimized = win:isMinimized()
+                if appHidden or minimized then
+                    local state
+                    if appHidden and minimized then
+                        state = "Hidden + minimized"
+                    elseif appHidden then
+                        state = "Hidden app"
+                    else
+                        state = "Minimized"
+                    end
+                    candidates[#candidates + 1] = win
+                    choices[#choices + 1] = {
+                        text = appName,
+                        subText = state .. " - " .. (win:title() or "Untitled"),
+                        image = icon,
+                        index = #candidates
+                    }
+                end
+            end
+        end
+    end
+
+    if #choices == 0 then
+        hs_alert.show("No hidden or minimized windows")
+        return true
+    end
+
+    -- Deterministic order for a name-searched list: app name, then state+title.
+    -- The `index` field travels with each choice, so sorting keeps the mapping
+    -- into `candidates` intact.
+    table.sort(choices, function(a, b)
+        if a.text ~= b.text then return a.text:lower() < b.text:lower() end
+        return a.subText:lower() < b.subText:lower()
+    end)
+
+    if hiddenWindowChooser then hiddenWindowChooser:delete() end
+    hiddenWindowChooser = hs_chooser.new(function(choice)
+        if choice then revealWindow(candidates[choice.index]) end
+    end)
+    hiddenWindowChooser:placeholderText("Search hidden or minimized windows")
+    hiddenWindowChooser:searchSubText(true)
+    hiddenWindowChooser:choices(choices)
+    hiddenWindowChooser:show()
 
     return true
 end
@@ -398,7 +488,10 @@ local windowMappings = {
     g = { action = toggleGridSelector, desc = "Grid Selector" },
 
     -- Number overlays
-    ["0"] = { action = showWindowOverlays, desc = "Number Overlays" }
+    ["0"] = { action = showWindowOverlays, desc = "Number Overlays" },
+
+    -- Reveal hidden apps / minimized windows via a searchable chooser
+    s = { action = showHiddenWindows, desc = "Hidden/Minimized Windows" }
 }
 
 -- Store the mappings in the modal definition
