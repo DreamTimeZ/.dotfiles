@@ -299,6 +299,204 @@ USAGE
     echo "${#live_ips[@]} responders on ${prefix}.0/24" >&2
 }
 
+# Provider adapters for net-check. Each prints one TSV row
+# (provider, latency_ms, down_mbps, up_mbps, quality) or returns non-zero.
+
+_net_check_cloudflare() {
+    local json
+    # --auto-save false: the CLI persists a run history by default, and a shell
+    # helper should not accrete state on disk without being asked to.
+    json=$(cloudflare-speed-cli --json --auto-save false 2>/dev/null) || return 1
+    # Absent fields become "?" rather than 0, so a provider that failed to
+    # measure is never rendered as having measured zero.
+    print -r -- "$json" | jq -r '
+        [ "Cloudflare",
+          (.idle_latency.median_ms // "?"),
+          (.download.mbps // "?"),
+          (.upload.mbps // "?"),
+          "bufferbloat " + (.connection_quality.bufferbloat_grade // "?")
+        ] | @tsv' 2>/dev/null
+}
+
+_net_check_apple() {
+    local json
+    # networkQuality reports throughput in bits/s, the table shows Mbit/s
+    local -r bits_per_mbit=1000000
+    # -s forces upload and download to run sequentially. By default they run at
+    # once, so the upload competes with the download and reads far under line
+    # speed (28-160 Mbps against a 624 Mbps downstream, against 257 with -s,
+    # which matches Cloudflare within 1%). -s also replaces the single
+    # top-level responsiveness field that parallel mode emits with per-phase
+    # dl_/ul_responsiveness, so RPM is read from those.
+    json=$(networkQuality -s -c 2>/dev/null) || return 1
+    print -r -- "$json" | jq -r --argjson mbit "$bits_per_mbit" '
+        [ "Apple",
+          (.base_rtt // "?"),
+          (if .dl_throughput then .dl_throughput / $mbit else "?" end),
+          (if .ul_throughput then .ul_throughput / $mbit else "?" end),
+          "RPM " + (if .dl_responsiveness and .ul_responsiveness
+                    then (.dl_responsiveness | round | tostring) + "/"
+                       + (.ul_responsiveness | round | tostring)
+                    else "?" end)
+        ] | @tsv' 2>/dev/null
+}
+
+# Measure internet throughput, latency and bufferbloat, optionally across providers
+#
+# Providers measure deliberately different paths (Cloudflare's anycast edge vs
+# Apple's CDN) and differ in server placement, stream count and congestion
+# control, so they disagree for legitimate reasons rather than by error. --all
+# therefore prints every row and summarises with the max, never the mean:
+# throughput error is one-sided, since TCP slow start, cross-traffic and
+# per-flow shapers can only depress a sample and never inflate one. A
+# cross-provider average is thus biased low by construction and additionally
+# averages over unrelated bottlenecks. See MacMillan et al., "Best Practices for
+# Collecting Speed Test Data" (2022); Cloudflare's own client reports p90.
+net-check() {
+    local all=0 provider row attempted=0
+    local -a providers rows
+    # Flag a cross-provider gap only once it exceeds what a single provider
+    # varies by between runs on a consumer link (Wi-Fi swings by ~3x), below
+    # which a "disagreement" is just noise being reported as a finding.
+    local -r divergence_ratio=2
+    # A saturating test leaves the link perturbed, so whatever runs next reads
+    # low: 157-207 Mbps back-to-back against 490-624 standalone. A gap this long
+    # brings the providers within 1-10% of each other, against the 2.9x split
+    # they showed back-to-back. Sufficient at this length, not shown minimal.
+    local -r settle_seconds=10
+
+    while (( $# > 0 )); do
+        case "$1" in
+            -h|--help)
+                cat <<'USAGE'
+net-check - Internet throughput, latency and bufferbloat
+
+Usage: net-check [-h] [-a]
+
+Options:
+  -h, --help   Show this help
+  -a, --all    Run every available provider and compare
+
+Providers are auto-detected. Without -a only the first available runs:
+  Cloudflare   cloudflare-speed-cli (brew install cloudflare-speed-cli)
+  Apple        /usr/bin/networkQuality (built in on macOS)
+
+With -a providers run sequentially, never concurrently, and with a settle gap
+between them: throughput tests saturate the link by design, so running them
+at once would make each report a fraction of the true capacity, and running
+them back-to-back depresses whichever goes second. Results are summarised
+with the max, not the mean (see the comment above this function for why).
+
+Providers routinely disagree. They place servers differently (Cloudflare's
+anycast edge vs Apple's CDN), open different numbers of streams and use
+different congestion control, so a spread is usually a real difference
+between paths rather than a faulty test. It can also mean an unstable link,
+which is common on Wi-Fi: re-run before drawing conclusions.
+
+Unmeasured values read "?" and are never summarised as zero.
+
+Quality column:
+  bufferbloat  Cloudflare's A-F grade for latency increase under load
+  RPM          Responsiveness under load (IETF draft), as download/upload.
+               Sequential mode measures it once per phase, so the two figures
+               are the round-trips per minute seen while each direction was
+               saturated.
+USAGE
+                return 0
+                ;;
+            -a|--all)
+                all=1
+                shift
+                ;;
+            -*)
+                zdotfiles_error "Unknown option: $1"
+                return 1
+                ;;
+            *)
+                zdotfiles_error "Unexpected argument: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    if ! zdotfiles_has_command jq; then
+        zdotfiles_error "net-check requires jq"
+        return 1
+    fi
+
+    # Cloudflare first: its anycast edge keeps RTT low, and low RTT is the
+    # regime where a single measurement is most trustworthy.
+    zdotfiles_has_command cloudflare-speed-cli && providers+=(cloudflare)
+    zdotfiles_is_macos && [[ -x /usr/bin/networkQuality ]] && providers+=(apple)
+
+    if (( ${#providers[@]} == 0 )); then
+        zdotfiles_error "No provider found (brew install cloudflare-speed-cli)"
+        return 1
+    fi
+
+    (( all )) || providers=("${providers[1]}")
+
+    for provider in "${providers[@]}"; do
+        if (( attempted )); then
+            echo "Settling ${settle_seconds}s..." >&2
+            sleep "$settle_seconds"
+        fi
+        echo "Testing ${provider}..." >&2
+        # An adapter can emit nothing and still exit 0 (empty input parses
+        # cleanly), so an empty row counts as a failure rather than a data row.
+        row=$(_net_check_${provider}) || row=""
+        if [[ -z "$row" ]]; then
+            zdotfiles_error "${provider} test failed"
+            continue
+        fi
+        # Only a test that actually ran perturbs the link, so only a test that
+        # ran makes the next one pay the settle gap.
+        attempted=1
+        rows+=("$row")
+    done
+
+    (( ${#rows[@]} == 0 )) && return 1
+
+    # Colors only when stdout is a TTY (so pipes/redirections get clean data)
+    local cyan="" gray="" bold="" reset=""
+    if [[ -t 1 ]]; then
+        cyan=$'\033[1;36m'
+        gray=$'\033[1;90m'
+        bold=$'\033[1m'
+        reset=$'\033[0m'
+    fi
+
+    printf '%s\n' "${rows[@]}" | awk -F'\t' \
+        -v cyan="$cyan" -v gray="$gray" -v bold="$bold" -v reset="$reset" \
+        -v ratio="$divergence_ratio" '
+    function fmt(v, f) { return (v == "?" || v == "") ? "?" : sprintf(f, v) }
+    BEGIN {
+        printf "%s%-12s %9s %11s %10s  %s%s\n", bold, "PROVIDER", "LATENCY", "DOWN Mbps", "UP Mbps", "QUALITY", reset
+    }
+    {
+        printf "%s%-12s%s %9s %11s %10s  %s%s%s\n", cyan, $1, reset, fmt($2, "%.1f ms"), fmt($3, "%.2f"), fmt($4, "%.2f"), gray, $5, reset
+        n++
+        # Unmeasured values are excluded rather than counted as zero, which
+        # would both invent a data point and mask the spread via the min guard.
+        if ($3 != "?") { if (nd++ == 0) max_down = min_down = $3
+                         else { if ($3 > max_down) max_down = $3; if ($3 < min_down) min_down = $3 } }
+        if ($4 != "?") { if (nu++ == 0) max_up = min_up = $4
+                         else { if ($4 > max_up) max_up = $4; if ($4 < min_up) min_up = $4 } }
+    }
+    END {
+        if (n < 2) exit
+        # Each column maxes over only the providers that measured it, and those
+        # counts can differ, so one number would misreport the other column.
+        if (nd == nu) label = sprintf("max of %d providers", nd)
+        else label = sprintf("max of %d/%d providers (down/up)", nd, nu)
+        printf "\n%s%-12s%s %9s %11s %10s  %s%s%s\n", bold, "best", reset, "", fmt(nd ? max_down : "?", "%.2f"), fmt(nu ? max_up : "?", "%.2f"), gray, label, reset
+        if (nd >= 2 && min_down > 0 && max_down / min_down > ratio)
+            printf "%s! providers disagree %.1fx on download (see -h)%s\n", gray, max_down / min_down, reset
+        if (nu >= 2 && min_up > 0 && max_up / min_up > ratio)
+            printf "%s! providers disagree %.1fx on upload (see -h)%s\n", gray, max_up / min_up, reset
+    }'
+}
+
 # Only define network functions if required tools are available
 if zdotfiles_has_command tcpdump; then
     # Network packet sniffing function
