@@ -39,7 +39,7 @@ zsh/
 │   │   │   ├── 00-core.zsh        # notify, retry, confirm
 │   │   │   ├── 05-clipboard.zsh   # cross-platform clipboard
 │   │   │   ├── 10-navigation.zsh  # mkcd, dusage, ffind
-│   │   │   ├── 15-network.zsh     # ip-local, sniff, nscan
+│   │   │   ├── 15-network.zsh     # ip-local, lan-scan, net-check, sniff, nscan
 │   │   │   ├── 16-websearch.zsh   # google, ghs, yt, so
 │   │   │   ├── 20-git.zsh         # fbr, fgf (fuzzy git)
 │   │   │   ├── 30-process.zsh     # fpkill, fh (process mgmt)

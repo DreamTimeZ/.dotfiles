@@ -10,7 +10,7 @@ modules/
 │   ├── 00-core.zsh         - Core utility functions (notify, retry, confirm)
 │   ├── 05-clipboard.zsh    - Cross-platform clipboard (pbcopy/pbpaste)
 │   ├── 10-navigation.zsh   - Navigation functions (mkcd, dusage, ffind, fdir)
-│   ├── 15-network.zsh      - Network functions (ip-local, sniff, nscan)
+│   ├── 15-network.zsh      - Network functions (ip-local, lan-scan, net-check, sniff, nscan)
 │   ├── 16-websearch.zsh    - Web search functions (google, ghs, yt, so)
 │   ├── 20-git.zsh          - Git functions (fbr, fgf - fuzzy git tools)
 │   ├── 30-process.zsh      - Process management (fpkill, fh - interactive tools)
