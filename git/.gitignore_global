@@ -15,3 +15,5 @@
 # Logs and temp
 *.log
 *.swp
+
+**/.claude/.cc-writes/
