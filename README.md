@@ -12,6 +12,7 @@ A carefully curated collection of dotfiles optimized for:
 - 📦 Tmux with sensible defaults and plugin management
 - 🔑 SSH with local overrides for machine-specific settings
 - 🌳 Git with split configuration for public/private settings
+- 👻 Ghostty as the terminal emulator (macOS)
 - 🔨 Hammerspoon for macOS automation and window management
 - 🚀 LaunchAgents for macOS system service management
 - ⌨️ Karabiner for keyboard remapping (macOS)
@@ -76,7 +77,7 @@ For detailed information on each component:
 - [Tmux Configuration](tmux/tmux.md) - Terminal multiplexer setup
 - [Hammerspoon Configuration](hammerspoon/README.md) - macOS automation
 - [LaunchAgents](launchagents/launchagents.md) - System service management
-- [iTerm2 Configuration](docs/iterm2.md) - Terminal emulator setup
+- [iTerm2 Configuration](docs/iterm2.md) - Legacy terminal emulator, superseded by Ghostty (`ghostty/config`)
 - [Repository Structure](docs/structure.md) - Understanding the organization
 
 ## 📋 Requirements
