@@ -42,3 +42,6 @@ keybind = super+delete=text:\x0b
 # Alt+Up/Down: jump to start/end of the zsh input buffer (sends Esc-< / Esc->)
 keybind = alt+up=text:\x1b<
 keybind = alt+down=text:\x1b>
+
+# Equalize splits: the default super+ctrl+= is untypable on QWERTZ ("=" is shift+0)
+keybind = super+ctrl+e=equalize_splits
