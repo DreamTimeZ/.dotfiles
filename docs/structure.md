@@ -8,18 +8,32 @@ The dotfiles use a clean, organized path structure with two repositories:
 ~/.dotfiles/         # Main public repository
 ├── bin/             # Helper scripts, installation scripts
 ├── docs/            # Documentation
+├── espanso/         # Espanso text expansion
+│   └── README.md    # Espanso documentation
+├── ghostty/         # Ghostty terminal configuration
 ├── git/             # Git configuration
+├── gpg/             # GnuPG configuration
+│   └── README.md    # GnuPG documentation
 ├── hammerspoon/     # Hammerspoon configuration
 │   └── README.md       # Hammerspoon documentation
+├── iterm2/          # iTerm2 shell integration (legacy, superseded by ghostty/)
+├── karabiner/       # Karabiner-Elements key remapping
 ├── launchagents/    # LaunchAgent plists
 │   └── launchagents.md # LaunchAgents documentation
+├── mise/            # mise tool-version management
+├── nilesoft/        # Nilesoft Shell context menu (Windows)
+│   └── README.md    # Nilesoft documentation
 ├── nvim/            # Neovim configuration
 │   └── neovim.md    # Neovim documentation
+├── p10k/            # Powerlevel10k prompt configuration
+├── packages/        # Package manifests (Brewfile per install group, apt/cargo lists)
 ├── ssh/             # SSH configuration
+├── tlrc/            # tldr client configuration
 ├── tmux/            # Tmux configuration
 │   └── tmux.md      # Tmux documentation
 ├── zsh/             # Zsh configuration
-│   └── README.md    # Zsh documentation
+│   ├── README.md    # Zsh documentation
+│   └── docs/        # Detailed Zsh docs (features, keybindings, usage, ...)
 ├── setup.sh         # Installation and setup script
 └── README.md        # Main documentation
 
