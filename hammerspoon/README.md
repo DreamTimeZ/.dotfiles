@@ -47,7 +47,8 @@ The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped 
 | Hyper + S | Open Settings Modal | Quick access to system settings |
 | Hyper + Space | Open Window Modal | Window management (resize, move, etc.) |
 | Hyper + M | Open Macros Modal | Automation macros |
-| Hyper + Return | Open iTerm2 | Directly launch or focus terminal |
+| Hyper + R | Open Routines Modal | Automation routines |
+| Hyper + Return | Open Ghostty | Directly launch or focus terminal |
 
 ### App Shortcuts (Hyper+A, then...)
 
