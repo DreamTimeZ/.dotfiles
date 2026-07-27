@@ -53,9 +53,6 @@
 	# Automatically correct and execute mistyped commands
 	autocorrect = 1
 
-[include]
-    path = ~/.gitconfig.local
-
 [interactive]
 	diffFilter = delta --color-only
 
@@ -72,3 +69,7 @@
 # DELTA_FEATURES activates them, set from $COLUMNS in zsh modules/local/26-delta.zsh.
 [delta "side-by-side-when-wide"]
 	side-by-side = true
+
+# Last, so machine-local values override everything above
+[include]
+    path = ~/.gitconfig.local
