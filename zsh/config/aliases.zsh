@@ -58,6 +58,14 @@ if zdotfiles_has_command git; then
     alias gr='git restore'
     alias grs='git restore --staged'
 
+    # Not a global diff.external: that breaks `git add -p` (difftastic cannot be an
+    # interactive.diffFilter, Wilfred/difftastic#280) and it emits no appliable patches.
+    if zdotfiles_has_command difft; then
+        alias gdft='git -c diff.external=difft diff'
+        alias gdftl='git -c diff.external=difft log -p --ext-diff'
+        alias gdfts='git -c diff.external=difft show --ext-diff'
+    fi
+
     # Advanced operations
     alias gm='git merge'
     alias gcp='git cherry-pick'
