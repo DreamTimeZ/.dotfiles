@@ -45,8 +45,9 @@
 [merge]
 	# Include summaries of merged commits in newly created merge commit messages
 	log = true
-	# Better conflict markers with diff3
-	conflictstyle = diff3
+	# Better conflict markers; zdiff3 hoists lines both sides share out of
+	# the conflict region, otherwise identical to diff3
+	conflictstyle = zdiff3
 
 [help]
 	# Automatically correct and execute mistyped commands
