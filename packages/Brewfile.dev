@@ -6,6 +6,7 @@ brew "gh"               # GitHub CLI
 brew "neovim"           # text editor
 brew "gitleaks"         # secret scanning
 brew "git-delta"        # git pager with syntax highlighting
+brew "difftastic"       # syntax-aware diff (gdft aliases)
 brew "uv"               # Python package manager
 brew "shellcheck"       # shell script linter
 brew "shfmt"            # shell script formatter
