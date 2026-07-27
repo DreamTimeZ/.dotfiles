@@ -63,7 +63,11 @@
 	navigate = true
 	light = false
 	features = decorations
-	side-by-side = true
 	line-numbers = true
 	# Default 2 truncates long lines in side-by-side, marking them with an arrow
 	wrap-max-lines = unlimited
+
+# Custom features are ignored when named in `features` above (delta 0.19.2); only
+# DELTA_FEATURES activates them, set from $COLUMNS in zsh modules/local/26-delta.zsh.
+[delta "side-by-side-when-wide"]
+	side-by-side = true
