@@ -59,11 +59,15 @@ setopt GLOBSTAR_SHORT         # Enable recursive globbing with **
 # ----- Auto-completion -----
 # Initialize completion system in interactive shells only
 ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump"
-mkdir -p -- "${ZSH_COMPDUMP%/*}"
+[[ -d ${ZSH_COMPDUMP%/*} ]] || mkdir -p -- "${ZSH_COMPDUMP%/*}"
 
 if [[ -o interactive ]]; then
   autoload -Uz compinit
   compinit -C -d "$ZSH_COMPDUMP"  # -C skips security check for faster startup
+  # Byte-compile the dump so later shells load the parsed form (~1.5ms saved).
+  # compinit only rewrites the dump when fpath changes, so this rarely fires.
+  # -U so aliases in scope are not expanded into the compiled form
+  [[ -s $ZSH_COMPDUMP && ! $ZSH_COMPDUMP.zwc -nt $ZSH_COMPDUMP ]] && zcompile -UR -- "$ZSH_COMPDUMP"
 fi
 
 # First-time setup (optional): run once to silence compaudit warnings
