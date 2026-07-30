@@ -12,6 +12,7 @@
     ln -sf "$dotfiles_config" "$config_dir/config.toml"
   fi
 
-  # Initialize atuin with zsh integration
-  eval "$(atuin init zsh --disable-up-arrow)"
+  # Initialize atuin with zsh integration. The generated script is static, so it
+  # is cached; the `atuin uuid` call inside it still runs per shell.
+  zdotfiles_source_cached atuin "$commands[atuin]" -- atuin init zsh --disable-up-arrow
 }
