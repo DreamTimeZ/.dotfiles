@@ -20,7 +20,11 @@ if [[ -r "$ZDOTFILES_CONFIG_DIR/helpers.zsh" ]]; then
 fi
 
 # Static path entries (login shell only - avoids duplication in subshells)
-[[ -d "/home/linuxbrew/.linuxbrew/bin" ]] && zdotfiles_path_prepend "/home/linuxbrew/.linuxbrew/bin"
+# /home is an autofs automount on macOS: every stat under it goes to automountd,
+# is never cached, and costs 8-15ms per login shell. Linuxbrew is Linux-only.
+if ! zdotfiles_is_macos; then
+  [[ -d "/home/linuxbrew/.linuxbrew/bin" ]] && zdotfiles_path_prepend "/home/linuxbrew/.linuxbrew/bin"
+fi
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
 [[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
