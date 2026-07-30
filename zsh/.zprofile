@@ -59,5 +59,13 @@ if [[ -n $commands[ssh-agent] && -n $commands[ssh-add] ]]; then
       print -r "export SSH_AGENT_PID=$SSH_AGENT_PID" >>$_ssh_env
     fi
     unset _ssh_env
+    # Publish the verdict so interactive shells (sheldon/ssh-keys.zsh) skip the
+    # ~3.5ms probe. Re-probe rather than trusting SSH_AUTH_SOCK: a restored
+    # agent-env leaves a stale socket set even when its agent is long dead.
+    # Left unset on failure, so those shells re-probe and can still recover.
+    ssh-add -l &>/dev/null
+    [[ $? -ne 2 ]] && export ZDOTFILES_SSH_AGENT_UP=1
+  else
+    export ZDOTFILES_SSH_AGENT_UP=1
   fi
 fi

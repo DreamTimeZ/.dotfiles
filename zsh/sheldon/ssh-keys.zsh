@@ -7,8 +7,14 @@
 
 # Guard: only set up if ssh-add exists and agent is running
 [[ -z $commands[ssh-add] ]] && return
-ssh-add -l &>/dev/null
-[[ $? -eq 2 ]] && return  # 2 = agent not running; 0/1 = running (with/without keys)
+# .zprofile already answered this for login shells and exports the verdict, so
+# nested shells inherit it. Only pay the ~3.5ms probe when nobody published one.
+if [[ -n ${ZDOTFILES_SSH_AGENT_UP:-} ]]; then
+  (( ZDOTFILES_SSH_AGENT_UP )) || return
+else
+  ssh-add -l &>/dev/null
+  [[ $? -eq 2 ]] && return  # 2 = agent not running; 0/1 = running (with/without keys)
+fi
 
 # Configuration (can be overridden before this file loads)
 : ${ZDOTFILES_SSH_KEY_DIR:=$HOME/.ssh}
