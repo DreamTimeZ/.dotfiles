@@ -147,6 +147,76 @@ zdotfiles_is_wsl() {
   return $?
 }
 
+# ----- Init Script Caching -----
+
+typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init"
+
+# Memoize an expensive `eval "$(tool init)"` to a byte-compiled cache file.
+# Spawning mise/atuin/zoxide/sheldon costs ~23ms per shell; sourcing the cached
+# output costs ~0.2ms. The cache is regenerated whenever any stamp file (the
+# tool binary, its config) is newer than the cache, so upgrades take effect.
+# Usage: zdotfiles_source_cached NAME STAMP... -- COMMAND [ARG...]
+zdotfiles_source_cached() {
+  local name=$1; shift
+
+  local -a stamps
+  while (( $# )) && [[ $1 != "--" ]]; do
+    stamps+=("$1")
+    shift
+  done
+  (( $# )) && shift  # discard the -- separator, if the caller supplied one
+  (( $# )) || return 1
+
+  # Non-exported global: can be missing in snapshot-restored shells, same
+  # hazard guarded in zdotfiles_has_command
+  [[ -n $ZDOTFILES_INIT_CACHE_DIR ]] || \
+    typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init"
+
+  local cache="$ZDOTFILES_INIT_CACHE_DIR/$name.zsh"
+  local stamp stale=0
+  [[ -s $cache ]] || stale=1
+  for stamp in $stamps; do
+    (( stale )) && break
+    # A vanished stamp means the tool or its state was removed - regenerate
+    # rather than trust a cache that may point at deleted files
+    [[ -e $stamp ]] || { stale=1; break }
+    [[ $stamp -nt $cache ]] && stale=1
+  done
+
+  if (( stale )); then
+    [[ -d $ZDOTFILES_INIT_CACHE_DIR ]] || mkdir -p -- "$ZDOTFILES_INIT_CACHE_DIR" 2>/dev/null
+    local generated
+    generated=$("$@" 2>/dev/null) || generated=""
+    [[ -n $generated ]] || return 1  # tool failed - nothing to source
+
+    # An init script that hardcodes an absolute PATH cannot be memoized: the
+    # snapshot would override PATH in every later shell. Run it uncached.
+    local line unsafe=0
+    for line in ${(f)generated}; do
+      [[ $line == export\ PATH=* && $line != *'$PATH'* ]] && { unsafe=1; break }
+    done
+    if (( unsafe )); then
+      eval "$generated"
+      return
+    fi
+
+    # $HOST as well as $$: ~/.cache may be a shared home (cf. zsh's own compdump)
+    local tmp="$cache.$HOST.$$"
+    if print -r -- "$generated" >| "$tmp" 2>/dev/null; then
+      mv -f -- "$tmp" "$cache"
+      # -U so aliases in scope are not expanded into the compiled form
+      zcompile -UR -- "$cache" 2>/dev/null
+    else
+      # Cache unwritable - initialize uncached from the output already captured
+      rm -f -- "$tmp" 2>/dev/null
+      eval "$generated"
+      return
+    fi
+  fi
+
+  source "$cache"
+}
+
 # ----- Lazy Loading Helpers -----
 
 # Minimal overhead lazy loading - matches original performance
@@ -185,6 +255,7 @@ zdotfiles_lazy_load() {
     zdotfiles_is_linux
     zdotfiles_is_wsl
     zdotfiles_lazy_load
+    zdotfiles_source_cached
   )
 
   # Export each function
