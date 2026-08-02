@@ -23,8 +23,11 @@ fi
 # /home is an autofs automount on macOS: every stat under it goes to automountd,
 # is never cached, and costs 8-15ms per login shell. Linuxbrew is Linux-only.
 if ! zdotfiles_is_macos; then
+  [[ -d "/home/linuxbrew/.linuxbrew/sbin" ]] && zdotfiles_path_prepend "/home/linuxbrew/.linuxbrew/sbin"
   [[ -d "/home/linuxbrew/.linuxbrew/bin" ]] && zdotfiles_path_prepend "/home/linuxbrew/.linuxbrew/bin"
 fi
+# sbin is prepended first so bin lands ahead of it, matching brew shellenv.
+[[ -d "/opt/homebrew/sbin" ]] && zdotfiles_path_prepend "/opt/homebrew/sbin"
 [[ -d "/opt/homebrew/bin" ]] && zdotfiles_path_prepend "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && zdotfiles_path_prepend "$HOME/.local/bin"
 [[ -d "$HOME/.cargo/bin" ]] && zdotfiles_path_prepend "$HOME/.cargo/bin"
