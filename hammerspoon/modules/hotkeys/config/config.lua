@@ -180,7 +180,7 @@ config.modals = {
             p = { pref = "x-apple.systempreferences:com.apple.preference.security",                            desc = "Privacy & Security" },
             a = { pref = "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility", desc = "Accessibility" },
             w = { pref = "x-apple.systempreferences:com.apple.wifi-settings-extension",                             desc = "Wi-Fi" },
-            e = { pref = "x-apple.systempreferences:com.apple.preference.network",                               desc = "Network" },
+            e = { pref = "x-apple.systempreferences:com.apple.Network-Settings.extension",                       desc = "Network" },
             b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" },
             k = { pref = "x-apple.systempreferences:com.apple.preference.keyboard",           desc = "Keyboard" },
             s = { pref = "x-apple.systempreferences:com.apple.preference.printfax",           desc = "Printers & Scanners" },
