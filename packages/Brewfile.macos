@@ -5,3 +5,4 @@ cask "karabiner-elements"   # keyboard remapping
 cask "espanso"              # cross-platform text expander
 brew "mas"                  # Mac App Store CLI
 brew "iproute2mac"          # Linux ip command for macOS
+brew "coreutils"            # GNU coreutils (macOS lacks timeout)
