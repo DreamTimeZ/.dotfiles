@@ -124,11 +124,27 @@ Items appear in alphabetical order in the modal:
 
 | Key | System Setting |
 |-----|----------------|
+| a | Accessibility |
 | b | Bluetooth |
-| w | Wi-Fi |
-| u | Software Update |
-| p | Security & Privacy |
+| c | Lock Screen |
 | d | Displays |
+| e | Network |
+| f | Focus |
+| i | Accessibility: Pointer Control |
+| j | Device Management |
+| k | Keyboard |
+| l | Login Items & Extensions |
+| m | Mouse |
+| n | Accessibility: Motion |
+| o | Spotlight |
+| p | Privacy & Security |
+| r | Wallpaper |
+| s | Printers & Scanners |
+| t | Screen Time |
+| u | Software Update |
+| v | VPN |
+| w | Wi-Fi |
+| y | Accessibility: Display |
 
 ## Customization
 
