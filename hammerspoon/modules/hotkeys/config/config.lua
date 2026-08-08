@@ -181,6 +181,7 @@ config.modals = {
             a = { pref = "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility", desc = "Accessibility" },
             w = { pref = "x-apple.systempreferences:com.apple.wifi-settings-extension",                             desc = "Wi-Fi" },
             e = { pref = "x-apple.systempreferences:com.apple.Network-Settings.extension",                       desc = "Network" },
+            v = { pref = "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension", desc = "VPN" },
             b = { pref = "x-apple.systempreferences:com.apple.preferences.Bluetooth",         desc = "Bluetooth" },
             k = { pref = "x-apple.systempreferences:com.apple.preference.keyboard",           desc = "Keyboard" },
             s = { pref = "x-apple.systempreferences:com.apple.preference.printfax",           desc = "Printers & Scanners" },
@@ -191,7 +192,7 @@ config.modals = {
             m = { pref = "x-apple.systempreferences:com.apple.Mouse-Settings.extension",                             desc = "Mouse" },
             t = { pref = "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension",                       desc = "Screen Time" },
             f = { pref = "x-apple.systempreferences:com.apple.Focus-Settings.extension",                             desc = "Focus" },
-            v = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Display",        desc = "Accessibility: Display" },
+            y = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Display",        desc = "Accessibility: Display" },
             n = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?Motion",         desc = "Accessibility: Motion" },
             i = { pref = "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?PointerControl", desc = "Accessibility: Pointer Control" },
             j = { pref = "x-apple.systempreferences:com.apple.Profiles-Settings.extension",                  desc = "Device Management" }
