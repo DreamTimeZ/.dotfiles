@@ -180,9 +180,10 @@ if zdotfiles_has_command zoxide; then
     fi
 fi
 
-# Enhanced file listing - pipe-safe, industry standard
-# Uses --color=auto for pipe compatibility (vs --color=always)
-if zdotfiles_has_command eza; then
+# eza 0.23.0 reads file names from stdin when given no path operand and a non-tty stdin, and no
+# flag disables it (still so in 0.23.5, 2026-08-19). Guard on stdin, not `-o interactive`: Claude
+# Code captures this profile with `zsh -i`.
+if zdotfiles_has_command eza && [[ -t 0 ]]; then
     alias ls='eza --color=auto --group-directories-first'
     alias l='eza -l --color=auto --group-directories-first'
     alias ll='eza -l --color=auto --group-directories-first --icons=auto'
