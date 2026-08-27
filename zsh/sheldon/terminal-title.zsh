@@ -35,8 +35,8 @@ if [[ $- == *i* ]] && ([[ "$TERM" == xterm* ]] || [[ "$TERM" == rxvt* ]] || [[ "
         truncated="$cmd"
       fi
 
-      # Set terminal title using print with proper escaping to avoid PROMPT_SP
-      print -Pn "\e]0;CMD: ${truncated}\a" > /dev/tty
+      # printf, not print -P: print -P expands % escapes (%n, %~) inside the just-typed command line.
+      printf '\e]0;CMD: %s\a' "$truncated" > /dev/tty
     fi
   }
 
