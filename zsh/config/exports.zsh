@@ -21,6 +21,10 @@ setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space (Atuin a
 setopt HIST_REDUCE_BLANKS     # Remove extra whitespace from history
 setopt HIST_VERIFY            # Show command with history expansion to user before running it
 
+# ----- Locale -----
+# AppleLocale carries a region override that LANG cannot express.
+export LC_TIME=en_GB.UTF-8
+
 # ----- Terminal Configuration -----
 # Enable true color (24-bit) support - only set if not already configured
 # Modern terminals (Ghostty, iTerm2, Alacritty, WezTerm, Kitty) often set this automatically
