@@ -369,28 +369,6 @@ Suggest a better title based on the latest feedback.}"
         (( count > 0 ))
     }
 
-    # whisper-transcriber emits VTT, so the caller's parsing path is unchanged.
-    _yt2note_asr_vtt() {
-        local url="$1" tmpdir="$2"
-        zdotfiles_has_command whisper-transcriber || return 1
-
-        local -a cookies_args
-        _yt2note_cookies_args cookies_args
-        yt-dlp "${cookies_args[@]}" --extract-audio --audio-format opus --no-playlist \
-            -o "${tmpdir}/%(id)s.%(ext)s" "$url" >/dev/null 2>&1 || return 1
-
-        local -a audio=("${tmpdir}"/*.opus(N))
-        (( ${#audio} )) || return 1
-
-        # No --language: -l selects a subtitle track, not the spoken language,
-        # and whisper rejects the regional tags YouTube uses (de-DE, pt-BR).
-        # -o is mandatory: the default output path is relative to $PWD, not tmpdir.
-        local vtt="${audio[1]:r}.vtt"
-        whisper-transcriber -f vtt -o "$vtt" "${audio[1]}" >/dev/null 2>&1 || return 1
-        [[ -s "$vtt" ]] || return 1
-        print -r -- "$vtt"
-    }
-
     _yt2note_fetch_transcript() {
         emulate -L zsh
         local url="$1" lang="${3:-}"
@@ -408,6 +386,8 @@ Suggest a better title based on the latest feedback.}"
                 zdotfiles_warn "yt2note: captions exist but could not be downloaded (check cookies)"
                 return 1
             fi
+            # Provider lives in a machine-local module, not in this repo.
+            (( $+functions[_yt2note_asr_vtt] )) || return 1
             _yt2note_timer_start "yt2note: no captions, transcribing audio..."
             vtt=$(_yt2note_asr_vtt "$url" "$tmpdir")
             asr_status=$?
