@@ -5,6 +5,10 @@ python = "3.14"
 node = "lts"
 pnpm = "latest"
 uv = "latest"
+# Pinned, not "latest": keep equal to the markdownlint-cli2 rev pinned in
+# .pre-commit-config.yaml of ~/.dotfiles and ~/.dotfiles-private, so ad-hoc
+# `mdlint` and the hook apply the same rules. Bump both together.
+"npm:markdownlint-cli2" = "0.23.2"
 
 [settings]
 # Read .python-version, .node-version, .nvmrc, etc.
