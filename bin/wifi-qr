@@ -1,0 +1,77 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+# The payload follows the ZXing barcode contents format. The password is read
+# from stdin with echo off, never from argv, so it stays out of shell history
+# and the process table.
+
+readonly SCRIPT_NAME="${0:t}"
+readonly ERROR_CORRECTION=Q   # a print survives a smudge, the payload is short enough to afford it
+readonly PNG_MODULE_SIZE=12
+# qrencode auto-splits into mode segments, and those multi-segment symbols do
+# not decode in OpenCV once the payload holds non-ASCII (umlaut SSIDs). One
+# 8-bit segment reads back fine. It costs 0 modules on lowercase payloads and
+# up to +12 on numeric or uppercase-hex ones, which auto mode would compact.
+# The worst case still decodes and fits 80 columns (measured 2026-09-05).
+readonly BYTE_MODE=-8
+
+usage() {
+  print -u2 -- "Usage: $SCRIPT_NAME [-o FILE.png] [--] SSID"
+  print -u2 -- "  Prompts for the password. Without -o the code is drawn in the terminal."
+}
+
+# The five characters the ZXing format escapes.
+escape() {
+  local s=$1
+  s=${s//\\/\\\\}
+  s=${s//;/\\;}
+  s=${s//,/\\,}
+  s=${s//:/\\:}
+  s=${s//\"/\\\"}
+  print -r -- "$s"
+}
+
+typeset -a out_arg help_arg
+zparseopts -D -F -- o:=out_arg h=help_arg -help=help_arg || { usage; exit 2; }
+if (( $#help_arg )); then
+  usage
+  exit 0
+fi
+if (( $# != 1 )) || [[ -z $1 ]]; then
+  usage
+  exit 2
+fi
+readonly ssid=$1
+readonly out=${out_arg[2]:-}
+
+if (( $#out_arg )) && [[ -z $out ]]; then
+  print -u2 -- "$SCRIPT_NAME: -o needs a filename"
+  exit 2
+fi
+
+if ! command -v qrencode >/dev/null; then
+  print -u2 -- "$SCRIPT_NAME: qrencode not found (brew install qrencode, apt install qrencode)"
+  exit 1
+fi
+if [[ -n $out && ( -e $out || -L $out ) ]]; then
+  print -u2 -- "$SCRIPT_NAME: $out exists, refusing to overwrite"
+  exit 1
+fi
+
+typeset password
+[[ -t 0 ]] && print -n -u2 -- "Password for $ssid: "
+IFS= read -rs password || :   # EOF without a newline still fills the variable
+[[ -t 0 ]] && print -u2
+if [[ -z $password ]]; then
+  print -u2 -- "$SCRIPT_NAME: empty password"
+  exit 1
+fi
+
+payload="WIFI:T:WPA;S:$(escape "$ssid");P:$(escape "$password");;"
+if [[ -n $out ]]; then
+  umask 077   # the png carries the password, and qrencode fopen()s at the ambient umask with no mode flag
+  print -rn -- "$payload" | qrencode "$BYTE_MODE" -o "$out" -t PNG -l "$ERROR_CORRECTION" -s "$PNG_MODULE_SIZE"
+  print -u2 -- "$SCRIPT_NAME: wrote $out, it carries the password in cleartext"
+else
+  print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSIUTF8 -l "$ERROR_CORRECTION"
+fi
