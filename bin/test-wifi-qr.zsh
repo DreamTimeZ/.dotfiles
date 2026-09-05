@@ -1,0 +1,99 @@
+#!/usr/bin/env zsh
+set -uo pipefail
+
+SCRIPT=${SCRIPT:-${0:A:h}/wifi-qr}
+CASE=0
+PASS=0
+FAIL=0
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/wifiqr.XXXXXX")
+trap 'rm -rf "$WORK"' EXIT
+
+mkdir "$WORK/bin" "$WORK/empty"
+cat > "$WORK/bin/qrencode" <<'FAKE'
+#!/bin/sh
+printf '%s\n' "$@" > "$FAKE_LOG.args"
+cat > "$FAKE_LOG.stdin"
+FAKE
+chmod +x "$WORK/bin/qrencode"
+
+run_case() {
+  local name=$1 want_exit=$2 want_payload=$3 want_args=$4 want_err=$5 input=$6
+  shift 6
+  CASE=$((CASE + 1))
+  local log="$WORK/case-$CASE" err got_exit payload=NONE args= ok=1
+  err=$(print -rn -- "$input" | FAKE_LOG=$log PATH="$WORK/bin:$PATH" "$SCRIPT" "$@" 2>&1 >/dev/null)
+  got_exit=$?
+  if [[ -e $log.stdin ]]; then payload=$(cat "$log.stdin"; printf X); payload=${payload%X}; fi   # $(<f) would strip a trailing newline the payload must not have
+  [[ -e $log.args ]] && args=$(tr '\n' ' ' < "$log.args")
+  [[ $got_exit == "$want_exit" ]] || ok=0
+  [[ $payload == "$want_payload" ]] || ok=0
+  [[ -z $want_args || $args == *"$want_args"* ]] || ok=0
+  [[ -z $want_err || $err == *"$want_err"* ]] || ok=0
+  if (( ok )); then
+    PASS=$((PASS + 1))
+    printf 'PASS  %s\n' "$name"
+  else
+    FAIL=$((FAIL + 1))
+    printf 'FAIL  %s\n  exit=%s want=%s\n  payload=%s\n  args=%s\n  stderr=%s\n' \
+      "$name" "$got_exit" "$want_exit" "$payload" "$args" "$err"
+  fi
+}
+
+run_case 'plain ssid and password, terminal output' 0 \
+  'WIFI:T:WPA;S:homenet;P:hunter2;;' '-8 -t ANSIUTF8' '' \
+  'hunter2' homenet
+
+run_case 'payload syntax characters are escaped in ssid and password' 0 \
+  'WIFI:T:WPA;S:a\;b\:c\,d\"e\\f;P:p\\\;\:\,\";;' '' '' \
+  'p\;:,"' 'a;b:c,d"e\f'
+
+run_case 'spaces survive in ssid and at both ends of the password' 0 \
+  'WIFI:T:WPA;S:Guest Network;P: lead and trail ;;' '' '' \
+  ' lead and trail ' 'Guest Network'
+
+run_case '-o writes a png and reports the file' 0 \
+  'WIFI:T:WPA;S:x;P:y;;' "-8 -o $WORK/out.png -t PNG -l Q -s 12" 'cleartext' \
+  'y' -o "$WORK/out.png" x
+
+touch "$WORK/taken.png"
+run_case '-o refuses an existing file before asking for the password' 1 \
+  NONE '' 'refusing to overwrite' \
+  'y' -o "$WORK/taken.png" x
+
+run_case '-o with an empty filename is an error' 2 \
+  NONE '' 'needs a filename' \
+  'y' -o '' x
+
+run_case 'empty password is an error' 1 NONE '' 'empty password' '' x
+
+run_case 'missing ssid prints usage' 2 NONE '' 'Usage' 'y'
+
+run_case 'two ssids print usage' 2 NONE '' 'Usage' 'y' one two
+
+run_case 'unknown option prints usage' 2 NONE '' 'Usage' 'y' -x ssid
+
+run_case '--help exits 0' 0 NONE '' 'Usage' '' --help
+
+run_case 'a leading-dash ssid is reachable after --' 0 \
+  'WIFI:T:WPA;S:-5GHz;P:y;;' '' '' \
+  'y' -- -5GHz
+
+err=$(print -rn -- 'y' | PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" ssid 2>&1 >/dev/null)
+if [[ $? == 1 && $err == *'qrencode not found'* ]]; then
+  PASS=$((PASS + 1)); printf 'PASS  %s\n' 'missing qrencode names the package'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL  %s\n  stderr=%s\n' 'missing qrencode names the package' "$err"
+fi
+
+umask 022   # the fake qrencode inherits the script umask, so its own log shows what -o would give the png
+mode_log="$WORK/umask"
+print -rn -- 'y' | FAKE_LOG=$mode_log PATH="$WORK/bin:$PATH" "$SCRIPT" -o "$WORK/mode.png" x >/dev/null 2>&1
+mode=$(stat -f '%Lp' "$mode_log.stdin" 2>/dev/null || stat -c '%a' "$mode_log.stdin")
+if [[ $mode == 600 ]]; then
+  PASS=$((PASS + 1)); printf 'PASS  %s\n' 'png is written 0600, not world-readable'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL  %s\n  mode=%s want=600\n' 'png is written 0600, not world-readable' "$mode"
+fi
+
+printf '%d passed, %d failed\n' "$PASS" "$FAIL"
+(( FAIL == 0 ))
