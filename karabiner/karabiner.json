@@ -23,6 +23,21 @@
                         ]
                     },
                     {
+                        "description": "Swallow hyper+period: Cmd-Opt-Ctrl-Shift-Period is Apple's sysdiagnose trigger",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "period",
+                                    "modifiers": {
+                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
+                                    }
+                                },
+                                "to": [{ "key_code": "vk_none" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
                         "description": "Option/Cmd+Backspace to Ctrl+W/U in Ghostty (for TUI apps using kitty keyboard protocol)",
                         "manipulators": [
                             {
