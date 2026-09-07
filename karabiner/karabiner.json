@@ -23,11 +23,31 @@
                         ]
                     },
                     {
-                        "description": "Swallow hyper+period: Cmd-Opt-Ctrl-Shift-Period is Apple's sysdiagnose trigger",
+                        "description": "Swallow hyper+period/comma/slash: sysdiagnosed reserves these three keychords",
                         "manipulators": [
                             {
                                 "from": {
                                     "key_code": "period",
+                                    "modifiers": {
+                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
+                                    }
+                                },
+                                "to": [{ "key_code": "vk_none" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "comma",
+                                    "modifiers": {
+                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
+                                    }
+                                },
+                                "to": [{ "key_code": "vk_none" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "slash",
                                     "modifiers": {
                                         "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
                                     }
