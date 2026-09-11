@@ -16,6 +16,19 @@ cat > "$FAKE_LOG.stdin"
 FAKE
 chmod +x "$WORK/bin/qrencode"
 
+report() {
+  local name=$1 ok=$2
+  shift 2
+  if (( ok )); then
+    PASS=$((PASS + 1))
+    printf 'PASS  %s\n' "$name"
+  else
+    FAIL=$((FAIL + 1))
+    printf 'FAIL  %s\n' "$name"
+    printf '  %s\n' "$@"
+  fi
+}
+
 run_case() {
   local name=$1 want_exit=$2 want_payload=$3 want_args=$4 want_err=$5 input=$6
   shift 6
@@ -29,14 +42,7 @@ run_case() {
   [[ $payload == "$want_payload" ]] || ok=0
   [[ -z $want_args || $args == *"$want_args"* ]] || ok=0
   [[ -z $want_err || $err == *"$want_err"* ]] || ok=0
-  if (( ok )); then
-    PASS=$((PASS + 1))
-    printf 'PASS  %s\n' "$name"
-  else
-    FAIL=$((FAIL + 1))
-    printf 'FAIL  %s\n  exit=%s want=%s\n  payload=%s\n  args=%s\n  stderr=%s\n' \
-      "$name" "$got_exit" "$want_exit" "$payload" "$args" "$err"
-  fi
+  report "$name" "$ok" "exit=$got_exit want=$want_exit" "payload=$payload" "args=$args" "stderr=$err"
 }
 
 run_case 'plain ssid and password, terminal output' 0 \
@@ -79,21 +85,18 @@ run_case 'a leading-dash ssid is reachable after --' 0 \
   'y' -- -5GHz
 
 err=$(print -rn -- 'y' | PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" ssid 2>&1 >/dev/null)
-if [[ $? == 1 && $err == *'qrencode not found'* ]]; then
-  PASS=$((PASS + 1)); printf 'PASS  %s\n' 'missing qrencode names the package'
-else
-  FAIL=$((FAIL + 1)); printf 'FAIL  %s\n  stderr=%s\n' 'missing qrencode names the package' "$err"
-fi
+rc=$?
+ok=0
+[[ $rc == 1 && $err == *'qrencode not found'* ]] && ok=1
+report 'missing qrencode names the package' $ok "exit=$rc" "stderr=$err"
 
 umask 022   # the fake qrencode inherits the script umask, so its own log shows what -o would give the png
 mode_log="$WORK/umask"
 print -rn -- 'y' | FAKE_LOG=$mode_log PATH="$WORK/bin:$PATH" "$SCRIPT" -o "$WORK/mode.png" x >/dev/null 2>&1
 mode=$(stat -f '%Lp' "$mode_log.stdin" 2>/dev/null || stat -c '%a' "$mode_log.stdin")
-if [[ $mode == 600 ]]; then
-  PASS=$((PASS + 1)); printf 'PASS  %s\n' 'png is written 0600, not world-readable'
-else
-  FAIL=$((FAIL + 1)); printf 'FAIL  %s\n  mode=%s want=600\n' 'png is written 0600, not world-readable' "$mode"
-fi
+ok=0
+[[ $mode == 600 ]] && ok=1
+report 'png is written 0600, not world-readable' $ok "mode=$mode want=600"
 
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"
 (( FAIL == 0 ))
