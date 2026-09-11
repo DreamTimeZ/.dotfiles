@@ -46,20 +46,20 @@ run_case() {
 }
 
 run_case 'plain ssid and password, terminal output' 0 \
-  'WIFI:T:WPA;S:homenet;P:hunter2;;' '-8 -t ANSIUTF8' '' \
-  'hunter2' homenet
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSIUTF8' '' \
+  'hunter22' homenet
 
 run_case 'payload syntax characters are escaped in ssid and password' 0 \
-  'WIFI:T:WPA;S:a\;b\:c\,d\"e\\f;P:p\\\;\:\,\";;' '' '' \
-  'p\;:,"' 'a;b:c,d"e\f'
+  'WIFI:T:WPA;S:a\;b\:c\,d\"e\\f;P:p\\\;\:\,\"xy;;' '' '' \
+  'p\;:,"xy' 'a;b:c,d"e\f'
 
 run_case 'spaces survive in ssid and at both ends of the password' 0 \
   'WIFI:T:WPA;S:Guest Network;P: lead and trail ;;' '' '' \
   ' lead and trail ' 'Guest Network'
 
 run_case '-o writes a png and reports the file' 0 \
-  'WIFI:T:WPA;S:x;P:y;;' "-8 -o $WORK/out.png -t PNG -l Q -s 12" 'cleartext' \
-  'y' -o "$WORK/out.png" x
+  'WIFI:T:WPA;S:x;P:yyyyyyyy;;' "-8 -o $WORK/out.png -t PNG -l Q -s 12" 'cleartext' \
+  'yyyyyyyy' -o "$WORK/out.png" x
 
 touch "$WORK/taken.png"
 run_case '-o refuses an existing file before asking for the password' 1 \
@@ -81,9 +81,34 @@ run_case 'unknown option prints usage' 2 NONE '' 'Usage' 'y' -x ssid
 run_case '--help exits 0' 0 NONE '' 'Usage' '' --help
 
 run_case 'a leading-dash ssid is reachable after --' 0 \
-  'WIFI:T:WPA;S:-5GHz;P:y;;' '' '' \
-  'y' -- -5GHz
+  'WIFI:T:WPA;S:-5GHz;P:yyyyyyyy;;' '' '' \
+  'yyyyyyyy' -- -5GHz
 
+run_case 'a non-ASCII password is refused, 802.11 has no encoding for it' 1 \
+  NONE '' 'outside printable ASCII' \
+  'Pä$$wörtß' homenet
+
+run_case 'a control character in the password is refused' 1 \
+  NONE '' 'outside printable ASCII' \
+  $'pass\tword1' homenet
+
+run_case 'a password under the WPA minimum is refused' 1 \
+  NONE '' 'a WPA passphrase is 8 to 63' \
+  'short7c' homenet
+
+run_case 'a password over the WPA maximum is refused' 1 \
+  NONE '' 'a WPA passphrase is 8 to 63' \
+  "$(printf 'a%.0s' {1..70})" homenet
+
+run_case 'the raw 64-hex PSK is accepted despite exceeding the maximum' 0 \
+  "WIFI:T:WPA;S:homenet;P:$(printf '0123456789abcdef%.0s' {1..4});;" '' '' \
+  "$(printf '0123456789abcdef%.0s' {1..4})" homenet
+
+run_case 'a 64-character non-hex password is still refused' 1 \
+  NONE '' 'a WPA passphrase is 8 to 63' \
+  "$(printf 'z%.0s' {1..64})" homenet
+
+# a one-character input reaches the tool check only if it comes before the password read
 err=$(print -rn -- 'y' | PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" ssid 2>&1 >/dev/null)
 rc=$?
 ok=0
@@ -92,7 +117,7 @@ report 'missing qrencode names the package' $ok "exit=$rc" "stderr=$err"
 
 umask 022   # the fake qrencode inherits the script umask, so its own log shows what -o would give the png
 mode_log="$WORK/umask"
-print -rn -- 'y' | FAKE_LOG=$mode_log PATH="$WORK/bin:$PATH" "$SCRIPT" -o "$WORK/mode.png" x >/dev/null 2>&1
+print -rn -- 'yyyyyyyy' | FAKE_LOG=$mode_log PATH="$WORK/bin:$PATH" "$SCRIPT" -o "$WORK/mode.png" x >/dev/null 2>&1
 mode=$(stat -f '%Lp' "$mode_log.stdin" 2>/dev/null || stat -c '%a' "$mode_log.stdin")
 ok=0
 [[ $mode == 600 ]] && ok=1

@@ -14,6 +14,14 @@ readonly PNG_MODULE_SIZE=12
 # up to +12 on numeric or uppercase-hex ones, which auto mode would compact.
 # The worst case still decodes and fits 80 columns (measured 2026-09-05).
 readonly BYTE_MODE=-8
+# 802.11 Annex J maps a WPA-PSK passphrase of PSK_MIN to PSK_MAX printable ASCII
+# characters to the key, or takes the raw 256-bit key as PSK_HEX_LEN hex digits.
+# SAE has no such limit, but the code says T:WPA and a transition-mode AP still
+# derives a PSK, so a passphrase outside that would scan and then not join.
+readonly PSK_MIN=8
+readonly PSK_MAX=63
+readonly PSK_HEX_LEN=64
+readonly NOT_PRINTABLE_ASCII='*[^ -~]*'
 
 usage() {
   print -r -u2 -- "Usage: $SCRIPT_NAME [-o FILE.png] [--] SSID"
@@ -29,6 +37,21 @@ escape() {
   s=${s//:/\\:}
   s=${s//\"/\\\"}
   print -r -- "$s"
+}
+
+validate_password() {
+  local pw=$1
+  if [[ $pw == $~NOT_PRINTABLE_ASCII ]]; then
+    print -r -u2 -- "$SCRIPT_NAME: password holds a character outside printable ASCII, which a WPA passphrase cannot"
+    exit 1
+  fi
+  if (( ${#pw} == PSK_HEX_LEN )) && [[ $pw != *[^0-9a-fA-F]* ]]; then
+    return
+  fi
+  if (( ${#pw} < PSK_MIN || ${#pw} > PSK_MAX )); then
+    print -r -u2 -- "$SCRIPT_NAME: password is ${#pw} characters, a WPA passphrase is $PSK_MIN to $PSK_MAX"
+    exit 1
+  fi
 }
 
 typeset -a out_arg help_arg
@@ -66,6 +89,8 @@ if [[ -z $password ]]; then
   print -r -u2 -- "$SCRIPT_NAME: empty password"
   exit 1
 fi
+validate_password "$password"
+
 payload="WIFI:T:WPA;S:$(escape "$ssid");P:$(escape "$password");;"
 if [[ -n $out ]]; then
   umask 077   # the png carries the password, and qrencode fopen()s at the ambient umask with no mode flag
