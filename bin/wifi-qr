@@ -14,6 +14,13 @@ readonly PNG_MODULE_SIZE=12
 # up to +12 on numeric or uppercase-hex ones, which auto mode would compact.
 # The worst case still decodes and fits 80 columns (measured 2026-09-05).
 readonly BYTE_MODE=-8
+# A screen carries no smudge, and a higher level pushes common payloads past
+# 80 columns in the wide renderer, which halves every module. The saved version
+# is worth more than the redundancy here, while the png keeps Q because it is
+# the one that gets printed.
+readonly TERMINAL_ERROR_CORRECTION=L
+readonly WIDE_CELLS_PER_MODULE=2
+readonly DEFAULT_COLUMNS=80   # zsh sets COLUMNS to 0 when there is no controlling terminal
 # 802.11 Annex J maps a WPA-PSK passphrase of PSK_MIN to PSK_MAX printable ASCII
 # characters to the key, or takes the raw 256-bit key as PSK_HEX_LEN hex digits.
 # SAE has no such limit, but the code says T:WPA and a transition-mode AP still
@@ -52,6 +59,25 @@ validate_password() {
     print -r -u2 -- "$SCRIPT_NAME: password is ${#pw} characters, a WPA passphrase is $PSK_MIN to $PSK_MAX"
     exit 1
   fi
+}
+
+# ANSIUTF8 packs two module rows into one cell row, so a module lands one cell
+# wide, near 8px at a typical font size, and a version 5 symbol is only about
+# 3.5cm across on a laptop display: under 1mm a module, which is where a phone
+# camera starts needing to be held close and retried. ANSI spends
+# WIDE_CELLS_PER_MODULE cells per module instead, doubling the drawn size, and
+# costs twice the width. Its output is square, so the row count gives the
+# module width without parsing the colour escapes out of a line.
+draw_in_terminal() {
+  local payload=$1 art cols=$COLUMNS
+  (( cols )) || cols=$DEFAULT_COLUMNS
+  art=$(print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSI -l "$TERMINAL_ERROR_CORRECTION")
+  local -a rows=( ${(f)art} )
+  if (( ${#rows} * WIDE_CELLS_PER_MODULE <= cols )); then
+    print -r -- "$art"
+    return
+  fi
+  print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSIUTF8 -l "$TERMINAL_ERROR_CORRECTION"
 }
 
 typeset -a out_arg help_arg
@@ -97,5 +123,5 @@ if [[ -n $out ]]; then
   print -rn -- "$payload" | qrencode "$BYTE_MODE" -o "$out" -t PNG -l "$ERROR_CORRECTION" -s "$PNG_MODULE_SIZE"
   print -r -u2 -- "$SCRIPT_NAME: wrote $out, it carries the password in cleartext"
 else
-  print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSIUTF8 -l "$ERROR_CORRECTION"
+  draw_in_terminal "$payload"
 fi

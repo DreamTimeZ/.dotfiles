@@ -13,6 +13,8 @@ cat > "$WORK/bin/qrencode" <<'FAKE'
 #!/bin/sh
 printf '%s\n' "$@" > "$FAKE_LOG.args"
 cat > "$FAKE_LOG.stdin"
+i=0
+while [ "$i" -lt "${FAKE_ROWS:-0}" ]; do echo x; i=$((i + 1)); done
 FAKE
 chmod +x "$WORK/bin/qrencode"
 
@@ -46,7 +48,7 @@ run_case() {
 }
 
 run_case 'plain ssid and password, terminal output' 0 \
-  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSIUTF8' '' \
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSI -l L' '' \
   'hunter22' homenet
 
 run_case 'payload syntax characters are escaped in ssid and password' 0 \
@@ -107,6 +109,15 @@ run_case 'the raw 64-hex PSK is accepted despite exceeding the maximum' 0 \
 run_case 'a 64-character non-hex password is still refused' 1 \
   NONE '' 'a WPA passphrase is 8 to 63' \
   "$(printf 'z%.0s' {1..64})" homenet
+
+# zsh takes COLUMNS from the controlling terminal over the environment, so the
+# fake's row count alone drives the branch: more rows than any terminal is wide,
+# or a handful.
+FAKE_ROWS=1000 run_case 'a symbol too wide for the terminal falls back to the packed renderer' 0 \
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSIUTF8 -l L' '' 'hunter22' homenet
+
+FAKE_ROWS=4 run_case 'a symbol that fits keeps the wide renderer' 0 \
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSI -l L' '' 'hunter22' homenet
 
 # a one-character input reaches the tool check only if it comes before the password read
 err=$(print -rn -- 'y' | PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" ssid 2>&1 >/dev/null)
