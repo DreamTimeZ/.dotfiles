@@ -31,6 +31,7 @@ report() {
   fi
 }
 
+# want_args is matched exactly, so an ASCII payload cannot pick up a stray -8.
 run_case() {
   local name=$1 want_exit=$2 want_payload=$3 want_args=$4 want_err=$5 input=$6
   shift 6
@@ -39,16 +40,16 @@ run_case() {
   err=$(print -rn -- "$input" | FAKE_LOG=$log PATH="$WORK/bin:$PATH" "$SCRIPT" "$@" 2>&1 >/dev/null)
   got_exit=$?
   if [[ -e $log.stdin ]]; then payload=$(cat "$log.stdin"; printf X); payload=${payload%X}; fi   # $(<f) would strip a trailing newline the payload must not have
-  [[ -e $log.args ]] && args=$(tr '\n' ' ' < "$log.args")
+  if [[ -e $log.args ]]; then args=$(tr '\n' ' ' < "$log.args"); args=${args% }; fi
   [[ $got_exit == "$want_exit" ]] || ok=0
   [[ $payload == "$want_payload" ]] || ok=0
-  [[ -z $want_args || $args == *"$want_args"* ]] || ok=0
+  [[ -z $want_args || $args == "$want_args" ]] || ok=0
   [[ -z $want_err || $err == *"$want_err"* ]] || ok=0
   report "$name" "$ok" "exit=$got_exit want=$want_exit" "payload=$payload" "args=$args" "stderr=$err"
 }
 
 run_case 'plain ssid and password, terminal output' 0 \
-  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSI -l L' '' \
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-t ANSI -l L' '' \
   'hunter22' homenet
 
 run_case 'payload syntax characters are escaped in ssid and password' 0 \
@@ -60,7 +61,7 @@ run_case 'spaces survive in ssid and at both ends of the password' 0 \
   ' lead and trail ' 'Guest Network'
 
 run_case '-o writes a png and reports the file' 0 \
-  'WIFI:T:WPA;S:x;P:yyyyyyyy;;' "-8 -o $WORK/out.png -t PNG -l Q -s 12" 'cleartext' \
+  'WIFI:T:WPA;S:x;P:yyyyyyyy;;' "-o $WORK/out.png -t PNG -l Q -s 12" 'cleartext' \
   'yyyyyyyy' -o "$WORK/out.png" x
 
 touch "$WORK/taken.png"
@@ -71,6 +72,10 @@ run_case '-o refuses an existing file before asking for the password' 1 \
 run_case '-o with an empty filename is an error' 2 \
   NONE '' 'needs a filename' \
   'y' -o '' x
+
+run_case '-o with an empty filename is refused before the ssid is looked at' 2 \
+  NONE '' 'needs a filename' \
+  'y' -o '' 'Grüße-WLAN'
 
 run_case 'empty password is an error' 1 NONE '' 'empty password' '' x
 
@@ -110,14 +115,22 @@ run_case 'a 64-character non-hex password is still refused' 1 \
   NONE '' 'a WPA passphrase is 8 to 63' \
   "$(printf 'z%.0s' {1..64})" homenet
 
+run_case 'a non-ASCII ssid warns, and only it gets the 8-bit segment' 0 \
+  'WIFI:T:WPA;S:Grüße-WLAN;P:hunter22;;' '-8 -t ANSI -l L' 'some scanners will misread it' \
+  'hunter22' 'Grüße-WLAN'
+
+run_case '-o keeps the 8-bit segment for a non-ASCII ssid' 0 \
+  'WIFI:T:WPA;S:Grüße-WLAN;P:hunter22;;' "-8 -o $WORK/out-8bit.png -t PNG -l Q -s 12" 'cleartext' \
+  'hunter22' -o "$WORK/out-8bit.png" 'Grüße-WLAN'
+
 # zsh takes COLUMNS from the controlling terminal over the environment, so the
 # fake's row count alone drives the branch: more rows than any terminal is wide,
 # or a handful.
 FAKE_ROWS=1000 run_case 'a symbol too wide for the terminal falls back to the packed renderer' 0 \
-  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSIUTF8 -l L' '' 'hunter22' homenet
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-t ANSIUTF8 -l L' '' 'hunter22' homenet
 
 FAKE_ROWS=4 run_case 'a symbol that fits keeps the wide renderer' 0 \
-  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-8 -t ANSI -l L' '' 'hunter22' homenet
+  'WIFI:T:WPA;S:homenet;P:hunter22;;' '-t ANSI -l L' '' 'hunter22' homenet
 
 # a one-character input reaches the tool check only if it comes before the password read
 err=$(print -rn -- 'y' | PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" ssid 2>&1 >/dev/null)

@@ -10,9 +10,11 @@ readonly ERROR_CORRECTION=Q   # a print survives a smudge, the payload is short 
 readonly PNG_MODULE_SIZE=12
 # qrencode auto-splits into mode segments, and those multi-segment symbols do
 # not decode in OpenCV once the payload holds non-ASCII (umlaut SSIDs). One
-# 8-bit segment reads back fine. It costs 0 modules on lowercase payloads and
-# up to +12 on numeric or uppercase-hex ones, which auto mode would compact.
-# The worst case still decodes and fits 80 columns (measured 2026-09-05).
+# 8-bit segment reads back fine, so it is applied to exactly that case: on an
+# ASCII payload it only blocks the compaction auto mode would do, which costs
+# 0 to 2 symbol versions, 0 to 16 columns in the wide renderer below (measured
+# 2026-09-11 at -l L: 0 on HOMENET/ABCDEF1234, 8 on homenet/hunter22, 16 on a
+# 32-digit SSID with a 63-digit password).
 readonly BYTE_MODE=-8
 # A screen carries no smudge, and a higher level pushes common payloads past
 # 80 columns in the wide renderer, which halves every module. The saved version
@@ -71,13 +73,13 @@ validate_password() {
 draw_in_terminal() {
   local payload=$1 art cols=$COLUMNS
   (( cols )) || cols=$DEFAULT_COLUMNS
-  art=$(print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSI -l "$TERMINAL_ERROR_CORRECTION")
+  art=$(print -rn -- "$payload" | qrencode "${encode_args[@]}" -t ANSI -l "$TERMINAL_ERROR_CORRECTION")
   local -a rows=( ${(f)art} )
   if (( ${#rows} * WIDE_CELLS_PER_MODULE <= cols )); then
     print -r -- "$art"
     return
   fi
-  print -rn -- "$payload" | qrencode "$BYTE_MODE" -t ANSIUTF8 -l "$TERMINAL_ERROR_CORRECTION"
+  print -rn -- "$payload" | qrencode "${encode_args[@]}" -t ANSIUTF8 -l "$TERMINAL_ERROR_CORRECTION"
 }
 
 typeset -a out_arg help_arg
@@ -86,16 +88,29 @@ if (( $#help_arg )); then
   usage
   exit 0
 fi
+readonly out=${out_arg[2]:-}
+if (( $#out_arg )) && [[ -z $out ]]; then
+  print -r -u2 -- "$SCRIPT_NAME: -o needs a filename"
+  exit 2
+fi
+
 if (( $# != 1 )) || [[ -z $1 ]]; then
   usage
   exit 2
 fi
 readonly ssid=$1
-readonly out=${out_arg[2]:-}
 
-if (( $#out_arg )) && [[ -z $out ]]; then
-  print -r -u2 -- "$SCRIPT_NAME: -o needs a filename"
-  exit 2
+# qrencode cannot declare an ECI charset, so a non-ASCII payload is handed to the
+# scanner as undeclared bytes and decoders guess. zbar without -Sbinary
+# transcodes "Grüße-WLAN" to "Grﾃｼﾃ歹-WLAN", and did so on every one of ten
+# payload shapes tried, 30 to 93 bytes, one to seven umlauts (measured
+# 2026-09-11), so the failure is silent. The password is validated ASCII and
+# escape only adds backslashes, so the SSID alone decides whether the payload
+# needs the 8-bit segment.
+typeset -a encode_args=()
+if [[ $ssid == $~NOT_PRINTABLE_ASCII ]]; then
+  print -r -u2 -- "$SCRIPT_NAME: SSID holds a character outside printable ASCII, some scanners will misread it"
+  encode_args=("$BYTE_MODE")
 fi
 
 if ! command -v qrencode >/dev/null; then
@@ -120,7 +135,7 @@ validate_password "$password"
 payload="WIFI:T:WPA;S:$(escape "$ssid");P:$(escape "$password");;"
 if [[ -n $out ]]; then
   umask 077   # the png carries the password, and qrencode fopen()s at the ambient umask with no mode flag
-  print -rn -- "$payload" | qrencode "$BYTE_MODE" -o "$out" -t PNG -l "$ERROR_CORRECTION" -s "$PNG_MODULE_SIZE"
+  print -rn -- "$payload" | qrencode "${encode_args[@]}" -o "$out" -t PNG -l "$ERROR_CORRECTION" -s "$PNG_MODULE_SIZE"
   print -r -u2 -- "$SCRIPT_NAME: wrote $out, it carries the password in cleartext"
 else
   draw_in_terminal "$payload"
