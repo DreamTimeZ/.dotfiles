@@ -23,6 +23,14 @@ readonly BYTE_MODE=-8
 readonly TERMINAL_ERROR_CORRECTION=L
 readonly WIDE_CELLS_PER_MODULE=2
 readonly DEFAULT_COLUMNS=80   # zsh sets COLUMNS to 0 when there is no controlling terminal
+# --raw only drops zbarimg's "QR-Code:" prefix, it still transcodes: with no ECI
+# in the symbol it guesses Shift-JIS for the 8-bit segment above and hands back
+# "Grﾃｼﾃ歹-WLAN" for "Grüße-WLAN". -Sbinary is the switch that suppresses the
+# guess and returns the bytes the symbol carries (measured 2026-09-11). It also
+# drops the newline between symbols, and --oneshot is a no-op under it, so an
+# image holding two codes comes back as one concatenated payload.
+readonly DECODE_ARGS=(--raw --quiet -Sbinary)
+readonly ZBAR_NO_SYMBOL=4
 # 802.11 Annex J maps a WPA-PSK passphrase of PSK_MIN to PSK_MAX printable ASCII
 # characters to the key, or takes the raw 256-bit key as PSK_HEX_LEN hex digits.
 # SAE has no such limit, but the code says T:WPA and a transition-mode AP still
@@ -31,10 +39,14 @@ readonly PSK_MIN=8
 readonly PSK_MAX=63
 readonly PSK_HEX_LEN=64
 readonly NOT_PRINTABLE_ASCII='*[^ -~]*'
+readonly EXIT_INT=130    # 128 + signal number
+readonly EXIT_TERM=143
 
 usage() {
   print -r -u2 -- "Usage: $SCRIPT_NAME [-o FILE.png] [--] SSID"
+  print -r -u2 -- "       $SCRIPT_NAME -d FILE.png"
   print -r -u2 -- "  Prompts for the password. Without -o the code is drawn in the terminal."
+  print -r -u2 -- "  -d shows a saved code on the alternate screen, dropped at exit where the terminal honours it."
 }
 
 # The five characters the ZXing format escapes.
@@ -63,6 +75,44 @@ validate_password() {
   fi
 }
 
+# A decoded payload carries the password in cleartext. On a terminal it goes to
+# the alternate screen buffer, which an emulator that honours it discards at
+# rmcup, so the password never reaches scrollback. terminfo cannot tell whether
+# the emulator honours it (GNU screen ignores it unless altscreen is on). A
+# redirected stdout is the caller's own choice and is left verbatim. The symbol
+# bytes are untrusted: (V) keeps them from reaching the terminal as control
+# sequences.
+show_transient() {
+  local text=$1 tty_state
+  if [[ ! -t 1 ]]; then
+    print -r -- "$text"
+    return
+  fi
+  if ! tty_state=$(stty -g 2>/dev/null </dev/tty); then
+    print -r -u2 -- "$SCRIPT_NAME: no controlling terminal, this lands in scrollback"
+    print -r -- "${(V)text}"
+    return
+  fi
+  # A signal during read -k exits before read restores the tty, so the trap
+  # puts the saved state back itself.
+  trap 'stty "$tty_state" </dev/tty 2>/dev/null || :; tput rmcup 2>/dev/null || :; exit $EXIT_INT' INT
+  trap 'stty "$tty_state" </dev/tty 2>/dev/null || :; tput rmcup 2>/dev/null || :; exit $EXIT_TERM' TERM
+  if ! tput smcup 2>/dev/null; then
+    trap - INT TERM
+    print -r -u2 -- "$SCRIPT_NAME: terminal has no alternate screen, this lands in scrollback"
+    print -r -- "${(V)text}"
+    return
+  fi
+  tput clear 2>/dev/null || :
+  print -r -- "${(V)text}"
+  print -r -- ""
+  print -r -- "-- press any key --"
+  read -k 1 -s </dev/tty || :
+  while read -k 1 -s -t </dev/tty; do :; done   # the rest of a multi-byte key
+  tput rmcup 2>/dev/null || :
+  trap - INT TERM
+}
+
 # ANSIUTF8 packs two module rows into one cell row, so a module lands one cell
 # wide, near 8px at a typical font size, and a version 5 symbol is only about
 # 3.5cm across on a laptop display: under 1mm a module, which is where a phone
@@ -82,16 +132,56 @@ draw_in_terminal() {
   print -rn -- "$payload" | qrencode "${encode_args[@]}" -t ANSIUTF8 -l "$TERMINAL_ERROR_CORRECTION"
 }
 
-typeset -a out_arg help_arg
-zparseopts -D -F -- o:=out_arg h=help_arg -help=help_arg || { usage; exit 2; }
+decode() {
+  local file=$1 payload rc=0
+  if [[ ! -f $file ]]; then
+    print -r -u2 -- "$SCRIPT_NAME: $file: no such file"
+    exit 1
+  fi
+  if ! command -v zbarimg >/dev/null; then
+    print -r -u2 -- "$SCRIPT_NAME: zbarimg not found (brew install zbar, apt install zbar-tools)"
+    exit 1
+  fi
+  payload=$(zbarimg "${DECODE_ARGS[@]}" -- "$file") || rc=$?
+  if (( rc == ZBAR_NO_SYMBOL )); then
+    print -r -u2 -- "$SCRIPT_NAME: no QR code found in $file"
+    exit 1
+  fi
+  if (( rc )); then
+    print -r -u2 -- "$SCRIPT_NAME: zbarimg could not read $file"
+    exit 1
+  fi
+  show_transient "$payload"
+}
+
+typeset -a out_arg dec_arg help_arg
+zparseopts -D -F -- o:=out_arg d:=dec_arg h=help_arg -help=help_arg || { usage; exit 2; }
 if (( $#help_arg )); then
   usage
   exit 0
 fi
 readonly out=${out_arg[2]:-}
+readonly dec=${dec_arg[2]:-}
 if (( $#out_arg )) && [[ -z $out ]]; then
   print -r -u2 -- "$SCRIPT_NAME: -o needs a filename"
   exit 2
+fi
+
+if (( $#dec_arg )); then
+  if [[ -z $dec ]]; then
+    print -r -u2 -- "$SCRIPT_NAME: -d needs a filename"
+    exit 2
+  fi
+  if (( $#out_arg )); then
+    print -r -u2 -- "$SCRIPT_NAME: -d reads a code and -o writes one, pick one"
+    exit 2
+  fi
+  if (( $# )); then
+    usage
+    exit 2
+  fi
+  decode "$dec"
+  exit 0
 fi
 
 if (( $# != 1 )) || [[ -z $1 ]]; then

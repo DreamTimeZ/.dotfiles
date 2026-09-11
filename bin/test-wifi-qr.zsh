@@ -147,5 +147,68 @@ ok=0
 [[ $mode == 600 ]] && ok=1
 report 'png is written 0600, not world-readable' $ok "mode=$mode want=600"
 
+cat > "$WORK/bin/zbarimg" <<'FAKE'
+#!/bin/sh
+printf '%s\n' "$@" > "$FAKE_LOG.args"
+if [ -n "$FAKE_ZBAR_EXIT" ]; then exit "$FAKE_ZBAR_EXIT"; fi
+printf '%s\n' "$FAKE_ZBAR_OUT"
+FAKE
+chmod +x "$WORK/bin/zbarimg"
+touch "$WORK/fake.png"
+DECODE_CALL="--raw --quiet -Sbinary -- $WORK/fake.png"
+
+run_decode() {
+  local name=$1 want_exit=$2 want_stdout=$3 want_args=$4 want_err=$5
+  shift 5
+  CASE=$((CASE + 1))
+  local log="$WORK/case-$CASE" out err got_exit args=NONE ok=1
+  out=$(FAKE_LOG=$log PATH="$WORK/bin:$PATH" "$SCRIPT" "$@" 2>"$log.err")
+  got_exit=$?
+  err=$(<"$log.err")
+  if [[ -e $log.args ]]; then args=$(tr '\n' ' ' < "$log.args"); args=${args% }; fi
+  [[ $got_exit == "$want_exit" ]] || ok=0
+  [[ $out == "$want_stdout" ]] || ok=0
+  [[ $args == "$want_args" ]] || ok=0
+  [[ -z $want_err || $err == *"$want_err"* ]] || ok=0
+  report "$name" "$ok" "exit=$got_exit want=$want_exit" "stdout=$out want=$want_stdout" "args=$args want=$want_args" "stderr=$err"
+}
+
+FAKE_ZBAR_OUT='WIFI:T:WPA;S:TestNet;P:secretpw;;' run_decode '-d prints the payload the code carries' 0 \
+  'WIFI:T:WPA;S:TestNet;P:secretpw;;' "$DECODE_CALL" '' -d "$WORK/fake.png"
+
+FAKE_ZBAR_OUT='WIFI:T:WPA;S:Grüße-WLAN;P:pass1234;;' run_decode '-d passes -Sbinary and prints a non-ASCII payload byte-exact' 0 \
+  'WIFI:T:WPA;S:Grüße-WLAN;P:pass1234;;' "$DECODE_CALL" '' -d "$WORK/fake.png"
+
+run_decode '-d on a missing file fails before calling the decoder' 1 \
+  '' NONE 'no such file' -d "$WORK/absent.png"
+
+FAKE_ZBAR_EXIT=4 run_decode '-d reports an image that holds no barcode' 1 \
+  '' "$DECODE_CALL" 'no QR code found' -d "$WORK/fake.png"
+
+FAKE_ZBAR_EXIT=1 run_decode '-d reports a decoder that fails outright' 1 \
+  '' "$DECODE_CALL" 'could not read' -d "$WORK/fake.png"
+
+run_decode '-d and -o together are refused' 2 \
+  '' NONE 'pick one' -d "$WORK/fake.png" -o "$WORK/never.png"
+
+run_decode '-d takes no ssid argument' 2 '' NONE 'Usage' -d "$WORK/fake.png" MyNet
+
+run_decode '-d with an empty filename is an error' 2 '' NONE 'needs a filename' -d ''
+
+err=$(PATH="$WORK/empty" "${commands[zsh]}" "$SCRIPT" -d "$WORK/fake.png" 2>&1 >/dev/null)
+rc=$?
+ok=0
+[[ $rc == 1 && $err == *'zbarimg not found'* ]] && ok=1
+report 'missing zbarimg names the package' $ok "exit=$rc" "stderr=$err"
+
+# show_transient's alternate-screen branch needs a real controlling terminal to
+# exercise (tput smcup, stty save/restore, read -k </dev/tty). Verified by hand
+# under a pty on 2026-09-11: a keypress exits 0, SIGINT 130, SIGTERM 143, each
+# restoring icanon and echo and emitting rmcup, the payload is bracketed by
+# smcup/rmcup, and a colour escape in the payload reaches the screen as ^[ (via
+# (V)) rather than as a live sequence. Left out of the harness because a
+# deterministic driver needs a pty, and the Claude Code Bash sandbox refuses one
+# (script: openpty: Operation not permitted, 2026-09-11).
+
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"
 (( FAIL == 0 ))
