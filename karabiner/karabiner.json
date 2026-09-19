@@ -28,9 +28,7 @@
                             {
                                 "from": {
                                     "key_code": "period",
-                                    "modifiers": {
-                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
-                                    }
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
                                 },
                                 "to": [{ "key_code": "vk_none" }],
                                 "type": "basic"
@@ -38,9 +36,7 @@
                             {
                                 "from": {
                                     "key_code": "comma",
-                                    "modifiers": {
-                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
-                                    }
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
                                 },
                                 "to": [{ "key_code": "vk_none" }],
                                 "type": "basic"
@@ -48,9 +44,7 @@
                             {
                                 "from": {
                                     "key_code": "slash",
-                                    "modifiers": {
-                                        "mandatory": ["left_command", "left_control", "left_option", "left_shift"]
-                                    }
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
                                 },
                                 "to": [{ "key_code": "vk_none" }],
                                 "type": "basic"
@@ -222,6 +216,10 @@
                             "to": [{ "key_code": "right_command" }]
                         }
                     ]
+                },
+                {
+                    "identifiers": { "is_keyboard": true },
+                    "ignore": false
                 }
             ],
             "fn_function_keys": [
