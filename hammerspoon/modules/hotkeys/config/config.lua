@@ -143,8 +143,8 @@ config.modals = {
             m = { path = "~/Music",                  desc = "Music" },
             v = { path = "~/Movies",                 desc = "Movies" },
             l = { path = "~/Library",                desc = "Library" },
-            u = { path = "/Utilities",               desc = "Utilities" },
-            i = { path = "~/Library/CloudStorage/iCloud Drive", desc = "iCloud" }
+            u = { path = "/System/Applications/Utilities", desc = "Utilities" },
+            i = { path = "~/Library/Mobile Documents/com~apple~CloudDocs", desc = "iCloud" }
         }
     },
 
