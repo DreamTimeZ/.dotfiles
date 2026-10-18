@@ -230,6 +230,21 @@ create_symlink() {
 
     # Verify source exists
     if [[ ! -e "$source" ]]; then
+        # local/ sources come from the private repo: absent without it, and not yet
+        # linked in a dry run (link.sh --dry-run creates nothing). Matched on the
+        # repo-relative path so a checkout under e.g. /usr/local is not mistaken for one.
+        if [[ "/${source#"$DOTFILES_DIR"/}" == */local/* ]]; then
+            if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
+                log_skip "Needs private repo: ${source/#$DOTFILES_DIR/}"
+                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
+                return 0
+            fi
+            if (( DRY_RUN )); then
+                log_skip "Not checked, link.sh supplies it: ${source/#$DOTFILES_DIR/}"
+                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
+                return 0
+            fi
+        fi
         log_warn "Source not found: ${source/#$HOME/~}"
         SYMLINKS_FAILED=$((SYMLINKS_FAILED + 1))
         return 0
@@ -1321,8 +1336,7 @@ main() {
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
         printf "\n"
         log_info "Tip: Clone your private dotfiles to ${DOTFILES_PRIVATE/#$HOME/~}"
-        log_info "     Then run: ~/.dotfiles-private/link.sh"
-        log_info "     Then run: ./setup.sh --link-only --force"
+        log_info "     Then re-run: ./setup.sh --all"
     fi
 
     if (( SYMLINKS_FAILED > 0 || PACKAGES_WARNED > 0 )); then
