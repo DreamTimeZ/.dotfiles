@@ -125,7 +125,7 @@ Examples:
   ./setup.sh --all --skip gpg    # Full setup, skip GPG symlinks
   ./setup.sh --only shell git ssh  # Only link shell, git, and SSH configs
   ./setup.sh --link-only         # Only create symlinks
-  ./setup.sh --link-only --force # Recreate all symlinks
+  ./setup.sh --link-only --force # Replace existing files and symlinks, never directories
   ./setup.sh --doctor            # Check system health
   ./setup.sh --update            # Update Claude skills
   ./setup.sh --dry-run --all     # Preview full setup
@@ -740,40 +740,7 @@ link_espanso_config() {
 
     local dir
     for dir in config match; do
-        local src="${espanso_source}/${dir}"
-        local tgt="${espanso_target}/${dir}"
-
-        if [[ -L "$tgt" ]]; then
-            local current
-            current="$(readlink "$tgt")"
-            if [[ "$current" == "$src" ]]; then
-                log_skip "Already linked: ${tgt/#$HOME/~}"
-                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
-                continue
-            fi
-            if (( ! FORCE )); then
-                log_warn "Exists (different target): ${tgt/#$HOME/~} -> $current"
-                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
-                continue
-            fi
-            (( ! DRY_RUN )) && rm -f "$tgt"
-        elif [[ -d "$tgt" ]]; then
-            if (( ! FORCE )); then
-                log_warn "Exists as directory: ${tgt/#$HOME/~} (use --force to replace)"
-                SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
-                continue
-            fi
-            (( ! DRY_RUN )) && rm -rf "$tgt"
-        fi
-
-        if (( DRY_RUN )); then
-            log_info "[dry-run] Would link: ${tgt/#$HOME/~} -> ${src/#$DOTFILES_DIR/}"
-        else
-            mkdir -p "$espanso_target"
-            ln -s "$src" "$tgt"
-            log_success "${tgt/#$HOME/~} -> ${src/#$DOTFILES_DIR/}"
-        fi
-        SYMLINKS_CREATED=$((SYMLINKS_CREATED + 1))
+        create_symlink "${espanso_source}/${dir}" "${espanso_target}/${dir}"
     done
 }
 
@@ -1141,7 +1108,7 @@ run_doctor() {
                         issues=$((issues + 1))
                     fi
                 elif [[ -d "$_tgt" ]]; then
-                    log_warn "${_tgt/#$HOME/~} exists but is not a symlink (run setup.sh --link-only --force)"
+                    log_warn "${_tgt/#$HOME/~} exists but is not a symlink (remove it manually, then run setup.sh --link-only)"
                     issues=$((issues + 1))
                 else
                     log_error "${_tgt/#$HOME/~} missing"
