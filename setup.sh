@@ -101,11 +101,12 @@ Options:
   -h, --help           Show this help message
 
 Package categories:
-  core      Shell essentials: zsh, git, tmux, sheldon, fzf, zoxide, atuin
-  cli       CLI tools: bat, eza, fd, ripgrep, jq, yq, glow, tealdeer, grc
-  dev       Dev tools: mise, lazygit, gh, neovim, gitleaks, uv, shellcheck
-  extra     Extras: hyperfine, scc, pandoc, yt-dlp, nmap
-  macos     macOS apps: Hammerspoon, Karabiner Elements (macOS only)
+  core      Shell, git, tmux, plugin manager, history, navigation
+  cli       Modern CLI replacements, JSON/YAML tools, viewers, monitors
+  dev       Editor, runtimes, git and lint tooling
+  extra     Benchmarks, code stats, document conversion, media, OCR, network and disk tools
+  macos     Hammerspoon, Karabiner-Elements, espanso, CLI tools (macOS only)
+  Full lists: packages/Brewfile.<category>
 
 EOF
 
@@ -467,11 +468,11 @@ select_categories_interactive() {
     local desc
     for cat in "${all_categories[@]}"; do
         case "$cat" in
-            core)  desc="Shell essentials: zsh, git, tmux, sheldon, fzf, zoxide, atuin" ;;
-            cli)   desc="CLI tools: bat, eza, fd, ripgrep, jq, yq, glow, tealdeer, grc" ;;
-            dev)   desc="Dev tools: mise, lazygit, gh, neovim, gitleaks, uv, shellcheck" ;;
-            extra) desc="Extras: hyperfine, scc, pandoc, yt-dlp, nmap" ;;
-            macos) desc="macOS apps: Hammerspoon, Karabiner Elements" ;;
+            core)  desc="Shell, git, tmux, plugin manager, history, navigation" ;;
+            cli)   desc="Modern CLI replacements, JSON/YAML tools, viewers, monitors" ;;
+            dev)   desc="Editor, runtimes, git and lint tooling" ;;
+            extra) desc="Benchmarks, code stats, document conversion, media, OCR, network and disk tools" ;;
+            macos) desc="Hammerspoon, Karabiner-Elements, espanso, CLI tools" ;;
         esac
         printf "  ${BOLD}%-8s${NC} %s\n" "$cat" "$desc"
         printf "           Install? [y/N] "
