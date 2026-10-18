@@ -1,82 +1,54 @@
-# Hammerspoon Configuration
+# Hammerspoon
 
-## Overview
+macOS hotkeys, modals, and window management. `setup.sh` links this directory to `~/.hammerspoon`.
 
-Hammerspoon is a powerful automation tool for macOS that allows for extensive customization and control of your system through Lua scripting. This configuration uses a modular architecture for better maintainability and extensibility.
+- `init.lua`: entry point
+- `modules/hotkeys/`: hotkey and modal system, see [Hotkeys Module](modules/hotkeys/README.md) to extend it
+- `modules/mic_mute/`, `modules/startup/`: standalone modules
 
-## Architecture
+## Hotkeys
 
-The configuration is organized into a modular structure:
+Hyper is Cmd+Ctrl+Alt+Shift, mapped from Caps Lock by Karabiner-Elements.
 
-```markdown
-hammerspoon/
-├── init.lua                # Main entry point
-├── modules/
-│   └── hotkeys/           # Hotkeys module
-│       ├── config/        # Configuration files
-│       │   └── local/     # User customizations
-│       ├── core/          # Core functionality
-│       ├── modals/        # Modal implementations
-│       ├── ui/            # UI components
-│       ├── utils/         # Utility functions
-│       └── init.lua       # Module entry point
-└── Spoons/                # Hammerspoon Spoons (plugins)
-```
+| Hotkey | Action |
+|--------|--------|
+| Hyper + A | Apps modal |
+| Hyper + F | Finder modal |
+| Hyper + W | Websites modal |
+| Hyper + D | System modal |
+| Hyper + S | Settings modal |
+| Hyper + Space | Window modal (resize, move) |
+| Hyper + M | Macros modal |
+| Hyper + R | Routines modal (mappings only in the private repo) |
+| Hyper + Return | Launch or focus Ghostty |
+| Hyper + # | Transparent Ghostty, a separate instance (keycode 42, next to Return on German ISO) |
+| F18 (no Hyper) | Toggle mic mute (Karabiner maps F5 to F18) |
 
-## Features
+Modal entries appear sorted alphabetically by description. The Apps, Finder, Websites, and Settings tables below are the defaults in `modules/hotkeys/config/config.lua`. A non-empty `modules/hotkeys/config/local/<modal>_mappings.lua` replaces them entirely (see [Local Hotkey Mappings](modules/hotkeys/config/local/README.md)). System, Window, and Macros are custom modals in `modules/hotkeys/modals/`, Macros takes its keys from `modules/hotkeys/config/macros_mappings.lua`.
 
-- **Window Management**: Resize and position windows with hotkeys
-- **Application Switching**: Quickly launch or focus applications
-- **Custom Configurations**: Extensible with Lua scripting
-- **System Monitoring**: Monitor and react to system events
-- **Modular Design**: Clean separation of concerns for better maintainability
-- **Local Customizations**: User-specific configurations without modifying shared code
+### Apps (Hyper+A)
 
-## Hotkey System
+| Key | Application |
+|-----|-------------|
+| a | App Store |
+| b | Books |
+| c | Calendar |
+| f | FaceTime |
+| h | Photos |
+| m | Mail |
+| n | Notes |
+| o | Maps |
+| p | Preview |
+| r | Reminders |
+| s | Safari |
+| t | Terminal |
+| u | Music |
+| v | QuickTime Player |
+| w | Weather |
+| x | Calculator |
+| z | System Settings |
 
-The configuration uses Hyper key (⌘+⌃+⌥+⇧) as the main modifier, mapped via Karabiner-Elements from Caps Lock.
-
-### Primary Hotkeys
-
-| Hotkey | Action | Description |
-|--------|--------|-------------|
-| Hyper + A | Open Apps Modal | Select from various applications |
-| Hyper + F | Open Finder Modal | Quick access to common folders |
-| Hyper + W | Open Websites Modal | Open frequently used websites |
-| Hyper + D | Open System Modal | Perform system actions |
-| Hyper + S | Open Settings Modal | Quick access to system settings |
-| Hyper + Space | Open Window Modal | Window management (resize, move, etc.) |
-| Hyper + M | Open Macros Modal | Automation macros |
-| Hyper + R | Open Routines Modal | Automation routines |
-| Hyper + Return | Open Ghostty | Directly launch or focus terminal |
-
-### App Shortcuts (Hyper+A, then...)
-
-Items appear in alphabetical order in the modal:
-
-| Key | Application | Description |
-|-----|-------------|-------------|
-| a   | App Store   | App Store   |
-| b   | Books       | Books       |
-| c   | Calendar    | Calendar    |
-| f   | FaceTime    | FaceTime    |
-| h   | Photos      | Photos      |
-| m   | Mail        | Mail        |
-| n   | Notes       | Notes       |
-| o   | Maps        | Maps        |
-| p   | Preview     | Preview     |
-| r   | Reminders   | Reminders   |
-| s   | Safari      | Safari      |
-| t   | Terminal    | Terminal    |
-| u   | Music       | Music       |
-| v   | QuickTime Player | QuickTime |
-| w   | Weather     | Weather     |
-| x   | Calculator  | Calculator  |
-| z   | System Settings | Settings |
-
-### Finder Shortcuts (Hyper+F, then...)
-
-Items appear in alphabetical order in the modal:
+### Finder (Hyper+F)
 
 | Key | Location |
 |-----|----------|
@@ -92,9 +64,7 @@ Items appear in alphabetical order in the modal:
 | u | Utilities |
 | v | Movies |
 
-### Website Shortcuts (Hyper+W, then...)
-
-Items appear in alphabetical order in the modal:
+### Websites (Hyper+W)
 
 | Key | Website |
 |-----|---------|
@@ -107,20 +77,49 @@ Items appear in alphabetical order in the modal:
 | w | Wikipedia |
 | y | YouTube |
 
-### System Actions (Hyper+D, then...)
-
-Items appear in alphabetical order in the modal:
+### System (Hyper+D)
 
 | Key | Action |
 |-----|--------|
 | c | Clear Notifications |
+| d | New Desktop |
 | h | Reload Hammerspoon |
+| n | Toggle Natural Scroll |
 | r | Restart System (with confirmation) |
 | s | Shutdown System (with confirmation) |
 
-### Settings Shortcuts (Hyper+S, then...)
+### Window (Hyper+Space)
 
-Items appear in alphabetical order in the modal:
+Defined in `modules/hotkeys/modals/window.lua`.
+
+| Key | Action |
+|-----|--------|
+| h / j / k / l | Left / bottom / top / right half |
+| u / i / n / m | Top-left / top-right / bottom-left / bottom-right quarter |
+| 1 / 2 / 3 | Left / middle / right third |
+| f | Full screen |
+| c | Center window |
+| ´ / - | Larger / smaller |
+| d | Default size |
+| Right / Left | Next / previous screen |
+| a | Cycle app windows |
+| w | Mouse to window |
+| g | Grid selector |
+| 0 | Number overlays, then a digit focuses that window |
+| s | Hidden and minimized windows |
+
+### Macros (Hyper+M)
+
+Defined in `modules/hotkeys/config/macros_mappings.lua`.
+
+| Key | Action |
+|-----|--------|
+| a | Toggle Auto-Clicker |
+| i | Show Macro Status |
+| r | Toggle Recording |
+| s | Stop All Macros |
+
+### Settings (Hyper+S)
 
 | Key | System Setting |
 |-----|----------------|
@@ -145,70 +144,3 @@ Items appear in alphabetical order in the modal:
 | v | VPN |
 | w | Wi-Fi |
 | y | Accessibility: Display |
-
-## Customization
-
-All hotkey mappings can be customized in the following locations:
-
-- Global configuration: `~/.hammerspoon/modules/hotkeys/config/config.lua`
-- Local (user-specific) mappings: `~/.hammerspoon/modules/hotkeys/config/local/*.lua`
-
-See the README in the `modules/hotkeys/config/local` directory for detailed customization instructions.
-
-## Advanced Usage
-
-### Accessing Specialized Modules
-
-The modular architecture allows direct access to specialized functionality:
-
-```lua
--- Load the hotkeys module
-local hotkeys = require("modules.hotkeys")
-
--- Access specialized modules directly
-local ui = require("modules.hotkeys.ui.ui")
-local logging = require("modules.hotkeys.core.logging")
-local actions = require("modules.hotkeys.core.actions")
-local configUtils = require("modules.hotkeys.utils.config_utils")
-
--- Use functionality from the specialized modules
-ui.showFormattedAlert("Hammerspoon Config Loaded")
-logging.info("Initialization complete")
-configUtils.loadMappings(defaultMappings, nil, "customModal")
-```
-
-### Adding Custom Modals
-
-You can add new modal interfaces by editing the config file:
-
-```lua
--- In modules/hotkeys/config/config.lua
-config.modals.newmodal = {
-    title = "My New Modal:",
-    handler = {
-        field = "myfield",
-        action = "myHandler"
-    },
-    mappings = {
-        a = { myfield = "value1", desc = "Description 1" },
-        b = { myfield = "value2", desc = "Description 2" }
-    }
-}
-
--- For custom modal implementation:
-config.modals.newmodal.customModule = "modules.hotkeys.modals.mymodal"
-```
-
-## Installation
-
-```bash
-# Install Hammerspoon via Homebrew
-brew install --cask hammerspoon
-
-# Link configuration
-ln -sf ~/.dotfiles/hammerspoon ~/.hammerspoon
-
-# Note: Ensure the init.lua is directly in ~/.hammerspoon
-# If not, you may need to remove the existing directory:
-# rm -rf ~/.hammerspoon && ln -s ~/.dotfiles/hammerspoon ~/.hammerspoon
-```
