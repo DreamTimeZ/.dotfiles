@@ -2,25 +2,22 @@
 
 Cross-platform text expander. Docs: <https://espanso.org/docs/>
 
-## Structure
-
 ```text
 espanso/
-├── templates/          Starter configs, copy into local/ to use
-│   ├── default.yml     Global espanso settings
-│   └── base.yml        Example matches (dates, markdown, shell)
-└── local/              Git-ignored, personal config lives here
-    ├── config/         App-level settings (toggle key, backend, OS filters)
-    └── match/          Trigger definitions (*.yml)
+├── templates/                  Starter configs
+│   ├── default.yml.template    Global settings (toggle key, backend)
+│   └── base.yml.template       Example matches (dates, markdown, shell)
+└── local/                      Git-ignored, filled from the private repo
+    ├── config/                 App-level settings (*.yml)
+    └── match/                  Trigger definitions (*.yml)
 ```
 
-## Quick Start
+`setup.sh` links `local/config` and `local/match` into the espanso config dir (`~/Library/Application Support/espanso` on macOS, `~/.config/espanso` on Linux). On WSL espanso runs on the Windows side: run `temporary-link.bat` from the private repo to create the Windows symlinks (it requests admin rights itself).
 
-Copy templates and customize:
+Without the private repo, start from the templates:
 
 ```bash
-cd ~/.dotfiles/espanso/templates
-for f in *.template; do cp "$f" "../local/${f%.template}"; done
+cd ~/.dotfiles/espanso
+cp templates/default.yml.template local/config/default.yml
+cp templates/base.yml.template local/match/base.yml
 ```
-
-Then edit files in `local/` to add your own triggers and settings.

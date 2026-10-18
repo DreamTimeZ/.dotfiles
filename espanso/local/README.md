@@ -1,10 +1,9 @@
 # Private Espanso Configuration
 
-Personal text expansions (git-ignored).
-
-Add your snippets to `base.yml`:
+Git-ignored. Settings go in `config/*.yml`, triggers in `match/*.yml`:
 
 ```yaml
+# match/base.yml
 matches:
   - trigger: ":email"
     replace: "your.email@example.com"
