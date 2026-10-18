@@ -182,6 +182,7 @@
                         "product_id": 49291,
                         "vendor_id": 1133
                     },
+                    "ignore": true,
                     "ignore_vendor_events": true
                 },
                 {
