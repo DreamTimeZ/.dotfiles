@@ -1,126 +1,83 @@
 # .dotfiles
 
-Modern, modular dotfiles configuration for productive development environments on macOS, Linux, and Windows (WSL).
+Modular dotfiles for macOS, Linux, and Windows (WSL), installed and linked by one script: `setup.sh`.
 
-## 🎯 Overview
+## Prerequisites
 
-A carefully curated collection of dotfiles optimized for:
+- git
+- [Homebrew](https://brew.sh) on every platform: most packages install through it
+- Linux and WSL: Ubuntu or Debian (`setup.sh` uses apt and dpkg)
+- WSL: Windows Terminal recommended
 
-- 🔧 Zsh with modular configuration and Powerlevel10k
-- 🔌 Plugin management with Sheldon (modern alternative to oh-my-zsh)
-- 📝 Neovim with lazy.nvim for efficient plugin management
-- 📦 Tmux with sensible defaults and plugin management
-- 🔑 SSH with local overrides for machine-specific settings
-- 🌳 Git with split configuration for public/private settings
-- 👻 Ghostty as the terminal emulator (macOS)
-- 🔨 Hammerspoon for macOS automation and window management
-- 🚀 LaunchAgents for macOS system service management
-- ⌨️ Karabiner for keyboard remapping (macOS)
-- 📝 Espanso for text expansion (macOS, Linux, Windows)
-- 🖥️ Cross-platform support for macOS, Linux, and Windows (WSL)
+`setup.sh` installs the rest, including zsh, tmux, and sheldon.
 
-## ✨ Key Features
-
-- **Modern Shell**:
-  - Modular Zsh configuration with isolated components
-  - Powerlevel10k for a beautiful, informative prompt
-  - Syntax highlighting, auto-suggestions, and Atuin shell history
-  - FZF integration for fuzzy file finding and history search
-  - Sheldon for fast, declarative plugin management
-
-- **Development Environment**:
-  - Neovim with Lua configuration and lazy loading plugins
-  - Tmux with sensible defaults and session management
-  - Git with public/private configuration separation
-  - Platform-specific optimizations
-
-- **System Management**:
-  - Hammerspoon for keyboard shortcuts and window management (macOS)
-  - LaunchAgents for service automation (macOS)
-  - Karabiner for keyboard remapping (macOS)
-  - Espanso for text expansion (macOS, Linux, Windows)
-  - SSH key management with platform detection
-
-- **Customization**:
-  - Local overrides for machine-specific settings
-  - Private repository integration for sensitive configurations
-  - Support for platform-specific configurations
-  - Documented customization points
-
-## 🚀 Installation
-
-### Quick Install
+## Quick Install
 
 ```bash
-git clone https://github.com/username/dotfiles.git ~/.dotfiles
+git clone https://github.com/DreamTimeZ/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
+./setup.sh --dry-run --all   # preview, changes nothing
 ./setup.sh --all
+./setup.sh --doctor          # verify symlinks, tools, and permissions
 ```
 
-Or install selectively (`core`, `cli`, `dev`, `extra`, `macos`):
+To install only some package categories (`core`, `cli`, `dev`, `extra`, `macos`), pass them instead of `--all`. All symlinks are still created:
 
 ```bash
 ./setup.sh core cli dev
 ```
 
-Run `./setup.sh --doctor` to verify your setup.
+`./setup.sh --help` lists every option, category, and symlink group. Existing files at link targets are skipped with a warning. `--force` replaces files and symlinks without a backup, never directories.
 
-See the [Installation Guide](docs/installation.md) for complete step-by-step instructions.
+On a fresh Mac, Homebrew's installer has you append its `shellenv` line to `~/.zprofile`. Delete that file before `./setup.sh --all` so the linked `.zprofile` takes its place. It puts Homebrew on `PATH` itself.
 
-## 📚 Documentation
+On Linux and WSL, `setup.sh` does not change the login shell. Afterwards, run `chsh -s /usr/bin/zsh` (the apt-installed zsh, listed in `/etc/shells`).
 
-For detailed information on each component:
+Full guide: [Installation Guide](docs/installation.md).
 
-- [Installation Guide](docs/installation.md) - Detailed setup instructions
-- [Shell Configuration](docs/shell.md) - Zsh and Sheldon setup
-- [Neovim Configuration](nvim/neovim.md) - Editor setup
-- [Tmux Configuration](tmux/tmux.md) - Terminal multiplexer setup
-- [Hammerspoon Configuration](hammerspoon/README.md) - macOS automation
-- [LaunchAgents](launchagents/launchagents.md) - System service management
-- [iTerm2 Configuration](docs/iterm2.md) - Legacy terminal emulator, superseded by Ghostty (`ghostty/config`)
-- [Repository Structure](docs/structure.md) - Understanding the organization
+### Without the private repo
 
-## 📋 Requirements
+`setup.sh` works without `~/.dotfiles-private`, which supplies the machine-specific `local/` files: git user identity, private SSH hosts, shell modules, Hammerspoon hotkey mappings, and Espanso configs. Without it, git has no user identity, Espanso stays unconfigured, and Hammerspoon uses its default mappings. Clone it later and re-run `./setup.sh --all`.
 
-### Core Requirements
+## Components
 
-- Git (for cloning and version control)
-- Zsh 5.8+ (default on recent macOS)
-- Sheldon (plugin manager for Zsh)
+| Component | What it is | Docs |
+| --- | --- | --- |
+| Zsh | Modular config, Powerlevel10k, autosuggestions, syntax highlighting, fzf-tab, zoxide, Atuin history | [Zsh](zsh/README.md), [Keybindings](zsh/docs/keybindings.md) |
+| Sheldon | Declarative Zsh plugin manager (`zsh/sheldon/plugins.toml`) | [Zsh](zsh/README.md) |
+| mise | Runtime versions for Python, Node, pnpm, uv (`mise/global.toml`) | |
+| Neovim | Lua config, lazy.nvim, Treesitter, Telescope | [Neovim](nvim/neovim.md) |
+| Tmux | `Ctrl+a` prefix, TPM plugins, session save and restore | [Cheatsheet](tmux/CHEATSHEET.md) |
+| Git | Public `.gitconfig` that includes private `~/.gitconfig.local` | |
+| SSH | Public config that includes private `~/.ssh/config.local`, keys added to the agent on first use (macOS Keychain) | |
+| GPG | GnuPG and gpg-agent config | [GPG](gpg/README.md) |
+| Ghostty | Terminal emulator (macOS), supersedes iTerm2 | [iTerm2 (legacy)](docs/iterm2.md) |
+| Hammerspoon | macOS hotkeys, modals, and window management | [Hammerspoon](hammerspoon/README.md) |
+| Karabiner | Keyboard remapping (macOS) | |
+| Espanso | Text expansion (macOS, Linux, Windows) | [Espanso](espanso/README.md) |
+| Nilesoft Shell | Windows context menu | [Nilesoft](nilesoft/README.md) |
+| `bin/` | Scripts linked into `~/.local/bin`: `wifi-qr`, `gpg-backup`, `gpg-restore`, `api-keys-setup` (macOS) | [API keys](docs/api-keys-security.md) |
 
-### Platform-Specific Requirements
+## Documentation
 
-#### macOS
+- [Installation Guide](docs/installation.md): all options, package categories, local override files
+- [Setup Architecture](docs/setup-architecture.md): design rationale for `setup.sh`, private repo layering, symlink chain
 
-- Homebrew for package management
-- Recommended tools: fzf, eza, zoxide
+## Linting
 
-#### Linux
+Pre-commit hooks, configured in `.pre-commit-config.yaml`:
 
-- Required packages: zsh, git, curl, fzf
-- Installation method varies by distribution (see [Installation Guide](docs/installation.md))
+```bash
+uv tool install pre-commit   # the only extra tool, the hooks bring shellcheck, markdownlint, and node
+pre-commit install           # once per clone
+pre-commit run --all-files   # lint everything
+pre-commit autoupdate        # bump hook versions
+```
 
-#### Windows (WSL)
+- **Hygiene**: trailing whitespace, end-of-file, YAML/TOML/JSON syntax, merge and case conflicts, large files, private keys, shebang and executable-bit consistency.
+- **Markdown** (`markdownlint-cli2 --fix`, rewrites files): rules in `.markdownlint.jsonc`, ignores in `.markdownlint-cli2.jsonc`. It skips `.claude/`, `CLAUDE*.md`, and `zsh/config/prompts/` (context files and AI prompt payloads, not docs).
+- **Shell**: `shellcheck` on non-zsh shell scripts (`setup.sh`). Shellcheck cannot parse zsh, so zsh files get a `zsh -n` syntax check instead.
 
-- Windows Subsystem for Linux
-- Ubuntu or Debian WSL distribution
-- Windows Terminal (recommended)
+## License
 
-## 🧹 Linting
-
-Pre-commit hooks keep the repo clean (config: `.pre-commit-config.yaml`). Install once with `pre-commit install`, lint everything with `pre-commit run --all-files`, and update hook versions with `pre-commit autoupdate`.
-
-- **Hygiene**: trailing whitespace, end-of-file, YAML/JSON syntax, merge- and case-conflict guards, large-file and private-key detection.
-- **Markdown** (`markdownlint-cli2`): rules in `.markdownlint.jsonc`. `CLAUDE*.md` and `zsh/config/prompts/*.md` are excluded (context files and AI prompt payloads, not docs).
-- **Shell**: `shellcheck` for bash (`setup.sh` and the bash scripts in `bin/`). Shellcheck cannot parse zsh, so `.zsh` files get a `zsh -n` syntax check instead.
-
-`pre-commit` is the only extra prerequisite; the hook repos provide shellcheck, markdownlint, and node.
-
-## 🗺️ Roadmap
-
-- Backup and restore system
-- Enhanced Linux and WSL compatibility
-
-## 📝 License
-
-MIT License
+[MIT License](LICENSE)

@@ -1,5 +1,7 @@
 # Installation Guide
 
+Design rationale: [Setup Architecture](setup-architecture.md).
+
 ## Full Setup
 
 Clone both repos, then run setup:
@@ -19,7 +21,7 @@ symlinks are created.
 ## Minimal Setup (Without Private Repo)
 
 ```bash
-git clone git@github.com:DreamTimeZ/.dotfiles.git ~/.dotfiles
+git clone https://github.com/DreamTimeZ/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./setup.sh --all
 ```
@@ -29,7 +31,7 @@ without machine-specific configs. Add the private repo later and re-run:
 
 ```bash
 git clone <private-repo-url> ~/.dotfiles-private
-./setup.sh --link-only --force
+./setup.sh --all
 ```
 
 ## Prerequisites
@@ -44,7 +46,7 @@ git clone <private-repo-url> ~/.dotfiles-private
 ./setup.sh --all               # Full setup (all packages + symlinks)
 ./setup.sh core cli            # Install specific categories only
 ./setup.sh --link-only         # Only create symlinks (no packages)
-./setup.sh --link-only --force # Recreate all symlinks
+./setup.sh --link-only --force # Replace existing files and symlinks, never directories (no backup)
 ./setup.sh --packages-only     # Only install packages (no symlinks)
 ./setup.sh --doctor            # Check system health
 ./setup.sh --unlink            # Remove all managed symlinks
@@ -53,42 +55,30 @@ git clone <private-repo-url> ~/.dotfiles-private
 
 ### Package Categories
 
-| Category | Contents |
-|----------|----------|
-| `core`   | zsh, git, tmux, sheldon, fzf, zoxide, atuin |
-| `cli`    | bat, eza, fd, ripgrep, jq, yq, glow, tealdeer, grc |
-| `dev`    | mise, lazygit, gh, neovim, gitleaks, uv, shellcheck, shfmt |
-| `extra`  | hyperfine, scc, pandoc, yt-dlp, nmap |
-| `macos`  | Hammerspoon, Karabiner Elements (macOS only) |
+| Category | Purpose | Package list |
+|----------|---------|--------------|
+| `core`   | Shell, git, tmux, plugin manager, history, navigation | [`Brewfile.core`](../packages/Brewfile.core) |
+| `cli`    | Modern CLI replacements, JSON/YAML tools, viewers, system monitors | [`Brewfile.cli`](../packages/Brewfile.cli) |
+| `dev`    | Editor, runtimes, git and lint tooling | [`Brewfile.dev`](../packages/Brewfile.dev) |
+| `extra`  | Benchmarking, code stats, document conversion, media (ffmpeg, yt-dlp), OCR, network and disk tools | [`Brewfile.extra`](../packages/Brewfile.extra) |
+| `macos`  | Hammerspoon, Karabiner-Elements, espanso, plus macOS CLI tools (macOS only) | [`Brewfile.macos`](../packages/Brewfile.macos) |
 
-Package lists are in `packages/` (Brewfile format for brew, plain text for apt and cargo).
+The Brewfiles are the source of truth for each category. `apt.txt` holds Ubuntu/Debian system prerequisites, `cargo.txt` the Rust packages.
 
 ## Post-Install
 
-`setup.sh` handles these automatically, but for reference:
+Manual steps:
 
-- **Sheldon**: `sheldon lock --update` (zsh plugin lockfile)
-- **TPM**: Cloned to `~/.tmux/plugins/tpm/`, press `prefix+I` in tmux to install plugins
-- **Neovim**: `nvim --headless "+Lazy! sync" +qa` (plugin sync)
-- **Permissions**: `~/.ssh` (700), `~/.gnupg` (700), config files (600)
+- `setup.sh` only clones TPM, so press `prefix+I` in tmux to install the tmux plugins.
+- Linux and WSL: `setup.sh` does not change the login shell. Run `chsh -s /usr/bin/zsh` (the apt-installed zsh, listed in `/etc/shells`).
+
+`setup.sh` does the rest: `sheldon lock --update`, `nvim --headless "+Lazy! sync" +qa`, and
+permissions (`~/.ssh` and `~/.gnupg` 700, their config files 600).
 
 ## Espanso (Text Expansion)
 
-Espanso configs come from the private repo. On macOS/Linux, symlinks are created
-in `~/.config/espanso/`. On WSL, use `temporary-link.bat` from the private repo
-to create Windows-side NTFS symlinks (run as admin).
-
-## LaunchAgents (macOS)
-
-```bash
-mkdir -p ~/Library/LaunchAgents
-for plist in ~/.dotfiles/launchagents/*.plist; do
-    [ -f "$plist" ] || continue
-    ln -sf "$plist" ~/Library/LaunchAgents/
-    launchctl unload "$plist" 2>/dev/null || true
-    launchctl load "$plist"
-done
-```
+Espanso configs come from the private repo. Link targets per platform, and the
+manual WSL step, are in the [Espanso README](../espanso/README.md).
 
 ## Health Check
 
@@ -99,10 +89,6 @@ Run `./setup.sh --doctor` to verify:
 - Private repo is linked
 - SSH/GPG directory permissions are correct
 - Plugin managers are initialized
-
-## Architecture
-
-See [setup-architecture.md](setup-architecture.md) for the design rationale.
 
 ## Local Override Files
 

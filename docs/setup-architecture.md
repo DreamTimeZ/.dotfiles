@@ -3,7 +3,6 @@
 ## Decision: Shell-based setup over chezmoi
 
 **Date:** 2026-03-28
-**Status:** Accepted
 
 ## Context
 
@@ -38,7 +37,7 @@ The decisive reasons (why chezmoi's value doesn't apply here):
 
 - **We don't store secrets in dotfiles, by design.** API tokens, SSH keys, and GPG keys are generated per-device, never shared across machines. This means revocation is granular (one compromised machine = one revoked key), blast radius is smaller, and the audit trail is clear. chezmoi's encryption and password manager integration are its strongest differentiators, but they solve a problem we deliberately avoid.
 - **Encrypted secrets are still less secure than no secrets.** Even with age/GPG encryption, the ciphertext is exfiltrable. If someone gets the repo, they have the encrypted blobs forever and can brute-force or wait for a key leak. Zero ciphertext beats any ciphertext. chezmoi's secret management is harm reduction for users who would otherwise commit tokens in plaintext. It is not a best practice.
-- **Extra dependency with no payoff.** The current system depends on bash, ln, find, hostname, uname (present on every Unix system, always will be). chezmoi adds a Go binary that must be installed before anything else can be set up (chicken-and-egg on a fresh machine). Fewer dependencies means less breakage surface across OS upgrades and a longer-lived setup.
+- **Extra dependency with no payoff.** Linking (`setup.sh --link-only` and `link.sh`) depends on bash, ln, find, hostname, uname (present on every Unix system, always will be). Homebrew is needed only for package installs. chezmoi adds a Go binary that must be installed before anything else can be set up (chicken-and-egg on a fresh machine). Fewer dependencies means less breakage surface across OS upgrades and a longer-lived setup.
 - **Drift detection is irrelevant here.** On a personal machine with one user, config drift is rare and usually intentional. `chezmoi verify` shines in fleet/team contexts, not single-user dotfiles.
 
 Technical drawbacks (annoyances, not dealbreakers on their own):
@@ -62,7 +61,7 @@ Technical drawbacks (annoyances, not dealbreakers on their own):
 
 ## Solution: Enhanced shell-based setup
 
-Three new files fill the gaps without introducing new tool dependencies:
+Two files and a directory fill the gaps without introducing new tool dependencies:
 
 ### `setup.sh`
 
@@ -73,7 +72,7 @@ Single entry point for bootstrapping and managing dotfiles.
 - Runs `~/.dotfiles-private/link.sh` if the private repo exists
 - Post-install tasks: sheldon lock, TPM, neovim plugins, permissions
 - `--doctor` flag for health checks
-- `--dry-run`, `--force`, `--unlink` for safe operation
+- `--dry-run`, `--unlink`, and `--force` (replaces existing files and symlinks at link targets, never directories, no backup)
 - Idempotent (safe to run repeatedly)
 
 ### `symlinks.conf`
@@ -92,9 +91,9 @@ Categories: `core`, `cli`, `dev`, `extra`, `macos`.
 ```text
 Fresh machine:
   1. git clone <public-repo> ~/.dotfiles
-  2. cd ~/.dotfiles && ./setup.sh --all
-  3. (optional) git clone <private-repo> ~/.dotfiles-private
-  4. (optional) ~/.dotfiles-private/link.sh --force
+  2. (optional) git clone <private-repo> ~/.dotfiles-private
+  3. cd ~/.dotfiles && ./setup.sh --all    # runs link.sh first if step 2 was done
+  A private repo cloned later needs another ./setup.sh --all.
 
 Existing machine:
   ./setup.sh --link-only        # just refresh symlinks
