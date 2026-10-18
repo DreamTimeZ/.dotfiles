@@ -69,7 +69,7 @@ zstyle ':completion:*' cache-path "$HOME/.zcompcache"
 mkdir -p -- "$HOME/.zcompcache"
 '''
 
-# Syntax highlighting and autosuggestions (load last for best performance)
+# Syntax highlighting and autosuggestions (z-sy-h after any plugin that adds buffer-modifying ZLE hooks)
 
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"

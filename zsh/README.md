@@ -1,110 +1,49 @@
-# ZSH Configuration System
+# Zsh
 
-A clean, modular ZSH configuration with modern tools and smart defaults.
+Modular zsh config with Powerlevel10k, Sheldon plugins, Atuin history, and fzf. `setup.sh` links `.zshrc`, `.zprofile`, `sheldon/plugins.toml`, and `config/atuin/config.toml`.
 
-## 🚀 Quick Start
+## Load Order
 
-```bash
-# macOS with Homebrew
-brew install zsh git sheldon fzf zoxide eza ripgrep
+`.zshrc` sources `config/helpers.zsh`, then in order:
 
-# Clone and link
-git clone <your-repo> ~/.dotfiles
-ln -sf ~/.dotfiles/zsh/.zshrc ~/.zshrc
-ln -sf ~/.dotfiles/zsh/.zprofile ~/.zprofile
+1. `exports.zsh`: environment and shell options
+2. `plugins.zsh`: Sheldon plugins (`sheldon/plugins.toml`, per-tool setup in `sheldon/*.zsh`)
+3. `modules.zsh`: every `modules/functions/NN-*.zsh` in numeric order, then any unprefixed `*.zsh` there
+4. `keybindings.zsh`: see [Keybindings](docs/keybindings.md), or run `kb`
+5. `aliases.zsh`
+6. `local.zsh`: every `modules/local/*.zsh`, last, so it overrides anything above
 
-# Reload shell
-exec zsh
-```
+## Functions
 
-## ✨ Key Features
+Run `zh` to browse and search every alias, function, export, and keybinding.
 
-- **🎯 Smart Defaults**: `cd` uses zoxide, `ls` uses eza by default
-- **🔧 Modular Design**: Functions organized in logical modules
-- **⚡ Fast Startup**: Optimized loading with lazy initialization
-- **🛡️ Non-Breaking**: Modern tools with graceful fallbacks
-- **📦 Rich Utilities**: Productivity functions and aliases included
+| Module | Commands |
+| --- | --- |
+| `00-core` | `notify`, `retry`, `confirm`, `mkdirp`, `scratch` |
+| `05-clipboard` | `pbcopy` / `pbpaste` on Linux and WSL |
+| `10-navigation` | `mkcd`, `dusage`, `ffind`, `fdir` |
+| `15-network` | `ip-local`, `lan-scan`, `net-check`, `sniff`, `nscan` |
+| `16-websearch` | `google`, `ghs`, `yt`, `so`, `scholar`, `semscholar`, `xarchive`, `pypi`, `npm-search`, `dockerhub` |
+| `20-git` | `dirty`, `fbr`, `fgf` |
+| `30-process` | `fpkill`, `fh` |
+| `40-python` | `venv` |
+| `45-tmux` | `dev` |
+| `50-webserver` | `serve` |
+| `55-media` | `compress-video` |
+| `60-system` | `update`, `update_mise`, `update_sheldon`, `update_claude_skills`, `poweroff` (macOS) |
+| `65-introspection` | `zh` |
+| `70-services` | `ollama-start`, `ollama-stop`, `ollama-restart`, `ollama-status` |
+| `75-knowledge` | `yt2note`, `ytt`, `ytc` |
+| `80-colorization` | `grc` wrappers for `ping`, `dig`, `ps`, and others |
 
-## 📁 Structure
+Functions that need an external tool (fzf, ffmpeg, ollama, yt-dlp, grc) are only defined when it is installed.
 
-```text
-zsh/
-├── config/
-│   ├── aliases.zsh           # Clean aliases only
-│   ├── atuin/                # Shell history configuration
-│   │   └── config.toml       # Auto-symlinked to ~/.config/atuin/
-│   ├── exports.zsh           # Environment & options
-│   ├── modules/
-│   │   ├── functions/        # Organized by domain
-│   │   │   ├── 00-core.zsh        # notify, retry, confirm
-│   │   │   ├── 05-clipboard.zsh   # cross-platform clipboard
-│   │   │   ├── 10-navigation.zsh  # mkcd, dusage, ffind
-│   │   │   ├── 15-network.zsh     # ip-local, lan-scan, net-check, sniff, nscan
-│   │   │   ├── 16-websearch.zsh   # google, ghs, yt, so
-│   │   │   ├── 20-git.zsh         # fbr, fgf (fuzzy git)
-│   │   │   ├── 30-process.zsh     # fpkill, fh (process mgmt)
-│   │   │   ├── 40-python.zsh      # venv (environment mgmt)
-│   │   │   ├── 45-tmux.zsh        # dev (tmux sessions)
-│   │   │   ├── 50-webserver.zsh   # serve (dev server)
-│   │   │   ├── 60-system.zsh      # update (system updater)
-│   │   │   ├── 65-introspection.zsh # zh (config picker)
-│   │   │   ├── 70-services.zsh    # ollama-* (AI tools)
-│   │   │   ├── 75-knowledge.zsh   # yt2note, ytt, ytc
-│   │   │   └── 80-colorization.zsh # grc setup
-│   │   └── local/            # Your customizations
-│   └── plugins.zsh           # Plugin management
-├── sheldon/                  # Plugin configs
-└── docs/                     # Documentation
-```
+## Customization
 
-## 🎮 Highlights
+Put machine-specific `.zsh` files in `config/modules/local/` (supplied by the private repo). See `example.zsh.template` there. `use_interactive_file_ops` makes `cp`, `mv`, and `rm` interactive for the session.
 
-### Smart Navigation
+## Logging and Profiling
 
-- `cd` → zoxide (frecency-based, learns your patterns)
-- `mkcd dir` → create and enter directory
-- `z proj` → jump to ~/Projects
-- `zi` → interactive directory picker
-
-### Enhanced Listing
-
-- `ls` → eza (colors, icons, git status)
-- `ll` → detailed view with icons
-- `tree` → directory tree view
-
-### Developer Tools
-
-- `ip-local` → network interface overview
-- `serve` → instant dev server (Node.js/Python)
-- `venv` → smart Python environment manager
-- `dirty` → scan git repos for uncommitted changes
-- `zh` → browse/search dotfiles aliases, functions, exports, keybindings
-
-### Shell History (Atuin)
-
-- Enhanced shell history with sync capabilities
-- Fuzzy search and workspace filtering
-- Configuration auto-managed in `config/atuin/`
-
-## 🔧 Customization
-
-Create `~/.dotfiles/zsh/config/modules/local/personal.zsh`:
-
-```zsh
-# Enable interactive file operations
-use_interactive_file_ops
-
-# Add custom aliases
-alias work='cd ~/Projects'
-alias config='cd ~/.dotfiles'
-
-# Machine-specific paths
-export PATH="$HOME/custom-tools:$PATH"
-```
-
-## 📚 Documentation
-
-- [Structure](docs/structure.md) - Complete directory layout
-- [Features](docs/features.md) - All available functions
-- [Usage](docs/usage.md) - Customization guide
-- [Keybindings](docs/keybindings.md) - Keyboard shortcuts
+- `ZDOTFILES_LOG_LEVEL`: 0 silent, 1 error, 2 warn, 3 info. `.zprofile` sets 0, `.zshrc` sets 3.
+- `source ~/.dotfiles/zsh/profile-zsh.zsh`: per-module startup timings
+- `hyperfine 'zsh -i -c exit' --warmup 3`: total startup time

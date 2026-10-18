@@ -1,37 +1,3 @@
-# Local ZSH Configurations
+# Local Zsh Modules
 
-User-specific configurations that **won't be committed** to the repository.
-
-## Usage
-
-Create `.zsh` files here - they load automatically after all other modules.
-
-### Example: `personal.zsh`
-
-```zsh
-# Enable interactive file operations for this session
-use_interactive_file_ops
-
-# Custom aliases
-alias work='cd ~/Projects'
-alias config='cd ~/.dotfiles'
-
-# Machine-specific paths
-export PATH="$HOME/custom-tools:$PATH"
-
-# Sensitive variables (won't be committed)
-export API_KEY="your-secret-key"
-```
-
-### Available Override Functions
-
-```zsh
-# Machine-specific path additions
-export PATH="$HOME/custom-tools/bin:$PATH"
-
-# Override command aliases
-alias llg='eza -la --git --icons'
-use_interactive_file_ops()  # Makes cp/mv/rm interactive by default
-```
-
-Files in this directory are loaded **last**, so they can override any previous settings.
+Every `*.zsh` file here is sourced last (by `config/local.zsh`), so it can override any export, alias, function, or keybinding. All of them are git-ignored. They are symlinked from `~/.dotfiles-private`, except `api-keys.zsh`, which `api-keys-setup` generates here. `example.zsh.template` shows common overrides. On macOS, store API keys with `api-keys-setup` ([API keys](../../../../docs/api-keys-security.md)), not as plain exports here.
