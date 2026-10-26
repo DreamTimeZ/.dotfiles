@@ -3,19 +3,11 @@ local M = {}
 -- Configuration
 local config = {
     interval = 0.01,
-    showAlerts = true    -- Whether to show status alerts
 }
 
 -- State
 local timer = nil
 local isRunning = false
-
---- Shows a status alert if enabled
-local function showAlert(message)
-    if config.showAlerts then
-        hs.alert.show("Auto-Clicker: " .. message)
-    end
-end
 
 --- Performs a single left click at current mouse position.
 --- Posts mousedown+mouseup back-to-back rather than using
@@ -40,7 +32,6 @@ function M.start()
 
     timer = hs.timer.doEvery(config.interval, M.click)
     isRunning = true
-    showAlert("ON")
 end
 
 --- Stops the auto-clicker
@@ -50,7 +41,6 @@ function M.stop()
     timer:stop()
     timer = nil
     isRunning = false
-    showAlert("OFF")
 end
 
 --- Toggles the auto-clicker state
@@ -70,7 +60,6 @@ end
 --- Configures the auto-clicker
 function M.configure(options)
     if options.interval then config.interval = options.interval end
-    if options.showAlerts ~= nil then config.showAlerts = options.showAlerts end
 end
 
 return M
