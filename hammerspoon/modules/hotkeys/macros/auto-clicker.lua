@@ -2,7 +2,7 @@ local M = {}
 
 -- Configuration
 local config = {
-    interval = 0.1,      -- Click interval in seconds (10 clicks/sec; browser-safe)
+    interval = 0.01,
     showAlerts = true    -- Whether to show status alerts
 }
 
