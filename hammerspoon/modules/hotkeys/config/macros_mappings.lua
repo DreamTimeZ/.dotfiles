@@ -4,10 +4,7 @@
 
 return {
     -- Macro toggles (action names auto-generated as "toggle" .. registry-name)
-    a = {
-        action = "toggleAutoClicker",
-        desc = "Toggle Auto-Clicker"
-    },
+    -- Auto-Clicker has no key here: Hyper+C toggles it directly (config.globalShortcuts)
     r = {
         action = "toggleRecording",
         desc = "Toggle Recording"

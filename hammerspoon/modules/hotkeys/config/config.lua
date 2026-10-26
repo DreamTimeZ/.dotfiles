@@ -210,7 +210,7 @@ config.modals = {
         -- mappings defined in system.lua
     },
 
-    -- Macros modal (auto-clicker functionality)
+    -- Macros modal
     macros = {
         title = "Macros:",
         handler = {
@@ -266,6 +266,13 @@ config.globalShortcuts = {
             action = "launchGhosttyTransparent"
         },
         mapping = { opacity = "0.18", desc = "Transparent Ghostty (launch or focus)" }
+    },
+
+    -- Left-hand toggle while the right hand positions the mouse
+    {
+        key = "c",
+        fn = function() require("modules.hotkeys.macros.auto-clicker").toggle() end,
+        desc = "Toggle Auto-Clicker"
     },
 
     -- Mic mute toggle (Karabiner: F5 -> F18 -> Hammerspoon)

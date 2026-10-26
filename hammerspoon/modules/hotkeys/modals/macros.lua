@@ -97,7 +97,6 @@ local function loadMappings()
     if not status or not mappings then
         logging.warn("Using default macro mappings")
         return {
-            a = { fn = actionHandlers.toggleAutoClicker, desc = "Toggle Auto-Clicker" },
             r = { fn = actionHandlers.toggleRecording, desc = "Toggle Recording" },
             s = { fn = actionHandlers.stopAll, desc = "Stop All Macros" },
             i = { fn = actionHandlers.showStatus, desc = "Show Macro Status" }
