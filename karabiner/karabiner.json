@@ -111,14 +111,6 @@
                                 },
                                 "to": [
                                     {
-                                        "conditions": [{ "type": "variable_unless", "name": "steelseries_media_keys", "value": 1 }],
-                                        "set_notification_message": { "id": "steelseries_media_keys", "text": "SteelSeries: media keys" }
-                                    },
-                                    {
-                                        "conditions": [{ "type": "variable_if", "name": "steelseries_media_keys", "value": 1 }],
-                                        "set_notification_message": { "id": "steelseries_media_keys", "text": "" }
-                                    },
-                                    {
                                         "set_variable": { "name": "steelseries_media_keys", "expression": "steelseries_media_keys != 0 ? 0 : 1" }
                                     }
                                 ],
