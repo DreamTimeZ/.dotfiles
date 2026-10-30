@@ -65,7 +65,7 @@ function M.setupModal(mappings, title, modal)
         local success = actions.executeAction(modal.handler, binding)
 
         if not success then
-            validation.handleError("Failed to execute action", true)
+            validation.handleError("Failed to execute action", false)
         end
 
         hs.alert.closeAll()
