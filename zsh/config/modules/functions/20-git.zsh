@@ -111,6 +111,7 @@ EOF
         fd_args+=(--exclude 'go/pkg' --exclude '.gradle' --exclude '.m2' --exclude '.gem')
         fd_args+=(--exclude '.vscode-server' --exclude '.cursor-server' --exclude '.claude' --exclude 'Library')
         fd_args+=(--exclude '.Trash' --exclude '.var' --exclude '.cpan' --exclude 'OneDrive')
+        fd_args+=(--exclude '.voicemode')
         repos=("${(@f)$(fd "${fd_args[@]}" "$target" 2>/dev/null)}")
     else
         local maxdepth=""
@@ -126,7 +127,7 @@ EOF
             -not -path '*/.claude/*' \
             -not -path '*/Library/*' -not -path '*/.Trash/*' \
             -not -path '*/.var/*' -not -path '*/.cpan/*' \
-            -not -path '*/OneDrive/*' 2>/dev/null)}")
+            -not -path '*/OneDrive/*' -not -path '*/.voicemode/*' 2>/dev/null)}")
     fi
 
     # ~/.claude is excluded above to avoid plugin/cache noise; scan skills
