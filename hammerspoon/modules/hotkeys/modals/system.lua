@@ -18,7 +18,7 @@ local function shutdownSystem()
         return true
     else
         logging.info("Shutdown cancelled by user")
-        return false
+        return true
     end
 end
 
@@ -35,7 +35,7 @@ local function restartSystem()
         return true
     else
         logging.info("Restart cancelled by user")
-        return false
+        return true
     end
 end
 
