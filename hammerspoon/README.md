@@ -4,7 +4,7 @@ macOS hotkeys, modals, and window management. `setup.sh` links this directory to
 
 - `init.lua`: entry point
 - `modules/hotkeys/`: hotkey and modal system, see [Hotkeys Module](modules/hotkeys/README.md) to extend it
-- `modules/mic_mute/`, `modules/startup/`: standalone modules
+- `modules/mic_mute/`, `modules/startup/`, `modules/voice_services/`: standalone modules
 
 ## Hotkeys
 
@@ -88,6 +88,7 @@ Modal entries appear sorted alphabetically by description. The Apps, Finder, Web
 | n | Toggle Natural Scroll |
 | r | Restart System (with confirmation) |
 | s | Shutdown System (with confirmation) |
+| v | Toggle Voice Services (installed VoiceMode services, never at login) |
 
 ### Window (Hyper+Space)
 
