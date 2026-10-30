@@ -55,12 +55,9 @@ local function showStatus()
         table.insert(statusLines, name .. ": " .. status)
     end
 
-    hs.timer.doAfter(0.1, function()
+    ui.showFormattedAlert(statusLines, "Macro Status:")
+    hs.timer.doAfter(4, function()
         hs.alert.closeAll()
-        ui.showFormattedAlert(statusLines, "Macro Status:")
-        hs.timer.doAfter(4, function()
-            hs.alert.closeAll()
-        end)
     end)
 
     return true

@@ -61,15 +61,16 @@ function M.setupModal(mappings, title, modal)
         end
     end
 
+    -- Hints close before the action runs so alerts the action shows stay visible.
     local function handleModalAction(binding)
+        hs.alert.closeAll()
+        hotModal:exit()
+
         local success = actions.executeAction(modal.handler, binding)
 
         if not success then
             validation.handleError("Failed to execute action", false)
         end
-
-        hs.alert.closeAll()
-        hotModal:exit()
     end
 
     for key, binding in pairs(validBindings) do
