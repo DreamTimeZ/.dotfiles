@@ -1,13 +1,10 @@
--- Module for system actions (e.g., clear notifications, shutdown, etc.)
 local config = require("modules.hotkeys.config")
 local logging = require("modules.hotkeys.core.logging")
 local actions = require("modules.hotkeys.core.actions")
 local modals = require("modules.hotkeys.core.modals")
 
--- Get the system-specific modal definition
 local systemModal = config.modals.system
 
--- System actions with confirmation to prevent accidental triggers
 local function shutdownSystem()
     logging.info("Shutdown requested, showing confirmation dialog")
     local button = hs.dialog.blockAlert(
@@ -66,7 +63,6 @@ local function addNewDesktop()
     return true
 end
 
--- Define system actions mapping
 local systemMappings = {
     c = { action = actions.handlers.clearNotifications, desc = "Clear Notifications" },
     n = { action = toggleNaturalScroll, desc = "Toggle Natural Scroll" },
@@ -76,10 +72,8 @@ local systemMappings = {
     d = { action = addNewDesktop, desc = "New Desktop" },
 }
 
--- Store the mappings in the modal definition
 systemModal.mappings = systemMappings
 
--- Create the modal module
 local modal = modals.createModalModule(
     systemMappings,
     systemModal.title,
