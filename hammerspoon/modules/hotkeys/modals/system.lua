@@ -53,6 +53,14 @@ local function toggleNaturalScroll()
     return true
 end
 
+local voiceServices = require("modules.voice_services")
+
+local function toggleVoiceServices()
+    logging.info("Toggling voice services")
+    voiceServices.toggle()
+    return true
+end
+
 local function addNewDesktop()
     logging.info("Adding new desktop space")
     local ok, err = hs.spaces.addSpaceToScreen()
@@ -70,6 +78,7 @@ local systemMappings = {
     r = { action = restartSystem, desc = "Restart System" },
     h = { action = reloadHammerspoon, desc = "Reload Hammerspoon" },
     d = { action = addNewDesktop, desc = "New Desktop" },
+    v = { action = toggleVoiceServices, desc = "Toggle Voice Services" },
 }
 
 systemModal.mappings = systemMappings
