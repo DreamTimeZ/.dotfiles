@@ -6,6 +6,8 @@ curl
 git
 file
 procps
+# The Claude Code guard hooks fail open without jq. Brewfile.cli has it only with the cli category.
+jq
 # Build dependencies for cargo crates (OpenSSL, pkg-config)
 pkg-config
 libssl-dev
