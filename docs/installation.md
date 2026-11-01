@@ -96,6 +96,7 @@ These files come from the private repo and are symlinked into `local/` directori
 
 - `git/local/.gitconfig.local` - Git user info (symlinked to `~/.gitconfig.local`)
 - `ssh/local/config.local` - SSH hosts (symlinked to `~/.ssh/config.local`)
+- `ollama/local/server.json` - Ollama server settings (macOS, symlinked to `~/.ollama/server.json`)
 - `zsh/config/modules/local/*.zsh` - Shell functions, aliases, exports
 - `hammerspoon/modules/hotkeys/config/local/*` - Hotkey mappings (macOS)
 - `espanso/local/{config,match}/*` - Text expansion configs
