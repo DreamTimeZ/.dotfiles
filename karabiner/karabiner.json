@@ -99,7 +99,7 @@
                         ]
                     },
                     {
-                        "description": "External keyboards: standard F-keys, Hyper+Esc toggles media keys (fn+fN bypasses fn_function_keys)",
+                        "description": "External keyboards: media keys, Hyper+Esc toggles standard F-keys (fn+fN bypasses fn_function_keys)",
                         "manipulators": [
                             {
                                 "conditions": [
@@ -111,14 +111,14 @@
                                 },
                                 "to": [
                                     {
-                                        "set_variable": { "name": "external_media_keys", "expression": "external_media_keys != 0 ? 0 : 1" }
+                                        "set_variable": { "name": "external_fkeys", "expression": "external_fkeys != 0 ? 0 : 1" }
                                     }
                                 ],
                                 "type": "basic"
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f1", "modifiers": { "optional": ["any"] } },
@@ -127,7 +127,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f2", "modifiers": { "optional": ["any"] } },
@@ -136,7 +136,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f3", "modifiers": { "optional": ["any"] } },
@@ -145,7 +145,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f4", "modifiers": { "optional": ["any"] } },
@@ -154,7 +154,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f5", "modifiers": { "optional": ["any"] } },
@@ -163,7 +163,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f6", "modifiers": { "optional": ["any"] } },
@@ -172,7 +172,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f7", "modifiers": { "optional": ["any"] } },
@@ -181,7 +181,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f8", "modifiers": { "optional": ["any"] } },
@@ -190,7 +190,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f9", "modifiers": { "optional": ["any"] } },
@@ -199,7 +199,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f10", "modifiers": { "optional": ["any"] } },
@@ -208,7 +208,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f11", "modifiers": { "optional": ["any"] } },
@@ -217,7 +217,7 @@
                             },
                             {
                                 "conditions": [
-                                    { "type": "variable_unless", "name": "external_media_keys", "value": 1 },
+                                    { "type": "variable_if", "name": "external_fkeys", "value": 1 },
                                     { "type": "device_if", "identifiers": [{ "is_built_in_keyboard": false }] }
                                 ],
                                 "from": { "key_code": "f12", "modifiers": { "optional": ["any"] } },
