@@ -49,6 +49,9 @@ git/local/*
 ssh/local/*
 !ssh/local/.gitkeep
 
+ollama/local/*
+!ollama/local/.gitkeep
+
 # Package local configurations - private Brewfiles symlinked here
 packages/local/*
 !packages/local/.gitkeep
