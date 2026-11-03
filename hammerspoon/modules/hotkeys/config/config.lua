@@ -195,6 +195,11 @@ config.modals = {
 
 }
 
+-- A Hyper letter is only for a modal activator, H (it lists every shortcut, so it cannot sit in a
+-- modal), or an action fired by a one-chord trigger (clicker, Voice Control), a time-critical one
+-- (stop, interrupt, mute) or one used many times a day. Everything else goes in a topic modal.
+-- Non-letter keys (Return, #) sit outside this letter budget. Once the free letters run out, such
+-- actions take a free key of F13-F19 via Karabiner (the F18 pattern), never a modal.
 config.globalShortcuts = {
     { key = "a", modal = "apps",     desc = "Apps Modal" },
     { key = "f", modal = "finder",   desc = "Finder Modal" },
