@@ -242,7 +242,7 @@ config.globalShortcuts = {
         desc = "Toggle Auto-Clicker"
     },
 
-    -- Mic mute toggle (Karabiner: F5 -> F18 -> Hammerspoon)
+    -- Karabiner maps F5 to F18 unless Hyper+Esc switched an external keyboard to standard F-keys.
     {
         key = "f18",
         mods = {},

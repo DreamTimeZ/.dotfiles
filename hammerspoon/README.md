@@ -25,7 +25,7 @@ Hyper is Cmd+Ctrl+Alt+Shift, mapped from Caps Lock by Karabiner-Elements.
 | Hyper + # | Transparent Ghostty, a separate instance (keycode 42, next to Return on German ISO) |
 | Hyper + C | Toggle auto-clicker (Macros modal `s` and `i` still cover it) |
 | Hyper + H | Show every global shortcut, private additions included. Escape or any other global shortcut closes it |
-| F18 (no Hyper) | Toggle mic mute (Karabiner maps F5 to F18) |
+| F18 (no Hyper) | Toggle mic mute (Karabiner maps F5 to F18 unless Hyper+Esc switched an external keyboard to standard F-keys) |
 
 Modal entries appear sorted alphabetically by description. The Apps, Finder, Websites, and Settings tables below are the defaults in `modules/hotkeys/config/config.lua`. A non-empty `modules/hotkeys/config/local/<modal>_mappings.lua` replaces them entirely (see [Local Hotkey Mappings](modules/hotkeys/config/local/README.md)). System, Window, and Macros are custom modals in `modules/hotkeys/modals/`, Macros takes its keys from `modules/hotkeys/config/macros_mappings.lua`.
 
