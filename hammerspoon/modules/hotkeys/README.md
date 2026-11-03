@@ -13,8 +13,7 @@ hotkeys/
 ├── core/               actions.lua (handlers), modals.lua, logging.lua, validation.lua
 ├── modals/             Custom modals: system, window, macros
 ├── macros/             auto-clicker, natural-scroll, rec
-├── ui/ui.lua
-└── utils/config_utils.lua
+└── ui/ui.lua
 ```
 
 ## Adding a Modal

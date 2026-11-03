@@ -6,7 +6,6 @@ local config = require("modules.hotkeys.config")
 local logging = require("modules.hotkeys.core.logging")
 local actions = require("modules.hotkeys.core.actions")
 local modals = require("modules.hotkeys.core.modals")
-local configUtils = require("modules.hotkeys.utils.config_utils")
 
 -- Store state
 local globalHotkeys = {}
