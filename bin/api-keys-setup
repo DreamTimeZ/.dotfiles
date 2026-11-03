@@ -414,27 +414,14 @@ _setup_key() {
 # CONFIGURATION
 # ===============================
 
+# Lists only services with a stored key: each entry costs every new shell a
+# `security` spawn, and an unstored one is retried in every nested shell too.
+# The file thus mirrors the Keychain and is always rewritten.
 _create_config() {
-  local force_mode="${1:-false}"
-
-  if [[ -f "$CONFIG_FILE" ]]; then
-    if [[ "$force_mode" == "true" ]]; then
-      echo "Force replacing config"
-    else
-      local response
-      if _get_input "Replace config? [y/N] " response; then
-        if [[ ! "$response" =~ ^[Yy] ]]; then
-          echo "Keeping existing config"
-          return 0
-        fi
-      else
-        echo "Keeping existing config"
-        return 0
-      fi
-    fi
-  fi
-
-  cat > "$CONFIG_FILE" << 'EOF'
+  # Built aside and renamed: a shell starting mid-write would source a truncated file.
+  local tmp="$CONFIG_FILE.$$"
+  {
+  cat << 'EOF'
 # ===============================
 # API Keys - Secure Integration
 # ===============================
@@ -445,11 +432,12 @@ EOF
 
   # Add mappings
   for service in "${ALL_SERVICES[@]}"; do
+    _keychain_exists "$service" || continue
     local env_var="${SERVICE_ENV_VARS[$service]}"
     echo "    [$env_var]=$service"
-  done >> "$CONFIG_FILE"
+  done
 
-  cat >> "$CONFIG_FILE" << 'EOF'
+  cat << 'EOF'
   )
 
   local env_var service key
@@ -464,7 +452,9 @@ EOF
   unset _api_keys env_var service key
 fi
 EOF
+  } > "$tmp" || { rm -f -- "$tmp"; return 1; }
 
+  mv -f -- "$tmp" "$CONFIG_FILE" || { rm -f -- "$tmp"; return 1; }
   echo "Config updated: $CONFIG_FILE"
   return 0
 }
@@ -522,7 +512,7 @@ main() {
       -h|--help) _show_help; exit 0 ;;
       -s|--status) _validate_environment && _show_status; exit $? ;;
       -l|--list) _list_services; exit 0 ;;
-      -c|--config) _validate_environment && _create_config "$force_mode"; exit $? ;;
+      -c|--config) _validate_environment && _create_config; exit $? ;;
       -r|--remove) remove_mode=true ;;
       -f|--force) ;; # Already handled in first pass
       *)
@@ -622,7 +612,7 @@ main() {
     done
 
     # Update config after removals
-    _create_config "$force_mode" || exit 1
+    _create_config || exit 1
 
     echo
     if [[ $success -gt 0 ]]; then
@@ -648,7 +638,7 @@ main() {
   done
 
   # Update config
-  _create_config "$force_mode" || exit 1
+  _create_config || exit 1
 
   # Done
   echo
