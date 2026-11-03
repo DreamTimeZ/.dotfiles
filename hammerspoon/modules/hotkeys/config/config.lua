@@ -235,7 +235,7 @@ config.globalShortcuts = {
 }
 
 -- Kept apart: a reload rebuilds the active mappings from these, so a removed or broken local file
--- restores the defaults.
+-- restores the defaults and appended local entries never pile up.
 local defaultGlobalShortcuts = config.globalShortcuts
 local defaultModalMappings = {}
 for modalName, modal in pairs(config.modals) do
@@ -284,7 +284,15 @@ function config.loadLocalConfigs(logError)
     if localGlobalShortcuts and next(localGlobalShortcuts) ~= nil then
         activeGlobalShortcuts = localGlobalShortcuts
     end
-    config.globalShortcuts = activeGlobalShortcuts
+
+    local extraGlobalShortcuts = config.safeRequire(getLocalModulePath("global_extra"), logError)
+    config.globalShortcuts = {}
+    for _, shortcut in ipairs(activeGlobalShortcuts) do
+        table.insert(config.globalShortcuts, shortcut)
+    end
+    for _, shortcut in ipairs(extraGlobalShortcuts or {}) do
+        table.insert(config.globalShortcuts, shortcut)
+    end
 end
 
 function config.reloadConfigs(logError)
@@ -293,6 +301,7 @@ function config.reloadConfigs(logError)
     end
 
     package.loaded[getLocalModulePath("global_shortcuts")] = nil
+    package.loaded[getLocalModulePath("global_extra")] = nil
 
     config.loadLocalConfigs(logError)
 end

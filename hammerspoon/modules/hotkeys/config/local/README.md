@@ -14,8 +14,9 @@ Private mapping overrides, symlinked from `~/.dotfiles-private` and git-ignored.
 | `settings_mappings.lua` | Settings (Hyper+S) | `pref` |
 | `routines_mappings.lua` | Routines (Hyper+R) | `steps` (for `runSteps`) |
 | `global_shortcuts_mappings.lua` | Global Hyper shortcuts | a list of entries like `config.globalShortcuts`, not keyed by letter |
+| `global_extra_mappings.lua` | Global Hyper shortcuts, added | same list format, appended to the active global shortcuts |
 
-A non-empty file **replaces** the defaults entirely, it does not merge, so list every key you want. A file that fails to load or returns an empty table leaves the defaults in place. Custom modals (System, Window, Macros) never read `<modal>_mappings.lua` files: Macros takes its keys from `config/macros_mappings.lua`. The recording macro reads its settings from `rec_config.lua` here.
+A non-empty file **replaces** the defaults entirely, it does not merge, so list every key you want. `global_extra_mappings.lua` is the exception: it adds to the defaults (or to `global_shortcuts_mappings.lua`). A file that fails to load or returns an empty table leaves the defaults in place. Custom modals (System, Window, Macros) never read `<modal>_mappings.lua` files: Macros takes its keys from `config/macros_mappings.lua`. The recording macro reads its settings from `rec_config.lua` here.
 
 ```lua
 -- apps_mappings.lua
