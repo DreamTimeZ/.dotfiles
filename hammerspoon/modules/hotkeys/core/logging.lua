@@ -18,10 +18,11 @@ local function sanitizeMessage(message)
     end
 
     -- Remove potential control characters and limit length
-    message = message:gsub("[\x00-\x1f\x7f-\x9f]", "")
+    message = message:gsub("[\t\r\n]+", " ")
+    message = message:gsub("[\x00-\x1f\x7f]", ""):gsub("\xC2[\x80-\x9F]", "")
 
     if #message > config.logging.maxMessageLength then
-        message = message:sub(1, config.logging.maxMessageLength - 3) .. "..."
+        message = message:sub(1, utf8.offset(message, 0, config.logging.maxMessageLength - 2) - 1) .. "..."
     end
 
     return message
