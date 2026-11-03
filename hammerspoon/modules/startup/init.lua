@@ -2,6 +2,8 @@
 -- Only active during a grace period after system boot to avoid interfering
 -- with normal app usage during the session.
 
+local M = {}
+
 local BOOT_GRACE_PERIOD_SECONDS = 300
 
 local bootTimeSec = hs.execute("sysctl -n kern.boottime"):match("sec = (%d+)")
@@ -21,14 +23,21 @@ if isBootPhase() then
   end
 
   -- Hide apps that launch after Hammerspoon
+  local filters = {}
   for _, appName in ipairs(appsToHide) do
-    hs.window.filter.new(appName)
+    filters[#filters + 1] = hs.window.filter.new(appName)
       :subscribe(hs.window.filter.windowCreated, function(window)
         if window and isBootPhase() then
           window:application():hide()
         end
       end)
   end
+
+  -- A subscribed filter keeps window.filter's global watcher (AX observers on every app and
+  -- window) running until unsubscribed. Held in M so the timer survives garbage collection.
+  M.graceEndTimer = hs.timer.doAfter(BOOT_GRACE_PERIOD_SECONDS - (os.time() - bootTime), function()
+    for _, filter in ipairs(filters) do filter:unsubscribeAll() end
+  end)
 end
 
-return {}
+return M
