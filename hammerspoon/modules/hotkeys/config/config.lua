@@ -196,6 +196,8 @@ config.globalShortcuts = {
     { key = "m", modal = "macros",   desc = "Macros Modal" },
     { key = "r", modal = "routines", desc = "Routines Modal" },
 
+    { key = "h", fn = function() require("modules.hotkeys").showGlobalShortcuts() end, desc = "Show Global Shortcuts" },
+
     {
         key = "return",
         handler = {

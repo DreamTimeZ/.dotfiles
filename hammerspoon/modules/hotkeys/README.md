@@ -47,8 +47,8 @@ Each `config.globalShortcuts` entry has a `key` (name or keycode) and one of:
 - `handler` + `mapping`: run an action handler directly
 - `fn`: call a function
 
-Modifiers default to Hyper. `mods = {}` binds the bare key. A non-empty `config/local/global_shortcuts_mappings.lua` replaces the whole list, `config/local/global_extra_mappings.lua` appends to it. An entry that reuses the key combination of an earlier entry is skipped and logged as an error.
+Modifiers default to Hyper. `mods = {}` binds the bare key. A non-empty `config/local/global_shortcuts_mappings.lua` replaces the whole list, `config/local/global_extra_mappings.lua` appends to it. An entry that reuses the key combination of an earlier entry is skipped and logged as an error. Hyper+H lists every bound entry by its `desc` (or `mapping.desc`), so give each one.
 
 ## API
 
-`require("modules.hotkeys")` returns `exitAllModals()`, `setLogLevel(level)`, `setLoggingEnabled(enabled)`, `createModal(name)`, `executeAction(handler, mapping)`, `reloadConfig()`.
+`require("modules.hotkeys")` returns `exitAllModals()`, `showGlobalShortcuts()`, `setLogLevel(level)`, `setLoggingEnabled(enabled)`, `createModal(name)`, `executeAction(handler, mapping)`, `reloadConfig()`.

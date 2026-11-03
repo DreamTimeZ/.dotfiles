@@ -2,9 +2,17 @@ local config = require("modules.hotkeys.config")
 local logging = require("modules.hotkeys.core.logging")
 local actions = require("modules.hotkeys.core.actions")
 local modals = require("modules.hotkeys.core.modals")
+local ui = require("modules.hotkeys.ui.ui")
 
 local globalHotkeys = {}
+local boundShortcuts = {}
 local modules = {}
+
+local globalList = hs.hotkey.modal.new()
+globalList:bind("", "escape", function() globalList:exit() end)
+function globalList:exited()
+    ui.hideShortcutPanel()
+end
 
 config.loadLocalConfigs(logging.error)
 
@@ -43,7 +51,34 @@ local function exitAllModals()
     for _, mod in pairs(modules) do
         if mod.exit then mod.exit() end
     end
+    globalList:exit()
     hs.alert.closeAll()
+end
+
+local function shortcutRow(shortcut)
+    local key = shortcut.key
+    if type(key) == "number" then
+        key = hs.keycodes.map[key] or tostring(key)
+    end
+    local desc = shortcut.desc or (shortcut.mapping and shortcut.mapping.desc) or ""
+    if shortcut.mods and #shortcut.mods == 0 then
+        desc = desc .. " (no Hyper)"
+    elseif shortcut.mods then
+        local mods = type(shortcut.mods) == "table" and table.concat(shortcut.mods, "+") or shortcut.mods
+        key = mods .. "+" .. key
+    end
+    return { key = key, desc = desc }
+end
+
+local function showGlobalShortcuts()
+    exitAllModals()
+    local rows = {}
+    for _, shortcut in ipairs(boundShortcuts) do
+        table.insert(rows, shortcutRow(shortcut))
+    end
+    table.sort(rows, function(a, b) return a.desc:lower() < b.desc:lower() end)
+    ui.showShortcutPanel("Hyper + key:", rows)
+    globalList:enter()
 end
 
 local function loadModules()
@@ -65,6 +100,7 @@ local function createKeyBindings()
     end
 
     globalHotkeys = {}
+    boundShortcuts = {}
     local boundCombos = {}
     logging.info("Creating key bindings from configuration")
 
@@ -122,6 +158,7 @@ local function createKeyBindings()
         end
         boundCombos[hotkey.idx] = true
         table.insert(globalHotkeys, hotkey)
+        table.insert(boundShortcuts, shortcut)
         validCount = validCount + 1
 
         ::continue::
@@ -142,6 +179,7 @@ initialize()
 
 return {
     exitAllModals = exitAllModals,
+    showGlobalShortcuts = showGlobalShortcuts,
     setLogLevel = logging.setLogLevel,
     setLoggingEnabled = logging.setLoggingEnabled,
     createModal = createModal,
