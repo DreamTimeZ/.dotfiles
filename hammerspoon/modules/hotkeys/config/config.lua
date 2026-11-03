@@ -184,6 +184,15 @@ config.modals = {
         mappings = {}
     },
 
+    voice = {
+        title = "Voice:",
+        handler = {
+            field = "fn",
+            action = "functionCall"
+        },
+        mappings = {}
+    },
+
 }
 
 config.globalShortcuts = {
@@ -195,6 +204,7 @@ config.globalShortcuts = {
     { key = "space", modal = "window", desc = "Window Management Modal" },
     { key = "m", modal = "macros",   desc = "Macros Modal" },
     { key = "r", modal = "routines", desc = "Routines Modal" },
+    { key = "v", modal = "voice",    desc = "Voice Modal" },
 
     { key = "h", fn = function() require("modules.hotkeys").showGlobalShortcuts() end, desc = "Show Global Shortcuts" },
 

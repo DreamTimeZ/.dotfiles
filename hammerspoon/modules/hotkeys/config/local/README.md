@@ -13,6 +13,7 @@ Private mapping overrides, symlinked from `~/.dotfiles-private` and git-ignored.
 | `websites_mappings.lua` | Websites (Hyper+W) | `url` |
 | `settings_mappings.lua` | Settings (Hyper+S) | `pref` |
 | `routines_mappings.lua` | Routines (Hyper+R) | `steps` (for `runSteps`) |
+| `voice_mappings.lua` | Voice (Hyper+V) | `fn` |
 | `global_shortcuts_mappings.lua` | Global Hyper shortcuts | a list of entries like `config.globalShortcuts`, not keyed by letter |
 | `global_extra_mappings.lua` | Global Hyper shortcuts, added | same list format, appended to the active global shortcuts |
 

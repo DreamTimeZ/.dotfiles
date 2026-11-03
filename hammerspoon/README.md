@@ -20,6 +20,7 @@ Hyper is Cmd+Ctrl+Alt+Shift, mapped from Caps Lock by Karabiner-Elements.
 | Hyper + Space | Window modal (resize, move) |
 | Hyper + M | Macros modal |
 | Hyper + R | Routines modal (mappings only in the private repo) |
+| Hyper + V | Voice modal (mappings only in the private repo) |
 | Hyper + Return | Launch or focus Ghostty |
 | Hyper + # | Transparent Ghostty, a separate instance (keycode 42, next to Return on German ISO) |
 | Hyper + C | Toggle auto-clicker (Macros modal `s` and `i` still cover it) |
