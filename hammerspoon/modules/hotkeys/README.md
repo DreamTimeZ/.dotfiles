@@ -47,7 +47,7 @@ Each `config.globalShortcuts` entry has a `key` (name or keycode) and one of:
 - `handler` + `mapping`: run an action handler directly
 - `fn`: call a function
 
-Modifiers default to Hyper. `mods = {}` binds the bare key. A non-empty `config/local/global_shortcuts_mappings.lua` replaces the whole list, `config/local/global_extra_mappings.lua` appends to it.
+Modifiers default to Hyper. `mods = {}` binds the bare key. A non-empty `config/local/global_shortcuts_mappings.lua` replaces the whole list, `config/local/global_extra_mappings.lua` appends to it. An entry that reuses the key combination of an earlier entry is skipped and logged as an error.
 
 ## API
 

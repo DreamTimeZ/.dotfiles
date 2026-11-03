@@ -65,6 +65,7 @@ local function createKeyBindings()
     end
 
     globalHotkeys = {}
+    local boundCombos = {}
     logging.info("Creating key bindings from configuration")
 
     local validCount = 0
@@ -103,7 +104,23 @@ local function createKeyBindings()
             goto continue
         end
 
-        local hotkey = hs.hotkey.bind(mods, key, callback)
+        local ok, hotkey = pcall(hs.hotkey.new, mods, key, callback)
+        if not ok then
+            logging.error("Cannot bind shortcut for key '" .. tostring(key) .. "': " .. tostring(hotkey))
+            goto continue
+        end
+        -- hs.hotkey lets a later binding of the same combination shadow the earlier one, logged only at info level.
+        if boundCombos[hotkey.idx] then
+            logging.error("Skipping shortcut for key '" .. tostring(key) .. "': " .. hotkey.idx .. " is already bound")
+            hotkey:delete()
+            goto continue
+        end
+        if not hotkey:enable() then
+            logging.error("Cannot bind shortcut for key '" .. tostring(key) .. "'")
+            hotkey:delete()
+            goto continue
+        end
+        boundCombos[hotkey.idx] = true
         table.insert(globalHotkeys, hotkey)
         validCount = validCount + 1
 
