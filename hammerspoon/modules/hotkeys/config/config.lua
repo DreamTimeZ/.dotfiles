@@ -1,41 +1,31 @@
--- Centralized configuration for hotkeys module
 local config = {}
 
--- Base configuration settings
-------------------------------
-
--- Paths configuration
 config.paths = {
-    localModulesBase = "modules.hotkeys.config.local.",  -- Base path for local modules
+    localModulesBase = "modules.hotkeys.config.local.",
 }
 
--- Modifier keys configuration
 config.modifiers = {
     hyper = {"cmd", "ctrl", "alt", "shift"}
 }
 
--- Logging configuration
 config.logging = {
-    -- Log levels
     LEVELS = {
-        ERROR = 1,    -- Production errors that need immediate attention
-        WARN = 2,     -- Warning conditions that should be monitored
-        INFO = 3,     -- General informational messages (disabled in prod)
-        DEBUG = 4     -- Detailed debugging information (disabled in prod)
+        ERROR = 1,
+        WARN = 2,
+        INFO = 3,
+        DEBUG = 4
     },
-    -- Production-grade settings
     enabled = true,
-    level = 1,              -- Production default: ERROR only
+    level = 1,
     maxMessageLength = 500, -- Prevent log spam
     rateLimiting = {
         enabled = true,
-        maxPerSecond = 10,  -- Max 10 log messages per second
+        maxPerSecond = 10,
         windowMs = 1000
     },
     includeTimestamp = true,
     includeLevel = true,
-    includeContext = false, -- Disable verbose context in production
-    -- Level name lookup
+    includeContext = false,
     levelNames = {
         [1] = "ERROR",
         [2] = "WARN",
@@ -44,46 +34,22 @@ config.logging = {
     }
 }
 
--- Timing constants
 config.delays = {
-    appActivation = 0.1,     -- Delay after launching app to ensure it's ready for activation
-    ghosttyLaunchPoll = 0.1, -- Poll interval while waiting for a new Ghostty instance to register
-    ghosttyLaunchMaxAttempts = 30, -- Stop polling after this many tries (~3s at the poll interval)
+    appActivation = 0.1, -- Delay after launching app to ensure it's ready for activation
+    ghosttyLaunchPoll = 0.1,
+    ghosttyLaunchMaxAttempts = 30,
 }
 
--- UI settings
 config.ui = {
-    maxItemsPerLine = 5,     -- Maximum items per line in formatted alerts
-    keyFormat = "[%s] %s",   -- Format for key hint display
+    maxItemsPerLine = 5,
+    keyFormat = "[%s] %s",
 }
 
--- System preferences settings
 config.systemPreferences = {
-    forceKillDelay = 0.5,   -- Delay after force kill before opening a new URL (seconds)
+    forceKillDelay = 0.5,
 }
 
--- HOW TO ADD A NEW MODAL:
--- Just add a new entry to config.modals with the following structure:
---
--- config.modals.newmodal = {
---     title = "My New Modal:",  -- Title to display in the modal
---     handler = {
---         field = "myfield",    -- Field name required in mappings
---         action = "myHandler"  -- Function in utils to handle the action
---     },
---     mappings = {              -- Key mappings for this modal
---         a = { myfield = "value1", desc = "Description 1" },
---         b = { myfield = "value2", desc = "Description 2" }
---     },
---     -- Optional for custom implementations:
---     customModule = "modules.hotkeys.mymodule"
--- }
---
--- The system will automatically handle your new modal without any code changes.
-
--- Modal definitions with their mappings
 config.modals = {
-    -- Applications modal
     apps = {
         title = "Apps:",
         handler = {
@@ -111,7 +77,6 @@ config.modals = {
         }
     },
 
-    -- Window management modal
     window = {
         title = "Window Management:",
         handler = {
@@ -119,10 +84,8 @@ config.modals = {
             action = "functionCall"
         },
         customModule = "modules.hotkeys.modals.window"
-        -- mappings defined in window.lua
     },
 
-    -- Finder locations modal
     finder = {
         title = "Finder:",
         handler = {
@@ -144,7 +107,6 @@ config.modals = {
         }
     },
 
-    -- Websites modal
     websites = {
         title = "Websites:",
         handler = {
@@ -163,7 +125,6 @@ config.modals = {
         }
     },
 
-    -- System Settings panes modal
     settings = {
         title = "Settings:",
         handler = {
@@ -195,7 +156,6 @@ config.modals = {
         }
     },
 
-    -- System actions modal
     system = {
         title = "System Actions:",
         handler = {
@@ -203,10 +163,8 @@ config.modals = {
             action = "functionCall"
         },
         customModule = "modules.hotkeys.modals.system"
-        -- mappings defined in system.lua
     },
 
-    -- Macros modal
     macros = {
         title = "Macros:",
         handler = {
@@ -214,10 +172,8 @@ config.modals = {
             action = "functionCall"
         },
         customModule = "modules.hotkeys.modals.macros"
-        -- mappings defined in macros.lua
     },
 
-    -- Routines modal (compound app workflows)
     routines = {
         title = "Routines:",
         handler = {
@@ -225,14 +181,11 @@ config.modals = {
             action = "runSteps"
         },
         mappings = {}
-        -- private mappings loaded from local/routines_mappings.lua
     },
 
 }
 
--- Global shortcuts configuration
 config.globalShortcuts = {
-    -- Modal activators
     { key = "a", modal = "apps",     desc = "Apps Modal" },
     { key = "f", modal = "finder",   desc = "Finder Modal" },
     { key = "w", modal = "websites", desc = "Websites Modal" },
@@ -242,7 +195,6 @@ config.globalShortcuts = {
     { key = "m", modal = "macros",   desc = "Macros Modal" },
     { key = "r", modal = "routines", desc = "Routines Modal" },
 
-    -- Direct app shortcuts
     {
         key = "return",
         handler = {
@@ -254,7 +206,8 @@ config.globalShortcuts = {
 
     -- Transparent Ghostty: single separate instance so normal windows stay opaque.
     -- Keycode 42 is the key physically next to Return (# on German ISO),
-    -- bound by code because "#" is not a named key in Hammerspoon's keymap.
+    -- bound by code because hs.hotkey reads a key string starting with "#" as a raw keycode ("#42"),
+    -- so "#" alone is an invalid key.
     {
         key = 42,
         handler = {
@@ -272,7 +225,6 @@ config.globalShortcuts = {
     },
 
     -- Mic mute toggle (Karabiner: F5 -> F18 -> Hammerspoon)
-    -- mods = {} disables hyper modifier (see framework contract in hotkeys/init.lua).
     {
         key = "f18",
         mods = {},
@@ -282,21 +234,16 @@ config.globalShortcuts = {
 
 }
 
--- Configuration loading logic
-------------------------------
-
 -- Configuration cache to avoid repeated reloading
 local configCache = {
     isInitialized = false,
     localMappingsLoaded = {}
 }
 
--- Get the module path for a given module name
 local function getLocalModulePath(modalName)
     return config.paths.localModulesBase .. modalName .. "_mappings"
 end
 
--- Safely require a module with error handling
 local function safeRequire(modulePath, logFn)
     local status, result = pcall(require, modulePath)
 
