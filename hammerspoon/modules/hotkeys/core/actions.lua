@@ -10,46 +10,14 @@ local validation = require("modules.hotkeys.core.validation")
 function M.launchOrFocus(appName)
     if not validation.validate(appName, {name = "app name"}) then return false end
 
-    -- Check if appName is a full path (contains .app extension)
-    if appName:match("%.app$") then
-        -- Use shell command for full paths
-        hs.execute(string.format('open -a "%s"', appName))
-
-        -- Extract app name from bundle for focusing
-        local extractedName = appName:match("([^/]+)%.app$")
-        if extractedName then
-            hs.timer.doAfter(config.delays.appActivation, function()
-                local app = hs.application.get(extractedName)
-                if app then app:activate() end
-            end)
-        end
-    else
-        -- Use standard launch method for app names
-        hs.application.launchOrFocus(appName)
-        hs.timer.doAfter(config.delays.appActivation, function()
-            local app = hs.application.get(appName)
-            if app then app:activate() end
-        end)
-    end
-    return true
-end
-
--- Launch or focus app using full path (for apps not in /Applications)
-function M.launchOrFocusPath(appPath)
-    if not validation.validate(appPath, {name = "app path"}) then return false end
-
-    -- Use shell command to launch app with full path
-    hs.execute(string.format('open -a "%s"', appPath))
-
-    -- Extract app name from bundle for focusing
-    local appName = appPath:match("([^/]+)%.app$")
-    if appName then
-        hs.timer.doAfter(config.delays.appActivation, function()
-            local app = hs.application.get(appName)
-            if app then app:activate() end
-        end)
-    end
-    return true
+    -- Accepts an app name or a full .app path, focused by its .app file name
+    local launched = hs.application.launchOrFocus(appName)
+    local focusName = appName:match("([^/]+)%.app$") or appName
+    hs.timer.doAfter(config.delays.appActivation, function()
+        local app = hs.application.get(focusName)
+        if app then app:activate() end
+    end)
+    return launched
 end
 
 -- Bundle id shared by every Ghostty process (normal and transparent alike).
@@ -83,7 +51,7 @@ end
 function M.launchGhosttyTransparent(opacity)
     if not validation.validate(opacity, {name = "opacity"}) then return false end
 
-    -- Rebuild the value from a number so it can never inject into the shell.
+    -- Rebuild the value from a number so only a numeric opacity reaches Ghostty's arguments.
     local opacityNum = tonumber(opacity)
     if not opacityNum then
         return validation.handleError("Invalid opacity value: " .. tostring(opacity), true)
@@ -107,35 +75,41 @@ function M.launchGhosttyTransparent(opacity)
         before[app:pid()] = true
     end
 
-    hs.execute(string.format(
-        'open -na Ghostty.app --args --background-opacity=%.2f '
-            .. '--background-opacity-cells=true --quit-after-last-window-closed=true',
-        opacityNum
-    ))
-
-    local attempts = 0
-    local found = false
-    hs.timer.doUntil(
-        function()
-            return found or attempts >= config.delays.ghosttyLaunchMaxAttempts
-        end,
-        function()
-            attempts = attempts + 1
-            for _, app in ipairs(hs.application.applicationsForBundleID(GHOSTTY_BUNDLE_ID)) do
-                if not before[app:pid()] then
-                    hs.settings.set(TRANSPARENT_PID_KEY, app:pid())
-                    app:activate()
-                    found = true
-                    break
+    -- Polling starts once `open` exits, as it did when `open` ran synchronously.
+    local task = hs.task.new("/usr/bin/open", function()
+        local attempts = 0
+        local found = false
+        hs.timer.doUntil(
+            function()
+                return found or attempts >= config.delays.ghosttyLaunchMaxAttempts
+            end,
+            function()
+                attempts = attempts + 1
+                for _, app in ipairs(hs.application.applicationsForBundleID(GHOSTTY_BUNDLE_ID)) do
+                    if not before[app:pid()] then
+                        hs.settings.set(TRANSPARENT_PID_KEY, app:pid())
+                        app:activate()
+                        found = true
+                        break
+                    end
                 end
-            end
-            -- Release the guard once the instance is found or the search gives up.
-            if found or attempts >= config.delays.ghosttyLaunchMaxAttempts then
-                transparentGhosttyLaunching = false
-            end
-        end,
-        config.delays.ghosttyLaunchPoll
-    )
+                -- Release the guard once the instance is found or the search gives up.
+                if found or attempts >= config.delays.ghosttyLaunchMaxAttempts then
+                    transparentGhosttyLaunching = false
+                end
+            end,
+            config.delays.ghosttyLaunchPoll
+        )
+    end, {
+        "-na", "Ghostty.app", "--args",
+        string.format("--background-opacity=%.2f", opacityNum),
+        "--background-opacity-cells=true",
+        "--quit-after-last-window-closed=true",
+    })
+    if not (task and task:start()) then
+        transparentGhosttyLaunching = false
+        return validation.handleError("Cannot launch transparent Ghostty", true)
+    end
 
     return true
 end
@@ -152,7 +126,7 @@ function M.openFinderFolder(path)
         return validation.handleError("Path does not exist: " .. path, true)
     end
 
-    -- Escape path for use in scripts and commands
+    -- Escape path for use in the AppleScript
     local escapedPath = path:gsub('"', '\\"')
 
     -- Check if Finder is running and frontmost
@@ -175,8 +149,8 @@ function M.openFinderFolder(path)
 
         hs.osascript.applescript(script)
     else
-        -- Finder isn't frontmost or isn't running - use open command
-        hs.execute(string.format('open "%s"', escapedPath))
+        -- Finder isn't frontmost or isn't running
+        hs.open(path)
     end
 
     return true
@@ -189,6 +163,10 @@ function M.openURL(url)
     return true
 end
 
+-- System Settings and System Preferences share this bundle id. Pane URLs
+-- (x-apple.systempreferences:...) lack "://", which hs.urlevent.openURL rejects.
+local SYSTEM_SETTINGS_BUNDLE_ID = "com.apple.systempreferences"
+
 function M.openSystemPreferencePane(url)
     if not validation.validate(url, {name = "preference pane URL"}) then return false end
 
@@ -200,7 +178,7 @@ function M.openSystemPreferencePane(url)
     local appName = macOSVersion.major >= 13 and "System Settings" or "System Preferences"
 
     -- Try to open URL directly
-    hs.execute("open \"" .. url .. "\"")
+    hs.urlevent.openURLWithBundle(url, SYSTEM_SETTINGS_BUNDLE_ID)
 
     -- Check if we successfully opened the URL
     local function checkSettingsOpened()
@@ -220,11 +198,11 @@ function M.openSystemPreferencePane(url)
 
                 -- Wait for app to close before reopening
                 hs.timer.doAfter(sysPrefs.forceKillDelay, function()
-                    hs.execute("open \"" .. url .. "\"")
+                    hs.urlevent.openURLWithBundle(url, SYSTEM_SETTINGS_BUNDLE_ID)
                 end)
             else
                 -- Try launching again
-                hs.execute("open \"" .. url .. "\"")
+                hs.urlevent.openURLWithBundle(url, SYSTEM_SETTINGS_BUNDLE_ID)
             end
         end
     end)
@@ -266,7 +244,6 @@ end
 -- Map of action handlers for better performance and maintainability
 local ACTION_HANDLERS = {
     launchOrFocus = M.launchOrFocus,
-    launchOrFocusPath = M.launchOrFocusPath,
     launchGhosttyTransparent = M.launchGhosttyTransparent,
     openURL = M.openURL,
     openFinderFolder = M.openFinderFolder,

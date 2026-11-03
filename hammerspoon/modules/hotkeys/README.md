@@ -35,7 +35,7 @@ hotkeys/
 
 2. Bind it in `config.globalShortcuts`: `{ key = "x", modal = "newmodal", desc = "New Modal" }`. Without this entry the modal loads but nothing opens it.
 
-`handler.action` names a key of `ACTION_HANDLERS` in `core/actions.lua`: `launchOrFocus`, `launchOrFocusPath`, `launchGhosttyTransparent`, `openURL`, `openFinderFolder`, `openSystemPreferencePane`, `clearNotifications`, `functionCall`, `runSteps`. To add one, write the function in `actions.lua` and register it there.
+`handler.action` names a key of `ACTION_HANDLERS` in `core/actions.lua`: `launchOrFocus`, `launchGhosttyTransparent`, `openURL`, `openFinderFolder`, `openSystemPreferencePane`, `clearNotifications`, `functionCall`, `runSteps`. To add one, write the function in `actions.lua` and register it there.
 
 For behavior beyond one handler per modal, set `customModule = "modules.hotkeys.modals.<name>"` and build the module with `modals.createModalModule(mappings, title, modal, name)`, as `modals/system.lua` does. Custom modals ignore `config/local/` mappings.
 
