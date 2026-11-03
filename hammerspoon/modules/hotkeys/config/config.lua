@@ -32,8 +32,6 @@ config.logging = {
         maxPerSecond = 10,  -- Max 10 log messages per second
         windowMs = 1000
     },
-    -- Performance optimization
-    asyncLogging = false,   -- Synchronous for reliability in Hammerspoon
     includeTimestamp = true,
     includeLevel = true,
     includeContext = false, -- Disable verbose context in production
@@ -61,8 +59,6 @@ config.ui = {
 
 -- System preferences settings
 config.systemPreferences = {
-    checkInterval = 0.1,    -- How often to check if System Settings/Preferences has closed (seconds)
-    maxWaitTime = 3.0,      -- Maximum time to wait for graceful close (seconds)
     forceKillDelay = 0.5,   -- Delay after force kill before opening a new URL (seconds)
 }
 
