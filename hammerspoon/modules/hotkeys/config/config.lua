@@ -234,17 +234,20 @@ config.globalShortcuts = {
 
 }
 
--- Configuration cache to avoid repeated reloading
-local configCache = {
-    isInitialized = false,
-    localMappingsLoaded = {}
-}
+-- Kept apart: a reload rebuilds the active mappings from these, so a removed or broken local file
+-- restores the defaults.
+local defaultGlobalShortcuts = config.globalShortcuts
+local defaultModalMappings = {}
+for modalName, modal in pairs(config.modals) do
+    defaultModalMappings[modalName] = modal.mappings
+end
 
 local function getLocalModulePath(modalName)
     return config.paths.localModulesBase .. modalName .. "_mappings"
 end
 
-local function safeRequire(modulePath, logFn)
+function config.safeRequire(modulePath, logFn)
+    if not package.searchpath(modulePath, package.path) then return nil end
     local status, result = pcall(require, modulePath)
 
     if status and type(result) == "table" then
@@ -260,69 +263,38 @@ local function safeRequire(modulePath, logFn)
     return nil
 end
 
--- Load local configurations
-function config.loadLocalConfigs(forceReload, utils)
-    -- Skip if already initialized and not forcing reload
-    if configCache.isInitialized and not forceReload then return end
-
-    -- Loading local configurations
-
-    -- Load local mappings for all defined modals
+function config.loadLocalConfigs(logError)
     for modalName, modal in pairs(config.modals) do
-        -- Skip if we've already loaded this modal's mappings and not forcing reload
-        if not forceReload and configCache.localMappingsLoaded[modalName] then goto continue end
-
-        -- Only try to load local mappings if this isn't a custom implementation
         if not modal.customModule then
             local localPath = getLocalModulePath(modalName)
 
-            -- Load the local mappings
-            local localMappings = safeRequire(localPath, nil)
+            local localMappings = config.safeRequire(localPath, logError)
 
-            -- If local mappings loaded successfully, replace the defaults
             if localMappings and next(localMappings) ~= nil then
-                -- Using local mappings for " .. modalName
                 modal.mappings = localMappings
+            else
+                modal.mappings = defaultModalMappings[modalName]
             end
         end
-
-        configCache.localMappingsLoaded[modalName] = true
-
-        ::continue::
     end
 
-    -- Load custom global shortcuts if available
-    local localGlobalShortcuts = safeRequire(getLocalModulePath("global_shortcuts"), nil)
+    local localGlobalShortcuts = config.safeRequire(getLocalModulePath("global_shortcuts"), logError)
 
+    local activeGlobalShortcuts = defaultGlobalShortcuts
     if localGlobalShortcuts and next(localGlobalShortcuts) ~= nil then
-        -- Using local global shortcuts configuration
-        config.globalShortcuts = localGlobalShortcuts
+        activeGlobalShortcuts = localGlobalShortcuts
     end
-
-    configCache.isInitialized = true
-    -- Configuration loading complete
+    config.globalShortcuts = activeGlobalShortcuts
 end
 
--- Force reload of configuration files
-function config.reloadConfigs(utils)
-    -- Forcing configuration reload
-
-    -- Clear package.loaded cache for all module mappings
+function config.reloadConfigs(logError)
     for modalName, _ in pairs(config.modals) do
         package.loaded[getLocalModulePath(modalName)] = nil
     end
 
-    -- Clear global shortcuts module from cache
     package.loaded[getLocalModulePath("global_shortcuts")] = nil
 
-    -- Reset cache state
-    configCache.isInitialized = false
-    configCache.localMappingsLoaded = {}
-
-    -- Reload all configurations
-    config.loadLocalConfigs(true, utils)
-
-    -- Configuration reload complete
+    config.loadLocalConfigs(logError)
 end
 
 return config

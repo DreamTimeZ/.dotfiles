@@ -10,8 +10,11 @@ local env = {
     USER = os.getenv("USER"),
 }
 
-local ok, localCfg = pcall(require, "modules.hotkeys.config.local.rec_config")
-if ok and type(localCfg) == "table" and type(localCfg.env) == "table" then
+local localCfg = require("modules.hotkeys.config").safeRequire(
+    "modules.hotkeys.config.local.rec_config",
+    require("modules.hotkeys.core.logging").error
+)
+if localCfg and type(localCfg.env) == "table" then
     for k, v in pairs(localCfg.env) do env[k] = v end
 end
 

@@ -6,12 +6,7 @@ local modals = require("modules.hotkeys.core.modals")
 local globalHotkeys = {}
 local modules = {}
 
-config.loadLocalConfigs(false, {
-    info = logging.info,
-    debug = logging.debug,
-    warn = logging.warn,
-    error = logging.error
-})
+config.loadLocalConfigs(logging.error)
 
 local function createModal(modalName)
     local modal = config.modals[modalName]
@@ -135,12 +130,8 @@ return {
     createModal = createModal,
     executeAction = actions.executeAction,
     reloadConfig = function()
-        config.reloadConfigs({
-            info = logging.info,
-            debug = logging.debug,
-            warn = logging.warn,
-            error = logging.error
-        })
+        exitAllModals()
+        config.reloadConfigs(logging.error)
         initialize()
     end
 }
