@@ -43,6 +43,7 @@ config.delays = {
 config.ui = {
     maxItemsPerLine = 5,
     keyFormat = "[%s] %s",
+    panelMaxScreenWidthFraction = 0.9,
 }
 
 config.systemPreferences = {

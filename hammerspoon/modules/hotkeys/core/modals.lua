@@ -1,6 +1,5 @@
 local M = {}
 
-local config = require("modules.hotkeys.config")
 local log = require("modules.hotkeys.core.logging")
 local validation = require("modules.hotkeys.core.validation")
 local actions = require("modules.hotkeys.core.actions")
@@ -21,49 +20,36 @@ function M.setupModal(mappings, title, modal)
     local hotModal = hs.hotkey.modal.new()
 
     local validBindings = {}
-    local sortedHints = {}
+    local hints = {}
 
     for key, binding in pairs(mappings) do
         local isValid, errorMsg = validation.validateBinding(binding, modal)
 
         if isValid then
             validBindings[key] = binding
-
-            local description = binding.desc or key
-            table.insert(sortedHints, {
-                key = key,
-                text = string.format(config.ui.keyFormat, key, description),
-                description = description
-            })
+            table.insert(hints, { key = key, desc = binding.desc or key })
         else
             log.error("Skipping invalid binding for key '" .. key .. "': " .. (errorMsg or "unknown error"))
         end
     end
 
-    if #sortedHints > 0 then
-        table.sort(sortedHints, function(a, b)
-            return a.description:lower() < b.description:lower()
-        end)
-
-        local hintTexts = {}
-        for _, hint in ipairs(sortedHints) do
-            table.insert(hintTexts, hint.text)
-        end
-
-        function hotModal:entered()
-            hs.alert.closeAll()
-            ui.showFormattedAlert(hintTexts, title or "Actions:")
-        end
-    else
-        function hotModal:entered()
-            hs.alert.closeAll()
-            ui.showFormattedAlert({"No actions available"}, title or "Actions:")
-        end
+    table.sort(hints, function(a, b) return a.desc:lower() < b.desc:lower() end)
+    if #hints == 0 then
+        hints = { { desc = "No actions available" } }
     end
 
-    -- Hints close before the action runs so alerts the action shows stay visible.
-    local function handleModalAction(binding)
+    function hotModal:entered()
         hs.alert.closeAll()
+        ui.showShortcutPanel(title or "Actions:", hints)
+    end
+
+    -- Every exit path (action, Escape, exitAllModals) runs this.
+    function hotModal:exited()
+        ui.hideShortcutPanel()
+    end
+
+    -- exit() hides the panel before the action runs, so alerts the action shows stay visible.
+    local function handleModalAction(binding)
         hotModal:exit()
 
         local success = actions.executeAction(modal.handler, binding)
@@ -78,7 +64,7 @@ function M.setupModal(mappings, title, modal)
         hotModal:bind("", key, function() handleModalAction(boundBinding) end)
     end
 
-    hotModal:bind("", "escape", function() hs.alert.closeAll() hotModal:exit() end)
+    hotModal:bind("", "escape", function() hotModal:exit() end)
 
     return hotModal
 end
@@ -93,8 +79,7 @@ function M.createModalModule(mappings, title, modal, modalName)
 
     return {
         enter = function() hotModal:enter() end,
-        exit = function() hotModal:exit() hs.alert.closeAll() end,
-        isActive = function() return hotModal._eventport.m_enabled end
+        exit = function() hotModal:exit() end,
     }
 end
 
