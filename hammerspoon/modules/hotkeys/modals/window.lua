@@ -255,37 +255,27 @@ local function showWindowOverlays()
         return true
     end
 
-    -- Collect visible windows
+    -- Collect visible windows, reading the sort keys once per window: isVisible is an
+    -- AX round trip, and the comparator below runs O(n log n) times.
     local allWindows = {}
-    local appCache = {}
+    local isVisible = {}
+    local appNames = {}
 
     for _, win in ipairs(hs_window.allWindows()) do
         if win:isStandard() then
             table.insert(allWindows, win)
-
-            -- Cache application names
-            local app = win:application()
-            local appId = app:pid()
-            if not appCache[appId] then
-                appCache[appId] = app:name() or "Unknown"
-            end
+            isVisible[win] = win:isVisible()
+            appNames[win] = win:application():name() or "Unknown"
         end
     end
 
     if #allWindows == 0 then return true end
 
-    -- Optimized sort with cached app names
     table.sort(allWindows, function(a, b)
-        local aVisible = a:isVisible()
-        local bVisible = b:isVisible()
-
-        if aVisible ~= bVisible then
-            return aVisible
+        if isVisible[a] ~= isVisible[b] then
+            return isVisible[a]
         end
-
-        local aAppId = a:application():pid()
-        local bAppId = b:application():pid()
-        return (appCache[aAppId] or "") < (appCache[bAppId] or "")
+        return appNames[a] < appNames[b]
     end)
 
     -- Create overlays (maximum of 9)
@@ -318,8 +308,7 @@ local function showWindowOverlays()
 
             elements[2].text = tostring(i)
 
-            local appId = win:application():pid()
-            elements[3].text = appCache[appId] or "Unknown"
+            elements[3].text = appNames[win]
 
             -- Add all elements at once
             canvas:appendElements(elements)
@@ -392,6 +381,10 @@ local function showHiddenWindows()
     local choices = {}
 
     for _, app in ipairs(hs_application.runningApplications()) do
+        -- Background-only processes (kind -1) cannot own windows, so skip their AX
+        -- query, as hs.window.allWindows does.
+        if app:kind() < 0 then goto continue end
+
         local appHidden = app:isHidden()
         local appName = app:name() or "Unknown"
         -- One icon per app (bundle id can be nil for accessoryless processes).
@@ -419,6 +412,8 @@ local function showHiddenWindows()
                 end
             end
         end
+
+        ::continue::
     end
 
     if #choices == 0 then
