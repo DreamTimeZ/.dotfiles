@@ -79,7 +79,7 @@ local function createKeyBindings()
         local key = shortcut.key
 
         if not key then
-            logging.warn("Skipping shortcut without key")
+            logging.error("Skipping shortcut without key")
             goto continue
         end
 
@@ -104,7 +104,7 @@ local function createKeyBindings()
                 actions.executeAction(shortcut.handler, shortcut.mapping)
             end
         else
-            logging.warn("Skipping invalid shortcut for key '" .. key .. "'")
+            logging.error("Skipping invalid shortcut for key '" .. tostring(key) .. "'")
             goto continue
         end
 

@@ -109,7 +109,7 @@ local function loadMappings()
                 desc = mapping.desc or mapping.action
             }
         else
-            logging.warn("Unknown macro action '" .. tostring(mapping.action) .. "' for key '" .. tostring(key) .. "'")
+            logging.error("Unknown macro action '" .. tostring(mapping.action) .. "' for key '" .. tostring(key) .. "'")
         end
     end
 

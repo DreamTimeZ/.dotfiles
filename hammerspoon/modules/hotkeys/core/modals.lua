@@ -36,7 +36,7 @@ function M.setupModal(mappings, title, modal)
                 description = description
             })
         else
-            log.warn("Skipping invalid binding for key '" .. key .. "': " .. (errorMsg or "unknown error"))
+            log.error("Skipping invalid binding for key '" .. key .. "': " .. (errorMsg or "unknown error"))
         end
     end
 
