@@ -1,30 +1,12 @@
 #!/usr/bin/env bash
-#
-# setup.sh - Dotfiles setup and management
-#
-# Usage:
-#   ./setup.sh                    Interactive setup (select categories)
-#   ./setup.sh -a | --all         Install all packages + create symlinks
-#   ./setup.sh core cli           Install specific categories only
-#   ./setup.sh -l | --link-only   Only create symlinks (no packages)
-#   ./setup.sh -p | --packages-only  Only install packages (no symlinks)
-#   ./setup.sh -d | --doctor      System health check
-#   ./setup.sh -u | --unlink      Remove all managed symlinks
-#   ./setup.sh -U | --update      Update Claude skills (git clones + private skills)
-#
-# Package categories: core, cli, dev, extra, macos (macOS only)
 
 set -euo pipefail
-
-# ── Constants ──────────────────────────────────────────────────────
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly DOTFILES_DIR
 readonly DOTFILES_PRIVATE="${HOME}/.dotfiles-private"
 readonly SYMLINKS_CONF="${DOTFILES_DIR}/symlinks.conf"
 readonly PACKAGES_DIR="${DOTFILES_DIR}/packages"
-
-# ── Colors ─────────────────────────────────────────────────────────
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -34,15 +16,11 @@ readonly BOLD='\033[1m'
 readonly DIM='\033[2m'
 readonly NC='\033[0m'
 
-# ── Counters ───────────────────────────────────────────────────────
-
 SYMLINKS_CREATED=0
 SYMLINKS_SKIPPED=0
 SYMLINKS_FAILED=0
 SYMLINKS_EXCLUDED=0
 PACKAGES_WARNED=0
-
-# ── Flags ──────────────────────────────────────────────────────────
 
 DRY_RUN=0
 FORCE=0
@@ -56,16 +34,12 @@ declare -a CATEGORIES=()
 declare -a SKIP_GROUPS=()
 declare -a ONLY_GROUPS=()
 
-# ── Logging ────────────────────────────────────────────────────────
-
 log_info()    { printf "${BLUE}==>${NC} ${BOLD}%s${NC}\n" "$1"; }
 log_success() { printf " ${GREEN}ok${NC} %s\n" "$1"; }
 log_skip()    { printf " ${DIM}-- %s${NC}\n" "$1"; }
 log_warn()    { printf " ${YELLOW}!!${NC} %s\n" "$1"; }
 log_error()   { printf " ${RED}!!${NC} %s\n" "$1" >&2; }
 log_header()  { printf "\n${BOLD}%s${NC}\n\n" "$1"; }
-
-# ── Platform Detection ─────────────────────────────────────────────
 
 detect_platform() {
     case "$(uname -s | tr '[:upper:]' '[:lower:]')" in
@@ -80,8 +54,6 @@ detect_platform() {
         *) echo "unknown" ;;
     esac
 }
-
-# ── Help ───────────────────────────────────────────────────────────
 
 show_help() {
     cat << 'EOF'
@@ -110,7 +82,6 @@ Package categories:
 
 EOF
 
-    # Show available symlink groups from symlinks.conf
     if [[ -f "$SYMLINKS_CONF" ]]; then
         printf "Symlink groups (from symlinks.conf):\n"
         sed -n 's/^# @group \([a-zA-Z0-9_-]*\).*/  \1/p' "$SYMLINKS_CONF"
@@ -133,11 +104,7 @@ Examples:
 EOF
 }
 
-# ── Argument Parsing ───────────────────────────────────────────────
-
 parse_args() {
-    # Load valid group names for validation
-    # Virtual groups (handled outside symlinks.conf): espanso
     local -a valid_groups=(espanso)
     if [[ -f "$SYMLINKS_CONF" ]]; then
         while IFS= read -r _g; do
@@ -175,7 +142,7 @@ parse_args() {
                     SKIP_GROUPS+=("$_lower")
                     shift
                 done
-                continue  # skip outer shift, $1 is already the next flag
+                continue
                 ;;
             -o|--only)
                 if [[ $# -lt 2 || "$2" == -* ]]; then
@@ -199,7 +166,7 @@ parse_args() {
                     ONLY_GROUPS+=("$_lower")
                     shift
                 done
-                continue  # skip outer shift, $1 is already the next flag
+                continue
                 ;;
             -n|--dry-run)        DRY_RUN=1 ;;
             -f|--force)          FORCE=1 ;;
@@ -218,18 +185,13 @@ parse_args() {
     done
 }
 
-# ── Symlink Management ─────────────────────────────────────────────
-
 create_symlink() {
     local source="$1" target="$2"
 
-    # Expand ~ to $HOME in target
     target="${target/#\~/$HOME}"
 
-    # Resolve source to absolute path
     [[ "$source" != /* ]] && source="${DOTFILES_DIR}/${source}"
 
-    # Verify source exists
     if [[ ! -e "$source" ]]; then
         # local/ sources come from the private repo: absent without it, and not yet
         # linked in a dry run (link.sh --dry-run creates nothing). Matched on the
@@ -251,7 +213,6 @@ create_symlink() {
         return 0
     fi
 
-    # Create parent directory
     local target_dir="${target%/*}"
     if [[ ! -d "$target_dir" ]]; then
         if (( DRY_RUN )); then
@@ -261,7 +222,6 @@ create_symlink() {
         fi
     fi
 
-    # Already correctly linked
     if [[ -L "$target" ]]; then
         local current
         current="$(readlink "$target")"
@@ -270,7 +230,6 @@ create_symlink() {
             SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
             return 0
         fi
-        # Different target
         if (( ! FORCE )); then
             log_warn "Exists (different target): ${target/#$HOME/~} -> $current"
             SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
@@ -302,13 +261,13 @@ create_symlink() {
 
 is_group_excluded() {
     local group="$1"
-    [[ -z "$group" ]] && return 1  # ungrouped entries are never excluded
+    [[ -z "$group" ]] && return 1
     local g
     if [[ ${#ONLY_GROUPS[@]} -gt 0 ]]; then
         for g in "${ONLY_GROUPS[@]}"; do
             [[ "$g" == "$group" ]] && return 1
         done
-        return 0  # not in --only list
+        return 0
     fi
     if [[ ${#SKIP_GROUPS[@]} -gt 0 ]]; then
         for g in "${SKIP_GROUPS[@]}"; do
@@ -328,7 +287,6 @@ process_symlinks() {
         return 1
     fi
 
-    # Log group filter
     if [[ ${#ONLY_GROUPS[@]} -gt 0 ]]; then
         log_info "Only groups: ${ONLY_GROUPS[*]}"
     elif [[ ${#SKIP_GROUPS[@]} -gt 0 ]]; then
@@ -338,25 +296,20 @@ process_symlinks() {
     local current_group=""
 
     while IFS= read -r line; do
-        # Track @group directives
         if [[ "$line" =~ ^#[[:space:]]*@group[[:space:]]+([a-zA-Z0-9_-]+) ]]; then
             current_group="$(printf '%s' "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')"
             continue
         fi
 
-        # Skip comments and empty lines
         [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
-        # Parse fields (whitespace-separated)
         local source target filter
         read -r source target filter <<< "$line"
 
-        # Apply platform filter
         if [[ -n "${filter:-}" && "$filter" != "$platform" ]]; then
             continue
         fi
 
-        # Apply group filter
         if is_group_excluded "$current_group"; then
             SYMLINKS_EXCLUDED=$((SYMLINKS_EXCLUDED + 1))
             continue
@@ -410,8 +363,6 @@ remove_symlinks() {
     fi
 }
 
-# ── Private Repository Linking ─────────────────────────────────────
-
 link_private_repo() {
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
         log_warn "Private dotfiles not found at ${DOTFILES_PRIVATE/#$HOME/~} (skipping)"
@@ -437,8 +388,6 @@ link_private_repo() {
     fi
 }
 
-# ── Private Post-Install ──────────────────────────────────────────
-
 run_private_post_install() {
     local script="${DOTFILES_PRIVATE}/post-install.sh"
     [[ -f "$script" ]] || return 0
@@ -454,8 +403,6 @@ run_private_post_install() {
         return 1
     fi
 }
-
-# ── Package Installation ──────────────────────────────────────────
 
 select_categories_interactive() {
     local platform="$1"
@@ -657,10 +604,9 @@ install_local_packages() {
 install_linux_extras() {
     local platform="$1"
 
-    # Skip on WSL (espanso runs on the Windows side)
+    # espanso runs on the Windows side under WSL
     [[ "$platform" != "linux" ]] && return 0
 
-    # Detect display server for espanso variant
     local espanso_deb="espanso-debian-x11-amd64.deb"
     if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
         espanso_deb="espanso-debian-wayland-amd64.deb"
@@ -676,7 +622,6 @@ install_packages() {
         log_warn "Homebrew not found. Most packages require it: https://brew.sh"
     fi
 
-    # Determine categories
     if [[ ${#CATEGORIES[@]} -eq 0 ]] && (( ! INSTALL_ALL )); then
         select_categories_interactive "$platform"
     fi
@@ -690,27 +635,21 @@ install_packages() {
 
     log_header "Installing packages"
 
-    # System packages first (Linux/WSL)
     if [[ "$platform" == "linux" || "$platform" == "wsl" ]]; then
         install_apt_packages
     fi
 
-    # Brew packages per category
     for category in "${CATEGORIES[@]}"; do
         install_brew_packages "$category"
     done
 
-    # Local packages (symlinked from private repo by link.sh)
     install_local_packages
 
-    # Cargo packages
     install_cargo_packages
 
-    # Linux-only packages (GitHub releases)
     install_linux_extras "$platform"
 }
 
-# ── Espanso Config Linking ────────────────────────────────────────
 # macOS espanso config path contains spaces (~/Library/Application Support/espanso/)
 # which symlinks.conf cannot handle, so this is done separately.
 
@@ -718,13 +657,12 @@ espanso_target_dir() {
     case "$(detect_platform)" in
         macos) printf '%s' "${HOME}/Library/Application Support/espanso" ;;
         linux) printf '%s' "${HOME}/.config/espanso" ;;
-        # WSL: espanso runs on the Windows side, no config linking needed
+        # WSL: espanso runs on the Windows side
         *)     return 1 ;;
     esac
 }
 
 link_espanso_config() {
-    # Respect --skip/--only group filtering (virtual group: espanso)
     if is_group_excluded "espanso"; then
         SYMLINKS_EXCLUDED=$((SYMLINKS_EXCLUDED + 1))
         return 0
@@ -770,12 +708,6 @@ unlink_espanso_config() {
     done
 }
 
-# ── Post-Install ──────────────────────────────────────────────────
-
-# ── Claude skill management ────────────────────────────────────────
-
-# After a skill updates, re-sync its Python render deps if the venv already exists,
-# so a code change never leaves a stale environment behind.
 reconcile_skill_deps() {
     local dir="$1" refs="${1}/references"
     [[ -f "${refs}/pyproject.toml" ]] || return 0
@@ -791,10 +723,6 @@ reconcile_skill_deps() {
     fi
 }
 
-# Update every git-backed skill under ~/.claude/skills via fast-forward-only pull.
-# Auto-discovers repos, so it covers any skill cloned there and never touches
-# non-skill tools (e.g. TPM) that carry their own updaters. --ff-only plus a
-# clean-tree check guarantee local work is never overwritten.
 update_claude_skills() {
     log_header "Update Claude skills"
 
@@ -836,7 +764,6 @@ update_claude_skills() {
         fi
 
         before="$(git -C "$dir" rev-parse --short HEAD)"
-        # Non-interactive: fail fast instead of blocking the run on an SSH passphrase / HTTPS credential prompt
         if ! pull_err="$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
             git -C "$dir" pull --ff-only --quiet 2>&1)"; then
             log_warn "${name}: pull failed: ${pull_err##*$'\n'} (manual: git -C ${dir/#$HOME/~} pull --ff-only)"
@@ -862,9 +789,6 @@ update_claude_skills() {
     return $(( failed > 0 ))
 }
 
-# Excalidraw skill ships a Playwright renderer for visual validation. First-time
-# setup is heavy (chromium ~170 MB) and fully non-fatal: a missing uv or a failed
-# download warns and continues, never aborting provisioning. Idempotent on re-run.
 setup_excalidraw_render_pipeline() {
     local refs="${HOME}/.claude/skills/excalidraw-diagram/references"
     [[ -f "${refs}/pyproject.toml" ]] || return 0
@@ -893,7 +817,6 @@ setup_excalidraw_render_pipeline() {
 post_install() {
     log_header "Post-install"
 
-    # Sheldon plugin lockfile
     if command -v sheldon &>/dev/null; then
         if [[ -f "${HOME}/.config/sheldon/plugins.toml" ]]; then
             if (( DRY_RUN )); then
@@ -911,7 +834,6 @@ post_install() {
         log_skip "Sheldon not installed"
     fi
 
-    # TPM (Tmux Plugin Manager)
     local tpm_dir="${HOME}/.tmux/plugins/tpm"
     if [[ ! -d "$tpm_dir" ]]; then
         if command -v git &>/dev/null; then
@@ -930,11 +852,8 @@ post_install() {
         log_skip "TPM already installed"
     fi
 
-    # Excalidraw diagram skill (Claude Code) — cloned in place like TPM, from our fork
-    # (DreamTimeZ/excalidraw-diagram-skill), which carries a UMD-bundle render patch
-    # working around intermittent esm.sh 404s. Rebase the fork on upstream to pull updates.
-    # Repo root is the skill (SKILL.md at top level), so the clone dir IS the discovered skill dir.
-    # Render pipeline (Playwright/chromium) is set up after the mise step by setup_excalidraw_render_pipeline().
+    # Cloned from our fork (DreamTimeZ/excalidraw-diagram-skill), which carries a UMD-bundle
+    # render patch working around intermittent esm.sh 404s. Rebase the fork on upstream to pull updates.
     local excalidraw_skill="${HOME}/.claude/skills/excalidraw-diagram"
     if [[ ! -d "${excalidraw_skill}/.git" ]]; then
         if command -v git &>/dev/null; then
@@ -955,7 +874,6 @@ post_install() {
         log_skip "Excalidraw diagram skill already installed (refresh with: ./setup.sh --update)"
     fi
 
-    # Mise: install managed tools
     if command -v mise &>/dev/null; then
         if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
             if (( DRY_RUN )); then
@@ -973,10 +891,9 @@ post_install() {
         log_skip "Mise not installed"
     fi
 
-    # Excalidraw skill render pipeline (needs uv, installed by packages/mise above)
+    # Needs uv, installed by packages/mise above
     setup_excalidraw_render_pipeline
 
-    # Neovim plugins
     if command -v nvim &>/dev/null; then
         if [[ -f "${HOME}/.config/nvim/init.lua" ]]; then
             if (( DRY_RUN )); then
@@ -994,7 +911,6 @@ post_install() {
         log_skip "Neovim not installed"
     fi
 
-    # Fix file permissions
     fix_permissions
 }
 
@@ -1021,15 +937,11 @@ fix_permissions() {
     (( fixed > 0 )) && log_success "File permissions fixed" || true
 }
 
-# ── Doctor ────────────────────────────────────────────────────────
-
 check_dir_permissions() {
     local dir="$1" expected="$2" label="$3"
     if [[ -d "$dir" ]]; then
         local perms
-        # Linux stat
         perms="$(stat -c '%a' "$dir" 2>/dev/null)" || \
-        # macOS stat
         perms="$(stat -f '%Lp' "$dir" 2>/dev/null)" || \
         perms="unknown"
 
@@ -1049,7 +961,6 @@ run_doctor() {
 
     log_header "Dotfiles health check"
 
-    # ── Symlinks ──
     printf '%bSymlinks%b\n' "$BOLD" "$NC"
     if [[ -f "$SYMLINKS_CONF" ]]; then
         while IFS= read -r line; do
@@ -1090,7 +1001,6 @@ run_doctor() {
         issues=$((issues + 1))
     fi
 
-    # ── Espanso config (not in symlinks.conf due to spaces in macOS path) ──
     local espanso_target
     if espanso_target="$(espanso_target_dir)"; then
         local espanso_source="${DOTFILES_DIR}/espanso/local"
@@ -1121,7 +1031,6 @@ run_doctor() {
         fi
     fi
 
-    # ── Required tools ──
     printf '\n%bRequired tools%b\n' "$BOLD" "$NC"
     local -a required_tools=(git zsh tmux sheldon fzf)
     for tool in "${required_tools[@]}"; do
@@ -1133,10 +1042,8 @@ run_doctor() {
         fi
     done
 
-    # ── Recommended tools ──
     printf '\n%bRecommended tools%b\n' "$BOLD" "$NC"
     local -a recommended_tools=(bat eza fd rg jq zoxide atuin glow nvim mise lazygit gh uv ffmpeg tesseract)
-    # Private extension: append tools listed in ~/.dotfiles-private/shared/doctor-tools.txt if present.
     local private_tools_file="${DOTFILES_PRIVATE}/shared/doctor-tools.txt"
     if [[ -f "$private_tools_file" ]]; then
         while IFS= read -r _line; do
@@ -1152,7 +1059,6 @@ run_doctor() {
         fi
     done
 
-    # ── Private repo ──
     printf '\n%bPrivate dotfiles%b\n' "$BOLD" "$NC"
     if [[ -d "$DOTFILES_PRIVATE" ]]; then
         log_success "Private repo found"
@@ -1166,7 +1072,6 @@ run_doctor() {
         log_skip "Private repo not found (optional)"
     fi
 
-    # ── Permissions ──
     printf '\n%bPermissions%b\n' "$BOLD" "$NC"
     # ~/.ssh and ~/.gnupg are literal display labels (3rd arg), not paths to expand.
     # shellcheck disable=SC2088
@@ -1174,7 +1079,6 @@ run_doctor() {
     # shellcheck disable=SC2088
     check_dir_permissions "${HOME}/.gnupg" "700" "~/.gnupg" || issues=$((issues + 1))
 
-    # ── Plugin managers ──
     printf '\n%bPlugin managers%b\n' "$BOLD" "$NC"
     if [[ -f "${HOME}/.local/share/sheldon/plugins.lock" ]]; then
         log_success "Sheldon lockfile"
@@ -1190,7 +1094,6 @@ run_doctor() {
         issues=$((issues + 1))
     fi
 
-    # ── Mise tools ──
     if command -v mise &>/dev/null; then
         printf '\n%bMise tools%b\n' "$BOLD" "$NC"
         if [[ -f "${HOME}/.config/mise/config.toml" ]]; then
@@ -1209,7 +1112,6 @@ run_doctor() {
         fi
     fi
 
-    # ── Summary ──
     printf "\n"
     if (( issues == 0 )); then
         log_info "All checks passed"
@@ -1219,8 +1121,6 @@ run_doctor() {
 
     return $(( issues > 0 ? 1 : 0 ))
 }
-
-# ── Main ──────────────────────────────────────────────────────────
 
 main() {
     parse_args "$@"
@@ -1249,13 +1149,11 @@ main() {
     log_info "Dotfiles: ${DOTFILES_DIR/#$HOME/~}"
     printf "\n"
 
-    # Doctor mode
     if (( DO_DOCTOR )); then
         run_doctor "$platform"
         exit $?
     fi
 
-    # Unlink mode
     if (( DO_UNLINK )); then
         remove_symlinks "$platform"
         unlink_espanso_config
@@ -1275,12 +1173,10 @@ main() {
         link_private_repo
     fi
 
-    # Install packages (public Brewfiles + local Brewfiles from private repo)
     if (( ! LINK_ONLY )); then
         install_packages "$platform"
     fi
 
-    # Create home symlinks and run post-install
     if (( ! PACKAGES_ONLY )); then
         process_symlinks "$platform"
         link_espanso_config
@@ -1290,7 +1186,6 @@ main() {
         fi
     fi
 
-    # Summary
     log_header "Done"
     local summary
     if (( DRY_RUN )); then

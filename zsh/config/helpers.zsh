@@ -1,15 +1,6 @@
-# ===============================
-# ZSH CONFIGURATION HELPERS
-# ===============================
-# Central place for helper functions used throughout the zsh configuration system
-
-# ----- Constants and Defaults -----
-# Cache for frequently used values
-typeset -g ZDOTFILES_PLATFORM=""  # Will be set on first use
-typeset -gA ZDOTFILES_CMD_CACHE   # Command existence cache
+typeset -g ZDOTFILES_PLATFORM=""
+typeset -gA ZDOTFILES_CMD_CACHE
 ZDOTFILES_CMD_CACHE=()            # Clear on re-source to detect newly installed tools
-
-# ----- Logging Helpers -----
 
 # Print informational message (blue) - only if log level is info or higher
 zdotfiles_info() {
@@ -29,8 +20,6 @@ zdotfiles_error() {
   return 0
 }
 
-# ----- Path Management Helpers -----
-
 # Add directory to end of PATH without duplicates
 # Usage: zdotfiles_path_append /path/to/directory
 # Returns: 0 on success, 1 if directory doesn't exist
@@ -38,7 +27,6 @@ zdotfiles_path_append() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
 
   local dir="$1"
-  # Remove existing occurrence first (prevent duplicates)
   PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
 
   export PATH="$PATH:$dir"
@@ -53,15 +41,12 @@ zdotfiles_path_prepend() {
   [[ ! -d "$1" ]] && zdotfiles_error "Cannot add non-existent directory to PATH: $1" && return 1
 
   local dir="$1"
-  # Remove existing occurrence first (prevent duplicates)
   PATH=":$PATH:"; PATH="${PATH//:$dir:/:}"; PATH="${PATH#:}"; PATH="${PATH%:}"
 
   export PATH="$dir:$PATH"
   zdotfiles_info "Prepended to PATH: $dir"
   return 0
 }
-
-# ----- System Detection Helpers -----
 
 # Check if a command exists in PATH with caching
 # Usage: if zdotfiles_has_command git; then ...; fi
@@ -71,11 +56,10 @@ zdotfiles_has_command() {
 
   local cmd="$1"
 
-  # Lazy-init: cache may not exist in snapshot-restored shells (e.g. Claude
-  # Code) where functions are restored without their non-exported variables
+  # The cache may not exist in snapshot-restored shells (e.g. Claude Code),
+  # where functions are restored without their non-exported variables
   [[ ${(t)ZDOTFILES_CMD_CACHE} != association* ]] && typeset -gA ZDOTFILES_CMD_CACHE=()
 
-  # Check cache first
   if [[ -n "${ZDOTFILES_CMD_CACHE[$cmd]:-}" ]]; then
     return "${ZDOTFILES_CMD_CACHE[$cmd]}"
   fi
@@ -94,15 +78,12 @@ zdotfiles_has_command() {
 # Usage: platform=$(zdotfiles_detect_platform)
 # Returns: String with platform name (macos, linux, wsl, bsd, windows, unknown)
 zdotfiles_detect_platform() {
-  # Use cached value if available
   [[ -n "$ZDOTFILES_PLATFORM" ]] && echo "$ZDOTFILES_PLATFORM" && return 0
 
-  # Detect platform and cache it
   local platform
   case "$OSTYPE" in
     darwin*)  platform="macos" ;;
     linux*)
-      # Distinguish WSL from native Linux
       if [[ -n "$WSL_DISTRO_NAME" || -n "$WSL_INTEROP" ]]; then
         platform="wsl"
       else
@@ -114,7 +95,6 @@ zdotfiles_detect_platform() {
     *)        platform="unknown" ;;
   esac
 
-  # Cache the result
   ZDOTFILES_PLATFORM="$platform"
   echo "$platform"
   return 0
@@ -147,8 +127,6 @@ zdotfiles_is_wsl() {
   return $?
 }
 
-# ----- Init Script Caching -----
-
 typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init/$ZSH_VERSION"
 
 # Memoize an expensive `eval "$(tool init)"` to a byte-compiled cache file.
@@ -164,11 +142,10 @@ zdotfiles_source_cached() {
     stamps+=("$1")
     shift
   done
-  (( $# )) && shift  # discard the -- separator, if the caller supplied one
+  (( $# )) && shift
   (( $# )) || return 1
 
-  # Non-exported global: can be missing in snapshot-restored shells, same
-  # hazard guarded in zdotfiles_has_command
+  # Non-exported global: can be missing in snapshot-restored shells
   [[ -n $ZDOTFILES_INIT_CACHE_DIR ]] || \
     typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init/$ZSH_VERSION"
 
@@ -187,10 +164,10 @@ zdotfiles_source_cached() {
     [[ -d $ZDOTFILES_INIT_CACHE_DIR ]] || mkdir -p -- "$ZDOTFILES_INIT_CACHE_DIR" 2>/dev/null
     local generated
     generated=$("$@" 2>/dev/null) || generated=""
-    [[ -n $generated ]] || return 1  # tool failed - nothing to source
+    [[ -n $generated ]] || return 1
 
     # An init script that hardcodes an absolute PATH cannot be memoized: the
-    # snapshot would override PATH in every later shell. Run it uncached.
+    # snapshot would override PATH in every later shell.
     local line unsafe=0
     for line in ${(f)generated}; do
       [[ $line == export\ PATH=* && $line != *'$PATH'* ]] && { unsafe=1; break }
@@ -207,7 +184,6 @@ zdotfiles_source_cached() {
       # -U so aliases in scope are not expanded into the compiled form
       zcompile -UR -- "$cache" 2>/dev/null
     else
-      # Cache unwritable - initialize uncached from the output already captured
       rm -f -- "$tmp" 2>/dev/null
       eval "$generated"
       return
@@ -217,8 +193,6 @@ zdotfiles_source_cached() {
   source "$cache"
 }
 
-# ----- Lazy Loading Helpers -----
-
 # Minimal overhead lazy loading - matches original performance
 # Usage: zdotfiles_lazy_load INIT_FUNC COMMANDS...
 zdotfiles_lazy_load() {
@@ -226,7 +200,6 @@ zdotfiles_lazy_load() {
   shift
   local all_cmds="$*"
 
-  # Create wrappers for each command
   local cmd
   for cmd; do
     eval "$cmd() {
@@ -239,10 +212,7 @@ zdotfiles_lazy_load() {
   done
 }
 
-# ----- Function Export -----
-# Export functions for use in subshells and modules
 {
-  # List of public functions to export
   local public_funcs=(
     zdotfiles_info
     zdotfiles_warn
@@ -258,12 +228,10 @@ zdotfiles_lazy_load() {
     zdotfiles_source_cached
   )
 
-  # Export each function
   local func
   for func in "${public_funcs[@]}"; do
     typeset -gf "$func"
   done
 } &>/dev/null
 
-# Don't export this helper file's local variables
 unset func public_funcs

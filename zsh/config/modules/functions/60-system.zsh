@@ -1,8 +1,4 @@
-# ===============================
-# SYSTEM MAINTENANCE FUNCTIONS
-# ===============================
-
-# macOS: provide poweroff (exists natively on Linux but not macOS)
+# poweroff exists natively on Linux but not macOS
 if zdotfiles_is_macos; then
   poweroff() { sudo shutdown -h "${@:-now}"; }
 fi
