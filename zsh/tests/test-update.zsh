@@ -348,7 +348,6 @@ run PLATFORM=linux RC_sudo_v=1 --
 eq  "T8 sudo failure rc" 1 $RC
 eq  "T8 sudo failure runs nothing else" "sudo -v" "$CALLS"
 
-# In this run the summary pads states to FAILED and labels to "sheldon plugins"
 run RC_mas=1 --
 has "T9 OK row aligned" $'\n'"$(printf '  %-6s  %-15s  ' OK Homebrew)" "$OUT"
 has "T9 FAILED row aligned" $'\n'"$(printf '  %-6s  %-15s  ' FAILED 'App Store apps')" "$OUT"

@@ -3,10 +3,10 @@ if zdotfiles_is_macos; then
   poweroff() { sudo shutdown -h "${@:-now}"; }
 fi
 
-# The _update_* helpers run only inside update and share its locals through
-# dynamic scope: out/err (colors), o_* (options), step_* (results), current_*
-# (running step), printed (headers so far), macos and macos_* (the macOS
-# update check), keepalive_pid, REPLY.
+# The _update_* helpers run only inside update and share the locals of update
+# and _update_main through dynamic scope: out/err (colors), o_* (options),
+# step_* (results), current_* (running step), printed (headers so far), macos
+# and macos_* (the macOS update check), keepalive_pid, REPLY.
 
 _update_usage() {
   cat <<'EOF'
@@ -127,8 +127,7 @@ _update_sudo_keepalive() {
 
 # Homebrew resets the sudo timestamp the first time it needs sudo itself (pkg
 # casks), so that step can still prompt. The keepalive goes on refreshing
-# whatever timestamp is current. Without it the run goes on, only with more
-# prompts.
+# whatever timestamp is current.
 _update_sudo() {
   local -ri keepalive_centiseconds=6000
   if ! sudo -v; then
@@ -197,7 +196,6 @@ _update_macos_check() {
   current_label=
 }
 
-# --no-scan installs what the check at the start found instead of scanning again.
 _update_macos_install() {
   local -a args=(--install --all --no-scan --agree-to-license)
   (( $#o_restart )) && args+=(--restart)
@@ -214,8 +212,6 @@ _update_macos() {
   fi
 }
 
-# The interrupt path in _update_main calls this too. The row already exists
-# when the interrupt hit the check, its prompt or the install.
 _update_macos_result() {
   (( ${step_labels[(Ie)macOS updates]} )) && return
   if (( macos_install )); then
@@ -397,7 +393,6 @@ _update_main() {
       _update_record "Claude skills" SKIPPED "" "setup.sh not found"
     fi
 
-    # Last, as --restart can end the session
     (( macos )) && _update_macos
   } always {
     (( keepalive_pid )) && kill $keepalive_pid 2>/dev/null
