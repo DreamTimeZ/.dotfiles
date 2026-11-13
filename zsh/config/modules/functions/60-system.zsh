@@ -21,10 +21,12 @@ Upgrade the system and developer tools, in this order:
   Linux   APT packages (full-upgrade), Flatpak apps, then Homebrew and
           the developer tools as on macOS
 
-A step whose tool is not installed is skipped. sudo asks for your password
-at the start (macOS, and Linux with apt-get), and if that fails, no step
-runs. A Homebrew cask that runs an installer, and softwareupdate on Apple
-silicon, may ask again.
+A step whose tool is not installed is left out. A missing softwareupdate,
+a missing or non-executable setup.sh, a missing sudo where apt-get exists,
+and a missing cargo-update where cargo exists show as SKIPPED instead.
+sudo asks for your password at the start (macOS, and Linux with apt-get),
+and if that fails, no step runs. A Homebrew cask that runs an installer,
+and softwareupdate on Apple silicon, may ask again.
 
   -y, --yes       Run unattended: apt, flatpak, mise and sheldon get their
                   yes flag, and macOS updates install without asking
@@ -104,8 +106,6 @@ _update_run() {
 _update_tool() {
   if whence -p -- "$2" >/dev/null; then
     _update_run "$1" "${@:3}"
-  else
-    _update_record "$1" SKIPPED "" "$2 not installed"
   fi
 }
 
@@ -365,13 +365,13 @@ _update_main() {
       _update_sudo || return
       _update_macos_check
     else
-      if ! whence -p apt-get >/dev/null; then
-        _update_record "APT packages" SKIPPED "" "apt-get not installed"
-      elif ! whence -p sudo >/dev/null; then
-        _update_record "APT packages" SKIPPED "" "sudo not installed"
-      else
-        _update_sudo || return
-        _update_run "APT packages" _update_apt
+      if whence -p apt-get >/dev/null; then
+        if whence -p sudo >/dev/null; then
+          _update_sudo || return
+          _update_run "APT packages" _update_apt
+        else
+          _update_record "APT packages" SKIPPED "" "sudo not installed"
+        fi
       fi
       _update_tool "Flatpak apps" flatpak _update_flatpak
     fi
@@ -382,7 +382,11 @@ _update_main() {
     (( macos )) && _update_tool "App Store apps" mas mas upgrade
     _update_tool "mise tools" mise _update_mise
     _update_tool "Rust toolchain" rustup rustup update
-    _update_tool "cargo packages" cargo-install-update cargo install-update -a
+    if whence -p cargo-install-update >/dev/null; then
+      _update_run "cargo packages" cargo install-update -a
+    elif whence -p cargo >/dev/null; then
+      _update_record "cargo packages" SKIPPED "" "cargo-install-update not installed"
+    fi
     _update_tool "sheldon plugins" sheldon _update_sheldon
 
     if [[ -x $setup ]]; then

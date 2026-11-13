@@ -285,10 +285,21 @@ lacks "T6 sudo failure prints no summary" "Summary" "$OUT"
 mkbin $WORK/bin-bare softwareupdate
 run -b $WORK/bin-bare --
 eq "T7 rc" 0 $RC
-for label tool in Homebrew brew 'App Store apps' mas 'mise tools' mise 'Rust toolchain' rustup \
-    'cargo packages' cargo-install-update 'sheldon plugins' sheldon; do
-  eq "T7 $label skipped" "SKIPPED $label $tool not installed" "$(row SKIPPED $label)"
+eq "T7 only the macOS and Claude rows" 2 $(summary_rows)
+for label in Homebrew 'App Store apps' 'mise tools' 'Rust toolchain' 'cargo packages' 'sheldon plugins'; do
+  lacks "T7 $label left out" "$label" "$OUT"
 done
+for label tool in Homebrew brew 'App Store apps' mas 'mise tools' mise 'Rust toolchain' rustup \
+    'sheldon plugins' sheldon; do
+  mkbin $WORK/bin-no-$tool ${ALL_TOOLS:#$tool}
+  run -b $WORK/bin-no-$tool --
+  lacks "T7 without $tool, $label left out" "$label" "$OUT"
+  eq "T7 without $tool, every other row stays" 7 $(summary_rows)
+done
+mkbin $WORK/bin-no-cargo ${ALL_TOOLS:#cargo(|-install-update)}
+run -b $WORK/bin-no-cargo --
+lacks "T7 without cargo, cargo packages left out" "cargo packages" "$OUT"
+eq "T7 without cargo, every other row stays" 7 $(summary_rows)
 mkbin $WORK/bin-cargo cargo
 run -b $WORK/bin-cargo --
 eq "T7 cargo without cargo-update skipped" "SKIPPED cargo packages cargo-install-update not installed" "$(row SKIPPED 'cargo packages')"
@@ -324,8 +335,8 @@ eq  "T8 flatpak failure row" "FAILED Flatpak apps exit 1" "$(row FAILED 'Flatpak
 mkbin $WORK/bin-noapt brew
 run -b $WORK/bin-noapt PLATFORM=linux --
 eq  "T8 no apt-get, no sudo" "brew update"$'\n'"brew upgrade --yes"$'\n'"setup.sh --update" "$CALLS"
-eq  "T8 no apt-get row" "SKIPPED APT packages apt-get not installed" "$(row SKIPPED 'APT packages')"
-eq  "T8 no flatpak row" "SKIPPED Flatpak apps flatpak not installed" "$(row SKIPPED 'Flatpak apps')"
+lacks "T8 no apt-get, no row" "APT packages" "$OUT"
+lacks "T8 no flatpak, no row" "Flatpak apps" "$OUT"
 mkbin $WORK/bin-nosudo apt-get brew
 rm $WORK/bin-nosudo/sudo
 run -b $WORK/bin-nosudo PLATFORM=linux --
