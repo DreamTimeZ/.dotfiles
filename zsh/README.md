@@ -42,6 +42,10 @@ Functions that need an external tool (fzf, ffmpeg, ollama, yt-dlp, grc) are only
 
 Put machine-specific `.zsh` files in `config/modules/local/` (supplied by the private repo). See `example.zsh.template` there. `use_interactive_file_ops` makes `cp`, `mv`, and `rm` interactive for the session.
 
+## Tests
+
+Run `tests/test-update.zsh`. It tests `update` against stub tools and never calls the real brew, sudo, or softwareupdate. Its pseudo-terminal cases (color, prompt, Ctrl-C, Ctrl-Z) skip where none can be opened.
+
 ## Logging and Profiling
 
 - `ZDOTFILES_LOG_LEVEL`: 0 silent, 1 error, 2 warn, 3 info. `.zprofile` sets 0, `.zshrc` sets 3.
