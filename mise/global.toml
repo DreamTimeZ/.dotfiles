@@ -8,8 +8,7 @@ uv = "latest"
 "npm:markdownlint-cli2" = "latest"
 
 [settings]
-# Read .python-version, .node-version, .nvmrc, etc.
 idiomatic_version_file_enable_tools = ["python", "node"]
 
-# Auto-source .venv created by uv (don't create, uv owns that)
+# uv owns .venv creation: source the .venv it created, never create one.
 python.uv_venv_auto = "source"
