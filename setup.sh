@@ -1262,11 +1262,12 @@ main() {
         exit 0
     fi
 
-    # Update mode
+    # Under set -e a failed half would skip the other
     if (( DO_UPDATE )); then
-        update_claude_skills
-        run_private_post_install --update-skills
-        exit $?
+        local rc=0
+        update_claude_skills || rc=1
+        run_private_post_install --update-skills || rc=1
+        exit "$rc"
     fi
 
     # Link private repo first (populates local/ dirs for packages and configs)
