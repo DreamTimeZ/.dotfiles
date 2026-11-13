@@ -148,6 +148,7 @@ row() {
 count() { print -r -- ${#${(M)${(f)2}:#${~1}}} }
 
 summary_rows() {
+  [[ $OUT == *'==> Summary'* ]] || { print 0; return }
   local rows=${OUT#*==> Summary*$'\n'}
   print -r -- ${#${(f)rows}}
 }
@@ -481,10 +482,12 @@ else
   has "T14 colored error" $'\e[1;31mError:' "$out"
   out=$(ptyrun update NO_COLOR=1)
   lacks "T14 NO_COLOR" $'\e[' "$out"
+  has "T14 NO_COLOR plain header" "==> Homebrew" "$out"
   out=$(ptyrun update NO_COLOR= RC_mas=1)
   has "T14 empty NO_COLOR keeps color" $'\e[1;34m==>' "$out"
   out=$(ptyrun update TERM=dumb)
   lacks "T14 TERM=dumb" $'\e[' "$out"
+  has "T14 TERM=dumb plain header" "==> Homebrew" "$out"
   out=$(ptyrun "update 2>$WORK/errfile" RC_mas=1)
   has "T14 stdout colored, stderr to a file" $'\e[1;34m==>' "$out"
   has "T14 stderr file has the error" "Error: App Store apps failed" "$(<$WORK/errfile)"
