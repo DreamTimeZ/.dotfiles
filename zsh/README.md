@@ -30,7 +30,7 @@ Run `zh` to browse and search every alias, function, export, and keybinding.
 | `45-tmux` | `dev` |
 | `50-webserver` | `serve` |
 | `55-media` | `compress-video` |
-| `60-system` | `update`, `update_mise`, `update_sheldon`, `update_claude_skills`, `poweroff` (macOS) |
+| `60-system` | `update`, `poweroff` (macOS) |
 | `65-introspection` | `zh` |
 | `70-services` | `ollama-start`, `ollama-stop`, `ollama-restart`, `ollama-status` |
 | `75-knowledge` | `yt2note`, `ytt`, `ytc` |
