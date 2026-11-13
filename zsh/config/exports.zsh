@@ -62,7 +62,9 @@ setopt GLOBSTAR_SHORT         # Enable recursive globbing with **
 
 # ----- Auto-completion -----
 # Initialize completion system in interactive shells only
-ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump"
+# Per zsh version: only the version that wrote a .zwc reads it, and /bin/zsh
+# and a Homebrew zsh can both start this config.
+ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump-$ZSH_VERSION"
 [[ -d ${ZSH_COMPDUMP%/*} ]] || mkdir -p -- "${ZSH_COMPDUMP%/*}"
 
 if [[ -o interactive ]]; then

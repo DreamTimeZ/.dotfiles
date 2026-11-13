@@ -149,7 +149,7 @@ zdotfiles_is_wsl() {
 
 # ----- Init Script Caching -----
 
-typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init"
+typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init/$ZSH_VERSION"
 
 # Memoize an expensive `eval "$(tool init)"` to a byte-compiled cache file.
 # Spawning mise/atuin/zoxide/sheldon costs ~23ms per shell; sourcing the cached
@@ -170,7 +170,7 @@ zdotfiles_source_cached() {
   # Non-exported global: can be missing in snapshot-restored shells, same
   # hazard guarded in zdotfiles_has_command
   [[ -n $ZDOTFILES_INIT_CACHE_DIR ]] || \
-    typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init"
+    typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-init/$ZSH_VERSION"
 
   local cache="$ZDOTFILES_INIT_CACHE_DIR/$name.zsh"
   local stamp stale=0
