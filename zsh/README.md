@@ -46,6 +46,8 @@ Put machine-specific `.zsh` files in `config/modules/local/` (supplied by the pr
 
 Run `tests/test-update.zsh`. It tests `update` against stub tools and never calls the real brew, sudo, or softwareupdate. Its pseudo-terminal cases (color, prompt, Ctrl-C, Ctrl-Z) skip where none can be opened.
 
+Run `tests/test-init-cache.zsh` for the init cache (`zdotfiles_source_cached`). It works in a temp dir and never touches `~/.cache`.
+
 ## Logging and Profiling
 
 - `ZDOTFILES_LOG_LEVEL`: 0 silent, 1 error, 2 warn, 3 info. `.zprofile` sets 0, `.zshrc` sets 3.

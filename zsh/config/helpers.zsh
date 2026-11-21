@@ -132,7 +132,8 @@ typeset -g ZDOTFILES_INIT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zdotfiles-i
 # Memoize an expensive `eval "$(tool init)"` to a byte-compiled cache file.
 # Spawning mise/atuin/zoxide/sheldon costs ~23ms per shell; sourcing the cached
 # output costs ~0.2ms. The cache is regenerated whenever any stamp file (the
-# tool binary, its config) is newer than the cache, so upgrades take effect.
+# tool binary, its config) or the calling file is newer than the cache, so
+# upgrades and edited init commands take effect.
 # Usage: zdotfiles_source_cached NAME STAMP... -- COMMAND [ARG...]
 zdotfiles_source_cached() {
   local name=$1; shift
@@ -144,6 +145,9 @@ zdotfiles_source_cached() {
   done
   (( $# )) && shift
   (( $# )) || return 1
+
+  local caller=${funcfiletrace[1]%:*}
+  [[ -f $caller ]] && stamps+=("$caller")
 
   # Non-exported global: can be missing in snapshot-restored shells
   [[ -n $ZDOTFILES_INIT_CACHE_DIR ]] || \
