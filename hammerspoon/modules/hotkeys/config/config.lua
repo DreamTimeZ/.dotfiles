@@ -16,7 +16,7 @@ config.logging = {
         DEBUG = 4
     },
     enabled = true,
-    level = 1,
+    level = 1, -- Keep at 1, raise it at runtime with setLogLevel
     maxMessageLength = 500, -- Prevent log spam
     rateLimiting = {
         enabled = true,
