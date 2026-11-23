@@ -60,6 +60,13 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 
+[credential "https://github.com"]
+	helper =
+	helper = !\"$(command -v gh || command -v /opt/homebrew/bin/gh || command -v /home/linuxbrew/.linuxbrew/bin/gh || echo gh)\" auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !\"$(command -v gh || command -v /opt/homebrew/bin/gh || command -v /home/linuxbrew/.linuxbrew/bin/gh || echo gh)\" auth git-credential
+
 # Last, so machine-local values override everything above
 [include]
     path = ~/.gitconfig.local
