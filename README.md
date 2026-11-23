@@ -1,50 +1,46 @@
 # .dotfiles
 
-Modular dotfiles for macOS, Linux, and Windows (WSL), installed and linked by one script: `setup.sh`.
+Modular dotfiles for macOS, Linux, and Windows (WSL), installed and linked by one script.
 
-## Prerequisites
+## Install
 
-- git
-- [Homebrew](https://brew.sh) on every platform: most packages install through it
-- Linux and WSL: Ubuntu or Debian (`setup.sh` uses apt and dpkg)
-- WSL: Windows Terminal recommended
-
-`setup.sh` installs the rest, including zsh, tmux, and sheldon.
-
-## Quick Install
+Needs `bash`, `curl`, and a non-root user with sudo rights. Linux and WSL: Ubuntu or Debian.
 
 ```bash
-git clone https://github.com/DreamTimeZ/.dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-./setup.sh --dry-run --all   # preview, changes nothing
-./setup.sh --all
-./setup.sh --doctor          # verify symlinks, tools, and permissions
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/DreamTimeZ/.dotfiles/main/bootstrap.sh)"
 ```
 
-To install only some package categories (`core`, `cli`, `dev`, `extra`, `macos`), pass them instead of `--all`. All symlinks are still created:
+It installs git and Homebrew, clones this repo to `~/.dotfiles`, and runs `setup.sh`, which installs packages and creates the symlinks. First it asks which package categories to install (Enter takes the default, everything on a fresh machine). Questions come in the first minutes and near the end, the long middle runs unattended.
+
+Optional arguments after `--`:
+
+| Append | Effect |
+| --- | --- |
+| `-- core cli` | Only these categories, no question. All: `core`, `cli`, `dev`, `extra`, `macos` |
+| `-- -extra` | Every category except `extra` |
+| `-- git@github.com:<owner>/<repo>.git` | Adds the private repo: sets up the SSH key `~/.ssh/github`, clones both repos over SSH. Categories may follow |
+
+- Run it with `bash -c` as shown, never `curl | bash`: piped, it skips the category question and the private repo.
+- Re-running finishes a half-done setup, with the saved categories as the default. It never pulls an existing `~/.dotfiles`: run `git -C ~/.dotfiles pull` first.
+- Fresh Mac: skip Homebrew's advice to add its `shellenv` line to `~/.zprofile`. The linked `.zprofile` puts Homebrew on PATH itself.
+
+Afterwards:
 
 ```bash
-./setup.sh core cli dev
+~/.dotfiles/setup.sh --doctor   # verify symlinks, tools, and permissions
+~/.dotfiles/setup.sh --help     # every option, category, and symlink group
+chsh -s /usr/bin/zsh            # Linux and WSL: setup.sh leaves the login shell unchanged
 ```
 
-`./setup.sh --help` lists every option, category, and symlink group. Existing files at link targets are skipped with a warning. `--force` replaces files and symlinks without a backup, never directories.
+Without the private repo (`~/.dotfiles-private`, the machine-specific `local/` files), git has no user identity, Espanso stays unconfigured, and Hammerspoon uses its default mappings.
 
-On a fresh Mac, Homebrew's installer has you append its `shellenv` line to `~/.zprofile`. Delete that file before `./setup.sh --all` so the linked `.zprofile` takes its place. It puts Homebrew on `PATH` itself.
-
-On Linux and WSL, `setup.sh` does not change the login shell. Afterwards, run `chsh -s /usr/bin/zsh` (the apt-installed zsh, listed in `/etc/shells`).
-
-Full guide: [Installation Guide](docs/installation.md).
-
-### Without the private repo
-
-`setup.sh` works without `~/.dotfiles-private`, which supplies the machine-specific `local/` files: git user identity, private SSH hosts, shell modules, Hammerspoon hotkey mappings, and Espanso configs. Without it, git has no user identity, Espanso stays unconfigured, and Hammerspoon uses its default mappings. Clone it later and re-run `./setup.sh --all`.
+All options and steps: [Installation Guide](docs/installation.md). Design rationale: [Setup Architecture](docs/setup-architecture.md).
 
 ## Components
 
 | Component | What it is | Docs |
 | --- | --- | --- |
-| Zsh | Modular config, Powerlevel10k, autosuggestions, syntax highlighting, fzf-tab, zoxide, Atuin history | [Zsh](zsh/README.md), [Keybindings](zsh/docs/keybindings.md) |
-| Sheldon | Declarative Zsh plugin manager (`zsh/sheldon/plugins.toml`) | [Zsh](zsh/README.md) |
+| Zsh | Modular config, Sheldon plugins, Powerlevel10k, autosuggestions, syntax highlighting, fzf-tab, zoxide, Atuin history | [Zsh](zsh/README.md), [Keybindings](zsh/docs/keybindings.md) |
 | mise | Runtime versions for Python, Node, pnpm, uv (`mise/global.toml`) | |
 | Neovim | Lua config, lazy.nvim, Treesitter, Telescope | [Neovim](nvim/neovim.md) |
 | Tmux | `Ctrl+a` prefix, TPM plugins, session save and restore | [Cheatsheet](tmux/CHEATSHEET.md) |
@@ -58,26 +54,20 @@ Full guide: [Installation Guide](docs/installation.md).
 | Nilesoft Shell | Windows context menu | [Nilesoft](nilesoft/README.md) |
 | `bin/` | Scripts linked into `~/.local/bin`: `wifi-qr`, `gpg-backup`, `gpg-restore`, `api-keys-setup` (macOS) | [API keys](docs/api-keys-security.md) |
 
-## Documentation
-
-- [Installation Guide](docs/installation.md): all options, package categories, local override files
-- [Setup Architecture](docs/setup-architecture.md): design rationale for `setup.sh`, private repo layering, symlink chain
-
-## Linting
-
-Pre-commit hooks, configured in `.pre-commit-config.yaml`:
+## Development
 
 ```bash
-uv tool install pre-commit   # the only extra tool, the hooks bring shellcheck, markdownlint, and node
-pre-commit install           # once per clone
-pre-commit run --all-files   # lint everything
-pre-commit autoupdate        # bump hook versions
+uv tool install pre-commit          # the hooks bring shellcheck, markdownlint, and node
+pre-commit install                  # once per clone
+pre-commit run --all-files          # lint everything, markdownlint --fix rewrites files
+tests/test-bootstrap.sh             # bootstrap.sh against stubs, no network, temp HOME
+tests/test-setup-selection.sh       # setup.sh category selection against stubs
+tests/test-bootstrap-container.sh   # full run in ubuntu:24.04 amd64, needs Docker, slow on Apple Silicon
+tests/test-bootstrap-container.sh --private <path>   # same, with a local copy of the private repo
 ```
 
-- **Hygiene**: trailing whitespace, end-of-file, YAML/TOML/JSON syntax, merge and case conflicts, large files, private keys, shebang and executable-bit consistency.
-- **Markdown** (`markdownlint-cli2 --fix`, rewrites files): rules in `.markdownlint.jsonc`, ignores in `.markdownlint-cli2.jsonc`. It skips `.claude/`, `CLAUDE*.md`, and `zsh/config/prompts/` (context files and AI prompt payloads, not docs).
-- **Shell**: `shellcheck` on non-zsh shell scripts (`setup.sh`). Shellcheck cannot parse zsh, so zsh files get a `zsh -n` syntax check instead.
+CI runs both stub suites on Ubuntu (bash 5) and macOS (bash 3.2), plus the container test. Zsh tests: [Zsh](zsh/README.md#tests).
 
 ## License
 
-[MIT License](LICENSE)
+[MIT](LICENSE)
