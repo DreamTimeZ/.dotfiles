@@ -2,7 +2,10 @@
 Include ~/.ssh/config.local
 
 Host *
+  # The first value wins and config.local is included first: an IgnoreUnknown
+  # there must list UseKeychain too, or Linux ssh rejects UseKeychain below
   IgnoreUnknown UseKeychain
+  UseKeychain yes
   AddKeysToAgent yes
   ServerAliveInterval 60
   ServerAliveCountMax 3
