@@ -1,4 +1,3 @@
-# System prerequisites for Ubuntu/Debian (WSL and Linux)
 # These are needed before Homebrew or as system-level dependencies.
 
 build-essential

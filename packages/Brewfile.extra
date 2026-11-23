@@ -1,11 +1,9 @@
-# Extra: optional specialized tools
-
-brew "hyperfine"        # CLI benchmarking
-brew "scc"              # source code counter
-brew "pandoc"           # document converter
-brew "ffmpeg"           # media processing toolkit
-brew "tesseract"        # OCR engine
-brew "yt-dlp"           # video downloader
-brew "nmap"             # network scanner
-brew "cloudflare-speed-cli"  # internet speed test (net-check)
-brew "gdu"              # interactive disk usage cleanup
+brew "hyperfine"
+brew "scc"
+brew "pandoc"
+brew "ffmpeg"
+brew "tesseract"
+brew "yt-dlp"
+brew "nmap"
+brew "cloudflare-speed-cli"  # net-check
+brew "gdu"

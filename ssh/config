@@ -1,15 +1,12 @@
-# Include local, private SSH config (if it exists)
 # Must be at the top of the file to work
 Include ~/.ssh/config.local
 
-# Global settings for all SSH connections
 Host *
   IgnoreUnknown UseKeychain
   AddKeysToAgent yes
-  ServerAliveInterval 60  # Keep connection alive
-  ServerAliveCountMax 3   # Prevent excessive retries
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
 
-# GitHub
 Host github.com
   HostName github.com
   User git

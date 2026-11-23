@@ -3,13 +3,9 @@
 	autocrlf = input
 	editor = nvim
 	excludesfile = ~/.gitignore_global
-	# Treat spaces before tabs and all kinds of trailing whitespace as an error
 	whitespace = space-before-tab,-indent-with-non-tab,trailing-space
-	# Make `git rebase` safer on macOS
 	trustctime = false
-	# Speed up commands involving untracked files such as `git status`
 	untrackedCache = true
-	# Use delta as the pager
 	pager = delta
 	filemode = false
 	fscache = true
@@ -25,32 +21,22 @@
 	branch = auto
 
 [push]
-	# Push only the current branch to the remote it tracks
 	default = simple
-	# Automatically resolve merge conflicts in favor of our version when pulling
 	autoSetupRemote = true
 
 [fetch]
-	# Remove remote-tracking branches that no longer exist on the remote
 	prune = true
 
 [diff]
-	# Use better, descriptive initials (c, i, w) instead of a/b
 	mnemonicPrefix = true
-	# Detect copies as well as renames
 	renames = copies
-	# Show blocks of moved text as distinguished from wholly added/deleted
 	colorMoved = default
 
 [merge]
-	# Include summaries of merged commits in newly created merge commit messages
 	log = true
-	# Better conflict markers; zdiff3 hoists lines both sides share out of
-	# the conflict region, otherwise identical to diff3
 	conflictstyle = zdiff3
 
 [help]
-	# Automatically correct and execute mistyped commands
 	autocorrect = 1
 
 [interactive]
@@ -61,11 +47,10 @@
 	light = false
 	features = decorations
 	line-numbers = true
-	# Default 2 truncates long lines in side-by-side, marking them with an arrow
 	wrap-max-lines = unlimited
 	hyperlinks = true
 
-# Custom features are ignored when named in `features` above (delta 0.19.2); only
+# Custom features are ignored when named in `features` above (delta 0.21.2); only
 # DELTA_FEATURES activates them, set from $COLUMNS in zsh modules/local/26-delta.zsh.
 [delta "side-by-side-when-wide"]
 	side-by-side = true

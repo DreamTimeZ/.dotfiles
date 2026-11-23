@@ -1073,7 +1073,6 @@ run_doctor() {
     fi
 
     printf '\n%bPermissions%b\n' "$BOLD" "$NC"
-    # ~/.ssh and ~/.gnupg are literal display labels (3rd arg), not paths to expand.
     # shellcheck disable=SC2088
     check_dir_permissions "${HOME}/.ssh" "700" "~/.ssh" || issues=$((issues + 1))
     # shellcheck disable=SC2088
