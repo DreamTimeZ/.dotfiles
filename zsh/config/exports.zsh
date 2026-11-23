@@ -10,7 +10,8 @@ setopt SHARE_HISTORY
 setopt EXTENDED_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_SAVE_NO_DUPS
-setopt HIST_EXPIRE_DUPS_FIRST
+# No HIST_EXPIRE_DUPS_FIRST: HIST_IGNORE_ALL_DUPS leaves no duplicate to expire, so
+# every line read past HISTSIZE scans the whole ring (100k-line file: 3.5 s, 2026-11-23).
 setopt HIST_IGNORE_SPACE
 setopt HIST_REDUCE_BLANKS
 setopt HIST_VERIFY
