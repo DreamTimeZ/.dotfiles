@@ -59,7 +59,5 @@ if [[ -o interactive ]]; then
   [[ -s $ZSH_COMPDUMP && ! $ZSH_COMPDUMP.zwc -nt $ZSH_COMPDUMP ]] && zcompile -UR -- "$ZSH_COMPDUMP"
 fi
 
-if [[ -o interactive ]]; then
-  autoload -Uz bracketed-paste-magic
-  zle -N bracketed-paste bracketed-paste-magic
-fi
+# No bracketed-paste-magic: builtin bracketed-paste already keeps pasted lines from running,
+# and the magic replays each char through plugin-wrapped self-insert (16 KB paste: 4.7 s, 2026-11-23).
