@@ -11,6 +11,12 @@ readonly PACKAGES_DIR="${DOTFILES_DIR}/packages"
 # tilde-expanded back to $HOME by bash 5 but not by 3.2, a replacement taken
 # from a variable is expanded by neither.
 readonly HOME_ABBREV='~'
+readonly SELECTION_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/categories"
+# Install order. Each category has one packages/Brewfile.<category>.
+readonly -a CATEGORY_ORDER=(core cli dev extra macos)
+readonly MACOS_CATEGORY="macos"
+readonly SELECT_ALL_WORD="all"
+readonly EMPTY_SELECTION_RC=2
 readonly ESPANSO_DEB_ARCH="amd64"
 # Upstream's install steps for the Wayland .deb grant this to the espanso binary
 readonly ESPANSO_WAYLAND_CAP="cap_dac_override+p"
@@ -37,10 +43,15 @@ PACKAGES_ONLY=0
 DO_DOCTOR=0
 DO_UNLINK=0
 DO_UPDATE=0
-INSTALL_ALL=0
-declare -a CATEGORIES=()
+DO_SELECT=0
+declare -a SELECT_WORDS=()
+declare -a SELECTED=()
+SELECTION_WORDS=""
+SELECTION_SOURCE=""
 declare -a SKIP_GROUPS=()
 declare -a ONLY_GROUPS=()
+declare -a GROUP_LIST=()
+SELECTION_DEFAULT_REASON=""
 
 log_info()    { printf "${BLUE}==>${NC} ${BOLD}%s${NC}\n" "$1"; }
 log_success() { printf " ${GREEN}ok${NC} %s\n" "$1"; }
@@ -63,6 +74,38 @@ detect_platform() {
     esac
 }
 
+category_desc() {
+    case "$1" in
+        core)  echo "Shell, git, tmux, plugin manager, history, navigation" ;;
+        cli)   echo "Modern CLI replacements, JSON/YAML tools, viewers, monitors" ;;
+        dev)   echo "Editor, runtimes, git and lint tooling" ;;
+        extra) echo "Benchmarks, code stats, document conversion, media, OCR, network and disk tools" ;;
+        macos) echo "Hammerspoon, Karabiner-Elements, espanso, CLI tools" ;;
+    esac
+}
+
+to_lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
+is_category() {
+    local c
+    for c in "${CATEGORY_ORDER[@]}"; do
+        [[ "$c" == "$1" ]] && return 0
+    done
+    return 1
+}
+
+category_available() {
+    local platform="$1" category="$2"
+    [[ "$category" != "$MACOS_CATEGORY" || "$platform" == "macos" ]]
+}
+
+available_categories() {
+    local platform="$1" c
+    for c in "${CATEGORY_ORDER[@]}"; do
+        if category_available "$platform" "$c"; then printf '%s ' "$c"; fi
+    done
+}
+
 brewfile_entries() {
     local platform="$1" line
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -83,14 +126,266 @@ apt_list_entries() {
     done < "$1"
 }
 
+category_package_count() {
+    local platform="$1" brewfile="${PACKAGES_DIR}/Brewfile.$2" aptfile="${PACKAGES_DIR}/apt.$2.txt" n=0 line
+    if [[ -f "$brewfile" ]]; then
+        while IFS= read -r line; do
+            n=$((n + 1))
+        done < <(brewfile_entries "$platform" "$brewfile")
+    fi
+    if [[ ( "$platform" == "linux" || "$platform" == "wsl" ) && -f "$aptfile" ]]; then
+        while IFS= read -r line; do
+            n=$((n + 1))
+        done < <(apt_list_entries "$aptfile")
+    fi
+    echo "$n"
+}
+
+is_selection_word() {
+    [[ "$1" == "$SELECT_ALL_WORD" ]] || is_category "${1#-}"
+}
+
+split_selection_words() {
+    local arg part
+    for arg in "$@"; do
+        arg="$(to_lower "$arg")"
+        arg="${arg// /,}"
+        while [[ -n "$arg" ]]; do
+            part="${arg%%,*}"
+            if [[ "$arg" == *,* ]]; then arg="${arg#*,}"; else arg=""; fi
+            [[ -n "$part" ]] && printf '%s\n' "$part"
+        done
+    done
+}
+
+resolve_words() {
+    local platform="$1"
+    shift
+    local -a words=()
+    local w name
+    while IFS= read -r w; do
+        words+=("$w")
+    done < <(split_selection_words "$@")
+
+    local available
+    available="$(available_categories "$platform")"
+    for w in ${words[@]+"${words[@]}"}; do
+        name="${w#-}"
+        if ! is_selection_word "$w"; then
+            log_error "Unknown category: $w (valid: ${SELECT_ALL_WORD} ${available}or -<category> to exclude)"
+            return 1
+        fi
+        if [[ "$w" != -* && "$w" != "$SELECT_ALL_WORD" ]] && ! category_available "$platform" "$name"; then
+            log_error "category $name is macOS-only"
+            return 1
+        fi
+    done
+    [[ ${#words[@]} -eq 0 ]] && return "$EMPTY_SELECTION_RC"
+
+    local set=" "
+    [[ "${words[0]}" == -* ]] && set=" ${available}"
+    for w in "${words[@]}"; do
+        name="${w#-}"
+        if [[ "$w" == "$SELECT_ALL_WORD" ]]; then
+            set=" ${available}"
+        elif [[ "$w" == -* ]]; then
+            set="${set/ $name / }"
+        elif [[ "$set" != *" $name "* ]]; then
+            set+="$name "
+        fi
+    done
+
+    SELECTED=()
+    local c
+    for c in "${CATEGORY_ORDER[@]}"; do
+        [[ "$set" == *" $c "* ]] && SELECTED+=("$c")
+    done
+    [[ ${#SELECTED[@]} -eq 0 ]] && return "$EMPTY_SELECTION_RC"
+    SELECTION_WORDS="${words[*]}"
+}
+
+log_empty_selection() {
+    log_error "No package categories selected (for a links-only run use --link-only)"
+}
+
+read_saved_selection() {
+    local platform="$1"
+    if [[ -e "$SELECTION_FILE" && ! -f "$SELECTION_FILE" ]]; then
+        log_warn "Ignoring ${SELECTION_FILE/#$HOME/$HOME_ABBREV} (not a regular file)"
+        return 1
+    fi
+    [[ -f "$SELECTION_FILE" ]] || return 1
+
+    local -a words=() valid=()
+    IFS=$' \t\r\n' read -r -a words < "$SELECTION_FILE" || true
+    if [[ ${#words[@]} -eq 0 ]]; then
+        log_warn "Ignoring ${SELECTION_FILE/#$HOME/$HOME_ABBREV} (no categories on its first line)"
+        return 1
+    fi
+
+    local w
+    for w in ${words[@]+"${words[@]}"}; do
+        if resolve_words "$platform" "$w" 2>/dev/null || [[ $? -eq $EMPTY_SELECTION_RC ]]; then
+            valid+=("$w")
+        else
+            log_warn "Ignoring '$w' in ${SELECTION_FILE/#$HOME/$HOME_ABBREV} (not a valid category here)"
+        fi
+    done
+    [[ ${#valid[@]} -gt 0 ]] || return 1
+
+    if ! resolve_words "$platform" "${valid[@]}"; then
+        log_warn "Ignoring ${SELECTION_FILE/#$HOME/$HOME_ABBREV} (selects no category)"
+        return 1
+    fi
+}
+
+# Fatal in --select, whose only job is the saved file. An install run goes on
+# with the resolved selection.
+save_selection() {
+    (( DRY_RUN )) && return 0
+    local dir="${SELECTION_FILE%/*}" tmp="" shown="${SELECTION_FILE/#$HOME/$HOME_ABBREV}" saved=0
+    if [[ -e "$SELECTION_FILE" && ! -f "$SELECTION_FILE" ]]; then
+        log_warn "Could not save the selection: $shown exists and is not a regular file"
+    elif mkdir -p "$dir" && tmp="$(mktemp "${dir}/.categories.XXXXXX")" \
+        && printf '%s\n' "$SELECTION_WORDS" > "$tmp" && mv -f "$tmp" "$SELECTION_FILE"; then
+        saved=1
+        log_success "Saved selection to ${shown}: $SELECTION_WORDS"
+    else
+        [[ -n "$tmp" ]] && rm -f "$tmp"
+        log_warn "Could not save the selection to $shown"
+    fi
+    (( saved )) && return 0
+    if (( DO_SELECT )); then
+        log_error "Nothing saved (fix ${shown} and re-run setup.sh --select)"
+        exit 1
+    fi
+    log_warn "Using this selection for this run only"
+}
+
+print_category_table() {
+    local platform="$1" c
+    for c in $(available_categories "$platform"); do
+        printf "  ${BOLD}%-8s${NC} %3s  %s\n" "$c" "$(category_package_count "$platform" "$c")" "$(category_desc "$c")"
+    done
+}
+
+# Asks on stderr, so a redirected stdout cannot hide the question.
+ask_selection() {
+    local platform="$1" default="$2"
+
+    {
+        log_header "Select package categories to install"
+        printf "  ${DIM}%-8s %3s  %s${NC}\n" "category" "pkgs" "description"
+        print_category_table "$platform"
+        printf '\nEnter takes the default. Several: "core cli". All but one: "-extra". Everything: "all". q quits.\n'
+    } >&2
+
+    local -a answer
+    local rc
+    while true; do
+        printf 'Install which? [%s]: ' "$default" >&2
+        answer=()
+        # At EOF read fails but keeps what was typed before it
+        read -r -a answer || printf '\n' >&2
+        [[ ${#answer[@]} -eq 0 ]] && answer=("$default")
+        if [[ ${#answer[@]} -eq 1 ]]; then
+            case "$(to_lower "${answer[0]}")" in
+                q|quit)
+                    log_error "Nothing installed (selection cancelled)"
+                    exit 1
+                    ;;
+            esac
+        fi
+        rc=0
+        resolve_words "$platform" "${answer[@]}" || rc=$?
+        (( rc == 0 )) && return 0
+        (( rc == EMPTY_SELECTION_RC )) && log_empty_selection
+    done
+}
+
+resolve_selection() {
+    local platform="$1" rc=0
+    if [[ ${#SELECT_WORDS[@]} -gt 0 ]]; then
+        resolve_words "$platform" "${SELECT_WORDS[@]}" || rc=$?
+        (( rc == EMPTY_SELECTION_RC )) && log_empty_selection
+        (( rc == 0 )) || exit 1
+        SELECTION_SOURCE="arguments"
+        save_selection
+        return 0
+    fi
+
+    local saved=0 can_ask=0
+    read_saved_selection "$platform" && saved=1
+    [[ -t 0 && -t 2 ]] && (( ! DRY_RUN )) && can_ask=1
+
+    if (( can_ask && (DO_SELECT || ! saved) )); then
+        local default="$SELECT_ALL_WORD"
+        (( saved )) && default="$SELECTION_WORDS"
+        ask_selection "$platform" "$default"
+        SELECTION_SOURCE="prompt"
+        save_selection
+    elif (( saved )); then
+        SELECTION_SOURCE="saved"
+    else
+        resolve_words "$platform" "$SELECT_ALL_WORD"
+        SELECTION_SOURCE="default"
+        if [[ -e "$SELECTION_FILE" ]]; then
+            SELECTION_DEFAULT_REASON="saved selection ignored"
+        else
+            SELECTION_DEFAULT_REASON="nothing saved"
+        fi
+        if [[ -t 0 && -t 2 ]]; then
+            SELECTION_DEFAULT_REASON+=", a dry run does not ask"
+        else
+            SELECTION_DEFAULT_REASON+=", no terminal"
+        fi
+    fi
+}
+
+print_plan() {
+    local platform="$1" c
+    log_header "Install plan"
+    printf "  Platform:  %s\n" "$platform"
+    printf "  Install:\n"
+    for c in "${SELECTED[@]}"; do
+        printf "    ${BOLD}%-8s${NC} %3s  %s\n" "$c" "$(category_package_count "$platform" "$c")" "$(category_desc "$c")"
+    done
+
+    local skipped=""
+    for c in $(available_categories "$platform"); do
+        [[ " ${SELECTED[*]} " == *" $c "* ]] || skipped+="$c "
+    done
+    skipped="${skipped% }"
+    printf "  Skipped:   %s\n" "${skipped:-none}"
+
+    case "$SELECTION_SOURCE" in
+        arguments) printf "  Selection: from arguments (%s)\n" "$SELECTION_WORDS" ;;
+        saved)     printf "  Selection: saved in %s (%s)\n" "${SELECTION_FILE/#$HOME/$HOME_ABBREV}" "$SELECTION_WORDS" ;;
+        prompt)    printf "  Selection: from the prompt (%s)\n" "$SELECTION_WORDS" ;;
+        default)   printf "  Selection: default (%s: all)\n" "$SELECTION_DEFAULT_REASON" ;;
+    esac
+
+    # --select also runs from the bootstrap before it clones the private repo
+    if [[ -d "$DOTFILES_PRIVATE" ]]; then
+        printf "  Private:   %s present\n" "${DOTFILES_PRIVATE/#$HOME/$HOME_ABBREV}"
+    elif (( ! DO_SELECT )); then
+        printf "  Private:   %s not found\n" "${DOTFILES_PRIVATE/#$HOME/$HOME_ABBREV}"
+    fi
+
+    if [[ "$SELECTION_SOURCE" == "saved" ]]; then
+        printf '  %bChange it with setup.sh --select, or pass categories (setup.sh core cli)%b\n' "$DIM" "$NC"
+    fi
+}
+
 show_help() {
     cat << 'EOF'
-Usage: ./setup.sh [options] [categories...]
+Usage: ./setup.sh [options] [words...]
 
 Options:
-  -a, --all            Install all package categories
-  -s, --skip GROUP     Skip symlink group (repeatable, see groups below)
-  -o, --only GROUP     Only link these symlink groups (repeatable, mutually exclusive with --skip)
+  -a, --all            Install all package categories (the word all)
+      --select [WORDS] Choose and save the categories, print the plan, install nothing
+  -s, --skip GROUPS    Skip symlink groups, comma separated (repeatable, see groups below)
+  -o, --only GROUPS    Only link these symlink groups, comma separated (repeatable, mutually exclusive with --skip)
   -l, --link-only      Only create symlinks, skip packages
   -p, --packages-only  Only install packages, skip symlinks
   -d, --doctor         Check system health and symlink integrity
@@ -101,12 +396,26 @@ Options:
   -h, --help           Show this help message
 
 Package categories:
-  core      Shell, git, tmux, plugin manager, history, navigation
-  cli       Modern CLI replacements, JSON/YAML tools, viewers, monitors
-  dev       Editor, runtimes, git and lint tooling
-  extra     Benchmarks, code stats, document conversion, media, OCR, network and disk tools
-  macos     Hammerspoon, Karabiner-Elements, espanso, CLI tools (macOS only)
+EOF
+    local c desc
+    for c in "${CATEGORY_ORDER[@]}"; do
+        desc="$(category_desc "$c")"
+        [[ "$c" == "$MACOS_CATEGORY" ]] && desc+=" (macOS only)"
+        printf "  %-9s %s\n" "$c" "$desc"
+    done
+
+    cat << 'EOF'
   Full lists: packages/Brewfile.<category>, on Linux also packages/apt.<category>.txt
+
+Selecting categories:
+  A word is a category (adds it), all (adds every category), or -<category>
+  (removes it). Words are case-insensitive and may be comma separated
+  (core,cli). A first word starting with - starts from all: -extra installs
+  everything but extra.
+  Without words: the selection saved in ~/.config/dotfiles/categories
+  (under XDG_CONFIG_HOME when set), else a prompt when stdin and stderr are
+  terminals, else all categories.
+  A selection from words or the prompt is saved. --dry-run never asks or saves.
 
 EOF
 
@@ -119,17 +428,43 @@ EOF
     cat << 'EOF'
 
 Examples:
-  ./setup.sh                     # Interactive setup
+  ./setup.sh                     # Saved selection, else ask, then create symlinks
   ./setup.sh --all               # Full setup
-  ./setup.sh core cli            # Install core + cli, then create symlinks
+  ./setup.sh core cli            # Install core + cli (saved), then create symlinks
+  ./setup.sh -extra              # Everything except extra
+  ./setup.sh --select            # Change the saved selection, install nothing
+  ./setup.sh --select core,dev   # Save core + dev without asking
   ./setup.sh --all --skip gpg    # Full setup, skip GPG symlinks
-  ./setup.sh --only shell git ssh  # Only link shell, git, and SSH configs
+  ./setup.sh --only shell,git,ssh  # Only link shell, git, and SSH configs
   ./setup.sh --link-only         # Only create symlinks
   ./setup.sh --link-only --force # Replace existing files and symlinks, never directories
   ./setup.sh --doctor            # Check system health
   ./setup.sh --update            # Update Claude skills
   ./setup.sh --dry-run --all     # Preview full setup
 EOF
+}
+
+parse_group_list() {
+    local flag="$1" list="$2" name valid found
+    shift 2
+    GROUP_LIST=()
+    if [[ "$list" != -* ]]; then
+        while IFS= read -r name; do
+            found=0
+            for valid in "$@"; do
+                if [[ "$valid" == "$name" ]]; then found=1; break; fi
+            done
+            if (( ! found )); then
+                log_error "Unknown symlink group: $name (see --help for available groups)"
+                exit 1
+            fi
+            GROUP_LIST+=("$name")
+        done < <(split_selection_words "$list")
+    fi
+    if [[ ${#GROUP_LIST[@]} -eq 0 ]]; then
+        log_error "$flag requires a comma separated list of group names"
+        exit 1
+    fi
 }
 
 parse_args() {
@@ -142,71 +477,42 @@ parse_args() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -a|--all)            INSTALL_ALL=1 ;;
+            -a|--all)            SELECT_WORDS+=("$SELECT_ALL_WORD") ;;
+            --select)            DO_SELECT=1 ;;
             -l|--link-only)      LINK_ONLY=1 ;;
             -p|--packages-only)  PACKAGES_ONLY=1 ;;
             -d|--doctor)         DO_DOCTOR=1 ;;
             -u|--unlink)         DO_UNLINK=1 ;;
             -U|--update)         DO_UPDATE=1 ;;
             -s|--skip)
-                if [[ $# -lt 2 || "$2" == -* ]]; then
-                    log_error "--skip requires at least one group name"
-                    exit 1
-                fi
+                parse_group_list "$1" "${2-}" "${valid_groups[@]}"
+                SKIP_GROUPS+=("${GROUP_LIST[@]}")
                 shift
-                while [[ $# -gt 0 && "$1" != -* ]]; do
-                    local _lower
-                    _lower="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
-                    if [[ ${#valid_groups[@]} -gt 0 ]]; then
-                        local _found=0
-                        for _g in "${valid_groups[@]}"; do
-                            [[ "$_g" == "$_lower" ]] && _found=1 && break
-                        done
-                        if (( ! _found )); then
-                            log_error "Unknown symlink group: $1 (see --help for available groups)"
-                            exit 1
-                        fi
-                    fi
-                    SKIP_GROUPS+=("$_lower")
-                    shift
-                done
-                continue
                 ;;
             -o|--only)
-                if [[ $# -lt 2 || "$2" == -* ]]; then
-                    log_error "--only requires at least one group name"
-                    exit 1
-                fi
+                parse_group_list "$1" "${2-}" "${valid_groups[@]}"
+                ONLY_GROUPS+=("${GROUP_LIST[@]}")
                 shift
-                while [[ $# -gt 0 && "$1" != -* ]]; do
-                    local _lower
-                    _lower="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
-                    if [[ ${#valid_groups[@]} -gt 0 ]]; then
-                        local _found=0
-                        for _g in "${valid_groups[@]}"; do
-                            [[ "$_g" == "$_lower" ]] && _found=1 && break
-                        done
-                        if (( ! _found )); then
-                            log_error "Unknown symlink group: $1 (see --help for available groups)"
-                            exit 1
-                        fi
-                    fi
-                    ONLY_GROUPS+=("$_lower")
-                    shift
-                done
-                continue
                 ;;
             -n|--dry-run)        DRY_RUN=1 ;;
             -f|--force)          FORCE=1 ;;
             -h|--help)        show_help; exit 0 ;;
-            core|cli|dev|extra|macos)
-                CATEGORIES+=("$1")
+            -*)
+                local _w _all_words=1
+                while IFS= read -r _w; do
+                    is_selection_word "$_w" || _all_words=0
+                done < <(split_selection_words "$1")
+                if (( _all_words )); then
+                    SELECT_WORDS+=("$1")
+                else
+                    log_error "Unknown option: $1"
+                    printf "\n"
+                    show_help
+                    exit 1
+                fi
                 ;;
             *)
-                log_error "Unknown option: $1"
-                printf "\n"
-                show_help
-                exit 1
+                SELECT_WORDS+=("$1")
                 ;;
         esac
         shift
@@ -432,46 +738,12 @@ run_private_post_install() {
     fi
 }
 
-select_categories_interactive() {
-    local platform="$1"
-
-    log_header "Select package categories to install"
-
-    local -a all_categories=("core" "cli" "dev" "extra")
-    [[ "$platform" == "macos" ]] && all_categories+=("macos")
-
-    local desc
-    for cat in "${all_categories[@]}"; do
-        case "$cat" in
-            core)  desc="Shell, git, tmux, plugin manager, history, navigation" ;;
-            cli)   desc="Modern CLI replacements, JSON/YAML tools, viewers, monitors" ;;
-            dev)   desc="Editor, runtimes, git and lint tooling" ;;
-            extra) desc="Benchmarks, code stats, document conversion, media, OCR, network and disk tools" ;;
-            macos) desc="Hammerspoon, Karabiner-Elements, espanso, CLI tools" ;;
-        esac
-        printf "  ${BOLD}%-8s${NC} %s\n" "$cat" "$desc"
-        printf "           Install? [y/N] "
-        local answer
-        read -r answer
-        if [[ "$answer" =~ ^[Yy] ]]; then
-            CATEGORIES+=("$cat")
-        fi
-    done
-    printf "\n"
-
-    if [[ ${#CATEGORIES[@]} -eq 0 ]]; then
-        log_info "No categories selected, skipping package installation"
-    else
-        log_info "Selected: ${CATEGORIES[*]}"
-    fi
-}
-
 install_apt_packages() {
     command -v apt-get &>/dev/null || return 0
 
     local -a apt_files=("${PACKAGES_DIR}/apt.txt") packages=()
     local category apt_file line
-    for category in "${CATEGORIES[@]}"; do
+    for category in "${SELECTED[@]}"; do
         apt_files+=("${PACKAGES_DIR}/apt.${category}.txt")
     done
     for apt_file in "${apt_files[@]}"; do
@@ -653,24 +925,14 @@ install_packages() {
         log_warn "Homebrew not found. Most packages require it: https://brew.sh"
     fi
 
-    if [[ ${#CATEGORIES[@]} -eq 0 ]] && (( ! INSTALL_ALL )); then
-        select_categories_interactive "$platform"
-    fi
-
-    if (( INSTALL_ALL )); then
-        CATEGORIES=("core" "cli" "dev" "extra")
-        [[ "$platform" == "macos" ]] && CATEGORIES+=("macos")
-    fi
-
-    [[ ${#CATEGORIES[@]} -eq 0 ]] && return 0
-
     log_header "Installing packages"
 
     if [[ "$platform" == "linux" || "$platform" == "wsl" ]]; then
         install_apt_packages
     fi
 
-    for category in "${CATEGORIES[@]}"; do
+    local category
+    for category in "${SELECTED[@]}"; do
         install_brew_packages "$platform" "$category"
     done
 
@@ -1153,6 +1415,9 @@ run_doctor() {
 }
 
 main() {
+    local platform
+    platform="$(detect_platform)"
+
     parse_args "$@"
 
     if (( LINK_ONLY && PACKAGES_ONLY )); then
@@ -1170,14 +1435,35 @@ main() {
         exit 1
     fi
 
-    local platform
-    platform="$(detect_platform)"
+    if (( DO_SELECT + DO_DOCTOR + DO_UNLINK + DO_UPDATE > 1 )); then
+        log_error "--select, --doctor, --unlink and --update are mutually exclusive"
+        exit 1
+    fi
+
+    # Catches a mistyped word in every mode, not only when packages are handled
+    if [[ ${#SELECT_WORDS[@]} -gt 0 ]]; then
+        local word_rc=0
+        resolve_words "$platform" "${SELECT_WORDS[@]}" || word_rc=$?
+        (( word_rc == EMPTY_SELECTION_RC )) && log_empty_selection
+        (( word_rc == 0 )) || exit 1
+        if (( ! DO_SELECT && (LINK_ONLY || DO_DOCTOR || DO_UNLINK || DO_UPDATE) )); then
+            log_error "Category words need an install run or --select"
+            exit 1
+        fi
+    fi
 
     printf "\n"
     (( DRY_RUN )) && log_info "Dry run mode (no changes will be made)"
     log_info "Platform: $platform"
-    log_info "Dotfiles: ${DOTFILES_DIR/#$HOME/$HOME_ABBREV}"
+    # In --select from the bootstrap this is a temporary snapshot
+    (( DO_SELECT )) || log_info "Dotfiles: ${DOTFILES_DIR/#$HOME/$HOME_ABBREV}"
     printf "\n"
+
+    if (( DO_SELECT )); then
+        resolve_selection "$platform"
+        print_plan "$platform"
+        exit 0
+    fi
 
     if (( DO_DOCTOR )); then
         run_doctor "$platform"
@@ -1196,6 +1482,11 @@ main() {
         update_claude_skills || rc=1
         run_private_post_install --update-skills || rc=1
         exit "$rc"
+    fi
+
+    if (( ! LINK_ONLY )); then
+        resolve_selection "$platform"
+        print_plan "$platform"
     fi
 
     local private_post_install_failed=0
