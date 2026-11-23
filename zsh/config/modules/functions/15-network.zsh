@@ -207,6 +207,7 @@ USAGE
 
     # OUI vendor DB shipped with nmap; graceful blank if unavailable
     for p in /opt/homebrew/share/nmap/nmap-mac-prefixes \
+             /home/linuxbrew/.linuxbrew/share/nmap/nmap-mac-prefixes \
              /usr/local/share/nmap/nmap-mac-prefixes \
              /usr/share/nmap/nmap-mac-prefixes; do
         [[ -r "$p" ]] && { oui_db="$p"; break; }
