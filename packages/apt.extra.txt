@@ -1,0 +1,5 @@
+# Brewfile.extra installs these on macOS only.
+
+ffmpeg
+tesseract-ocr
+tesseract-ocr-deu

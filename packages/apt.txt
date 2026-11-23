@@ -9,5 +9,3 @@ procps
 jq
 zsh
 tmux
-ffmpeg
-tesseract-ocr

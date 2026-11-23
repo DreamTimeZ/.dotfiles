@@ -1,8 +1,8 @@
 brew "hyperfine"
 brew "scc"
 brew "pandoc"
-brew "ffmpeg"
-brew "tesseract"
+brew "ffmpeg" if OS.mac?     # Linux: packages/apt.extra.txt
+brew "tesseract" if OS.mac?  # Linux: packages/apt.extra.txt
 brew "yt-dlp"
 brew "nmap"
 brew "cloudflare-speed-cli"  # net-check

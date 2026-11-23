@@ -14,6 +14,7 @@ readonly HOME_ABBREV='~'
 readonly ESPANSO_DEB_ARCH="amd64"
 # Upstream's install steps for the Wayland .deb grant this to the espanso binary
 readonly ESPANSO_WAYLAND_CAP="cap_dac_override+p"
+readonly BREW_MAC_GUARD=" if OS.mac?"
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -62,6 +63,26 @@ detect_platform() {
     esac
 }
 
+brewfile_entries() {
+    local platform="$1" line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^(brew|cask|mas)[[:space:]] ]] || continue
+        if [[ "${line%%#*}" == *"$BREW_MAC_GUARD"* ]]; then
+            [[ "$platform" == "macos" ]] || continue
+            line="${line/"$BREW_MAC_GUARD"/}"
+        fi
+        printf '%s\n' "$line"
+    done < "$2"
+}
+
+apt_list_entries() {
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        printf '%s\n' "$line"
+    done < "$1"
+}
+
 show_help() {
     cat << 'EOF'
 Usage: ./setup.sh [options] [categories...]
@@ -85,7 +106,7 @@ Package categories:
   dev       Editor, runtimes, git and lint tooling
   extra     Benchmarks, code stats, document conversion, media, OCR, network and disk tools
   macos     Hammerspoon, Karabiner-Elements, espanso, CLI tools (macOS only)
-  Full lists: packages/Brewfile.<category>
+  Full lists: packages/Brewfile.<category>, on Linux also packages/apt.<category>.txt
 
 EOF
 
@@ -446,15 +467,19 @@ select_categories_interactive() {
 }
 
 install_apt_packages() {
-    local apt_file="${PACKAGES_DIR}/apt.txt"
-    [[ ! -f "$apt_file" ]] && return 0
     command -v apt-get &>/dev/null || return 0
 
-    local -a packages=()
-    while IFS= read -r line; do
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        packages+=("$line")
-    done < "$apt_file"
+    local -a apt_files=("${PACKAGES_DIR}/apt.txt") packages=()
+    local category apt_file line
+    for category in "${CATEGORIES[@]}"; do
+        apt_files+=("${PACKAGES_DIR}/apt.${category}.txt")
+    done
+    for apt_file in "${apt_files[@]}"; do
+        [[ -f "$apt_file" ]] || continue
+        while IFS= read -r line; do
+            packages+=("$line")
+        done < <(apt_list_entries "$apt_file")
+    done
 
     [[ ${#packages[@]} -eq 0 ]] && return 0
 
@@ -475,7 +500,7 @@ install_apt_packages() {
 }
 
 install_brew_packages() {
-    local category="$1"
+    local platform="$1" category="$2"
     local brewfile="${PACKAGES_DIR}/Brewfile.${category}"
 
     if [[ ! -f "$brewfile" ]]; then
@@ -492,7 +517,7 @@ install_brew_packages() {
 
     if (( DRY_RUN )); then
         log_info "[dry-run] Would install from Brewfile.$category:"
-        sed -n 's/^brew "\(.*\)"/  - \1/p; s/^cask "\(.*\)"/  - \1 (cask)/p' "$brewfile"
+        brewfile_entries "$platform" "$brewfile" | sed -n 's/^brew "\(.*\)"/  - \1/p; s/^cask "\(.*\)"/  - \1 (cask)/p'
         return 0
     fi
 
@@ -555,7 +580,7 @@ install_github_deb() {
 }
 
 install_local_packages() {
-    local local_dir="${PACKAGES_DIR}/local"
+    local platform="$1" local_dir="${PACKAGES_DIR}/local"
     [[ -d "$local_dir" ]] || return 0
     command -v brew &>/dev/null || return 0
 
@@ -567,7 +592,8 @@ install_local_packages() {
 
         if (( DRY_RUN )); then
             log_info "[dry-run] Would install from local/$name:"
-            sed -n 's/^brew "\(.*\)"/  - \1/p; s/^cask "\(.*\)"/  - \1 (cask)/p; s/^mas "\(.*\)".*/  - \1 (App Store)/p' "$brewfile"
+            brewfile_entries "$platform" "$brewfile" \
+                | sed -n 's/^brew "\(.*\)"/  - \1/p; s/^cask "\(.*\)"/  - \1 (cask)/p; s/^mas "\(.*\)".*/  - \1 (App Store)/p'
             continue
         fi
 
@@ -645,10 +671,10 @@ install_packages() {
     fi
 
     for category in "${CATEGORIES[@]}"; do
-        install_brew_packages "$category"
+        install_brew_packages "$platform" "$category"
     done
 
-    install_local_packages
+    install_local_packages "$platform"
 
     install_linux_extras "$platform"
 }
