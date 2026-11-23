@@ -503,43 +503,6 @@ install_brew_packages() {
     }
 }
 
-install_cargo_packages() {
-    local cargo_file="${PACKAGES_DIR}/cargo.txt"
-    [[ ! -f "$cargo_file" ]] && return 0
-
-    if ! command -v cargo &>/dev/null; then
-        log_warn "Cargo not installed, skipping cargo packages"
-        return 0
-    fi
-
-    local -a packages=()
-    while IFS= read -r line; do
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        packages+=("$line")
-    done < "$cargo_file"
-
-    [[ ${#packages[@]} -eq 0 ]] && return 0
-
-    if (( DRY_RUN )); then
-        log_info "[dry-run] Would install cargo packages: ${packages[*]}"
-        return 0
-    fi
-
-    log_info "Installing cargo packages..."
-    for pkg in "${packages[@]}"; do
-        if cargo install --list 2>/dev/null | grep -q "^${pkg} "; then
-            log_skip "Already installed: $pkg"
-        else
-            if cargo install "$pkg" 2>/dev/null; then
-                log_success "$pkg"
-            else
-                log_warn "Failed: $pkg"
-                PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
-            fi
-        fi
-    done
-}
-
 # Returns 0 when it installed NAME in this run (or would in a dry run). Callers
 # test the status, so errexit does not apply inside: every failure is explicit.
 install_github_deb() {
@@ -686,8 +649,6 @@ install_packages() {
     done
 
     install_local_packages
-
-    install_cargo_packages
 
     install_linux_extras "$platform"
 }
