@@ -8,7 +8,6 @@
 	untrackedCache = true
 	pager = delta
 	filemode = false
-	fscache = true
 	fsmonitor = true
 
 [init]
