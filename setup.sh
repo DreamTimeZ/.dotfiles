@@ -1523,8 +1523,8 @@ main() {
 
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
         printf "\n"
-        log_info "Tip: Clone your private dotfiles to ${DOTFILES_PRIVATE/#$HOME/$HOME_ABBREV}"
-        log_info "     Then re-run: ./setup.sh --all"
+        log_info "Tip: Add your private dotfiles by re-running the bootstrap one-liner"
+        log_info "     with -- <private-repo-url> (see docs/installation.md)"
     fi
 
     if (( SYMLINKS_FAILED > 0 || PACKAGES_WARNED > 0 || private_post_install_failed )); then
