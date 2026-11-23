@@ -31,19 +31,24 @@ if [[ -n $commands[ssh-agent] && -n $commands[ssh-add] ]]; then
   ssh-add -l &>/dev/null
   if [[ $? -eq 2 ]]; then
     _ssh_env=$HOME/.ssh/agent-env
+    [[ -d $HOME/.ssh ]] || mkdir -m 700 "$HOME/.ssh"
+    # eval "$(cmd)" returns 0 even when cmd fails, so capture first. Persisting
+    # after a failed start would save the previous dead SSH_AUTH_SOCK.
+    _ssh_agent_start() {
+      local out
+      out=$(ssh-agent -s) || return
+      eval "$out" >/dev/null
+      print -r "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >$_ssh_env
+      print -r "export SSH_AGENT_PID=$SSH_AGENT_PID" >>$_ssh_env
+    }
     if [[ -f $_ssh_env ]]; then
       source "$_ssh_env" >/dev/null
       ssh-add -l &>/dev/null
-      [[ $? -eq 2 ]] && {
-        eval "$(ssh-agent -s)" >/dev/null
-        print -r "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >$_ssh_env
-        print -r "export SSH_AGENT_PID=$SSH_AGENT_PID" >>$_ssh_env
-      }
+      [[ $? -eq 2 ]] && _ssh_agent_start
     else
-      eval "$(ssh-agent -s)" >/dev/null
-      print -r "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >$_ssh_env
-      print -r "export SSH_AGENT_PID=$SSH_AGENT_PID" >>$_ssh_env
+      _ssh_agent_start
     fi
+    unset -f _ssh_agent_start
     unset _ssh_env
   fi
 fi
