@@ -483,6 +483,7 @@ install_brew_packages() {
     if ! command -v brew &>/dev/null; then
         log_warn "Homebrew not installed, skipping: $category"
         log_warn "Install Homebrew: https://brew.sh"
+        PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
         return 0
     fi
 
