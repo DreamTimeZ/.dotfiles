@@ -1,6 +1,7 @@
 brew "mise"
 brew "lazygit"
 brew "gh"
+brew "git-lfs"          # required by the lfs filter in git/.gitconfig
 brew "neovim"
 brew "gitleaks"
 brew "git-delta"

@@ -54,6 +54,12 @@
 [delta "side-by-side-when-wide"]
 	side-by-side = true
 
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+
 # Last, so machine-local values override everything above
 [include]
     path = ~/.gitconfig.local
