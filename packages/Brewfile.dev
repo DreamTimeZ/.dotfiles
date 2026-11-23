@@ -3,6 +3,7 @@ brew "lazygit"
 brew "gh"
 brew "git-lfs"          # required by the lfs filter in git/.gitconfig
 brew "neovim"
+brew "tree-sitter-cli"  # builds the Neovim treesitter parsers
 brew "gitleaks"
 brew "git-delta"
 brew "difftastic"       # gdft aliases
