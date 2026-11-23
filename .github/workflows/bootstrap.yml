@@ -1,0 +1,54 @@
+name: bootstrap
+
+on:
+  push:
+    # Path filters are not evaluated for tag pushes. A branches filter excludes tags.
+    branches:
+      - '**'
+    paths:
+      - bootstrap.sh
+      - setup.sh
+      - packages/**
+      - symlinks.conf
+      # Linked before setup.sh's own git clones (TPM, Excalidraw skill)
+      - git/.gitconfig
+      - mise/**
+      - nvim/**
+      - zsh/.zprofile
+      - zsh/config/helpers.zsh
+      - zsh/sheldon/**
+      - tests/**
+      - .github/workflows/bootstrap.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stubs:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    # /bin/bash is 5.x on the ubuntu runner and 3.2 on the macOS runner.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Bootstrap stub suite
+        run: /bin/bash tests/test-bootstrap.sh
+      - name: Setup selection stub suite
+        run: /bin/bash tests/test-setup-selection.sh
+
+  container:
+    runs-on: ubuntu-latest
+    # Homebrew install, all Brewfile categories, mise tools and the Neovim
+    # plugin sync on native amd64, plus the idempotent second run.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Bootstrap in a fresh container
+        run: tests/test-bootstrap-container.sh
