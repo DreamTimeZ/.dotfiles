@@ -927,8 +927,10 @@ install_packages() {
 
     log_header "Installing packages"
 
+    # All sudo work on Linux happens before the long Homebrew phase
     if [[ "$platform" == "linux" || "$platform" == "wsl" ]]; then
         install_apt_packages
+        install_linux_extras "$platform"
     fi
 
     local category
@@ -937,8 +939,6 @@ install_packages() {
     done
 
     install_local_packages "$platform"
-
-    install_linux_extras "$platform"
 }
 
 # macOS espanso config path contains spaces (~/Library/Application Support/espanso/)
