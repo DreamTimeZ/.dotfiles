@@ -1173,6 +1173,8 @@ main() {
         exit "$rc"
     fi
 
+    local private_post_install_failed=0
+
     # Link private repo first (populates local/ dirs for packages and configs)
     if (( ! PACKAGES_ONLY )); then
         link_private_repo
@@ -1187,7 +1189,7 @@ main() {
         link_espanso_config
         if (( ! LINK_ONLY )); then
             post_install
-            run_private_post_install
+            run_private_post_install || private_post_install_failed=1
         fi
     fi
 
@@ -1201,6 +1203,7 @@ main() {
     (( SYMLINKS_EXCLUDED > 0 )) && summary+=", $SYMLINKS_EXCLUDED excluded"
     log_info "$summary"
     (( PACKAGES_WARNED > 0 )) && log_warn "Package warnings: $PACKAGES_WARNED (review output above)"
+    (( private_post_install_failed )) && log_warn "Private post-install failed (review output above)"
 
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
         printf "\n"
@@ -1208,7 +1211,7 @@ main() {
         log_info "     Then re-run: ./setup.sh --all"
     fi
 
-    if (( SYMLINKS_FAILED > 0 || PACKAGES_WARNED > 0 )); then
+    if (( SYMLINKS_FAILED > 0 || PACKAGES_WARNED > 0 || private_post_install_failed )); then
         exit 1
     fi
 }
