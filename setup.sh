@@ -7,6 +7,10 @@ readonly DOTFILES_DIR
 readonly DOTFILES_PRIVATE="${HOME}/.dotfiles-private"
 readonly SYMLINKS_CONF="${DOTFILES_DIR}/symlinks.conf"
 readonly PACKAGES_DIR="${DOTFILES_DIR}/packages"
+# A literal ~ as the replacement of a ${var/#$HOME/...} expansion is
+# tilde-expanded back to $HOME by bash 5 but not by 3.2, a replacement taken
+# from a variable is expanded by neither.
+readonly HOME_ABBREV='~'
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -208,7 +212,7 @@ create_symlink() {
                 return 0
             fi
         fi
-        log_warn "Source not found: ${source/#$HOME/~}"
+        log_warn "Source not found: ${source/#$HOME/$HOME_ABBREV}"
         SYMLINKS_FAILED=$((SYMLINKS_FAILED + 1))
         return 0
     fi
@@ -216,7 +220,7 @@ create_symlink() {
     local target_dir="${target%/*}"
     if [[ ! -d "$target_dir" ]]; then
         if (( DRY_RUN )); then
-            log_info "[dry-run] Would create directory: ${target_dir/#$HOME/~}"
+            log_info "[dry-run] Would create directory: ${target_dir/#$HOME/$HOME_ABBREV}"
         else
             mkdir -p "$target_dir"
         fi
@@ -226,24 +230,24 @@ create_symlink() {
         local current
         current="$(readlink "$target")"
         if [[ "$current" == "$source" ]]; then
-            log_skip "Already linked: ${target/#$HOME/~}"
+            log_skip "Already linked: ${target/#$HOME/$HOME_ABBREV}"
             SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
             return 0
         fi
         if (( ! FORCE )); then
-            log_warn "Exists (different target): ${target/#$HOME/~} -> $current"
+            log_warn "Exists (different target): ${target/#$HOME/$HOME_ABBREV} -> $current"
             SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
             return 0
         fi
         (( ! DRY_RUN )) && rm -f "$target"
     elif [[ -e "$target" ]]; then
         if (( ! FORCE )); then
-            log_warn "Exists (not a symlink): ${target/#$HOME/~}"
+            log_warn "Exists (not a symlink): ${target/#$HOME/$HOME_ABBREV}"
             SYMLINKS_SKIPPED=$((SYMLINKS_SKIPPED + 1))
             return 0
         fi
         if [[ -d "$target" ]]; then
-            log_warn "Exists as directory: ${target/#$HOME/~} (remove manually to replace with symlink)"
+            log_warn "Exists as directory: ${target/#$HOME/$HOME_ABBREV} (remove manually to replace with symlink)"
             SYMLINKS_FAILED=$((SYMLINKS_FAILED + 1))
             return 0
         fi
@@ -251,10 +255,10 @@ create_symlink() {
     fi
 
     if (( DRY_RUN )); then
-        log_info "[dry-run] Would link: ${target/#$HOME/~} -> ${source/#$DOTFILES_DIR/}"
+        log_info "[dry-run] Would link: ${target/#$HOME/$HOME_ABBREV} -> ${source/#$DOTFILES_DIR/}"
     else
         ln -s "$source" "$target"
-        log_success "${target/#$HOME/~} -> ${source/#$DOTFILES_DIR/}"
+        log_success "${target/#$HOME/$HOME_ABBREV} -> ${source/#$DOTFILES_DIR/}"
     fi
     SYMLINKS_CREATED=$((SYMLINKS_CREATED + 1))
 }
@@ -346,10 +350,10 @@ remove_symlinks() {
             current="$(readlink "$target")"
             if [[ "$current" == "$source" ]]; then
                 if (( DRY_RUN )); then
-                    log_info "[dry-run] Would remove: ${target/#$HOME/~}"
+                    log_info "[dry-run] Would remove: ${target/#$HOME/$HOME_ABBREV}"
                 else
                     rm -f "$target"
-                    log_success "Removed: ${target/#$HOME/~}"
+                    log_success "Removed: ${target/#$HOME/$HOME_ABBREV}"
                 fi
                 count=$((count + 1))
             fi
@@ -365,7 +369,7 @@ remove_symlinks() {
 
 link_private_repo() {
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
-        log_warn "Private dotfiles not found at ${DOTFILES_PRIVATE/#$HOME/~} (skipping)"
+        log_warn "Private dotfiles not found at ${DOTFILES_PRIVATE/#$HOME/$HOME_ABBREV} (skipping)"
         return 0
     fi
 
@@ -383,7 +387,7 @@ link_private_repo() {
 
     if ! "${cmd[@]}"; then
         log_error "Private dotfiles linking failed"
-        log_error "Fix the issue and re-run: ${link_script/#$HOME/~}"
+        log_error "Fix the issue and re-run: ${link_script/#$HOME/$HOME_ABBREV}"
         return 1
     fi
 }
@@ -399,7 +403,7 @@ run_private_post_install() {
 
     if ! "${cmd[@]}"; then
         log_error "Private post-install failed"
-        log_error "Fix the issue and re-run: ${script/#$HOME/~}"
+        log_error "Fix the issue and re-run: ${script/#$HOME/$HOME_ABBREV}"
         return 1
     fi
 }
@@ -698,10 +702,10 @@ unlink_espanso_config() {
             current="$(readlink "$tgt")"
             if [[ "$current" == "$src" ]]; then
                 if (( DRY_RUN )); then
-                    log_info "[dry-run] Would remove: ${tgt/#$HOME/~}"
+                    log_info "[dry-run] Would remove: ${tgt/#$HOME/$HOME_ABBREV}"
                 else
                     rm -f "$tgt"
-                    log_success "Removed: ${tgt/#$HOME/~}"
+                    log_success "Removed: ${tgt/#$HOME/$HOME_ABBREV}"
                 fi
             fi
         fi
@@ -712,14 +716,14 @@ reconcile_skill_deps() {
     local dir="$1" refs="${1}/references"
     [[ -f "${refs}/pyproject.toml" ]] || return 0
     if [[ ! -d "${refs}/.venv" ]]; then
-        log_skip "${dir##*/}: code updated but no render venv (uv sync manually in ${refs/#$HOME/~})"
+        log_skip "${dir##*/}: code updated but no render venv (uv sync manually in ${refs/#$HOME/$HOME_ABBREV})"
         return 0
     fi
     command -v uv &>/dev/null || return 0
     if ( cd "$refs" && uv sync --quiet 2>/dev/null ); then
         log_success "${dir##*/}: render dependencies synced"
     else
-        log_warn "${dir##*/}: uv sync failed (run manually in ${refs/#$HOME/~})"
+        log_warn "${dir##*/}: uv sync failed (run manually in ${refs/#$HOME/$HOME_ABBREV})"
     fi
 }
 
@@ -728,7 +732,7 @@ update_claude_skills() {
 
     local skills_dir="${HOME}/.claude/skills"
     if [[ ! -d "$skills_dir" ]]; then
-        log_skip "No skills directory at ${skills_dir/#$HOME/~}"
+        log_skip "No skills directory at ${skills_dir/#$HOME/$HOME_ABBREV}"
         return 0
     fi
     if ! command -v git &>/dev/null; then
@@ -766,7 +770,7 @@ update_claude_skills() {
         before="$(git -C "$dir" rev-parse --short HEAD)"
         if ! pull_err="$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
             git -C "$dir" pull --ff-only --quiet 2>&1)"; then
-            log_warn "${name}: pull failed: ${pull_err##*$'\n'} (manual: git -C ${dir/#$HOME/~} pull --ff-only)"
+            log_warn "${name}: pull failed: ${pull_err##*$'\n'} (manual: git -C ${dir/#$HOME/$HOME_ABBREV} pull --ff-only)"
             failed=$((failed + 1)); continue
         fi
         after="$(git -C "$dir" rev-parse --short HEAD)"
@@ -782,7 +786,7 @@ update_claude_skills() {
     done
 
     if (( found == 0 )); then
-        log_skip "No git-backed skills in ${skills_dir/#$HOME/~}"
+        log_skip "No git-backed skills in ${skills_dir/#$HOME/$HOME_ABBREV}"
         return 0
     fi
     log_info "Skills: ${updated} updated, ${current} current, ${skipped} skipped, ${failed} failed"
@@ -804,13 +808,13 @@ setup_excalidraw_render_pipeline() {
 
     log_info "Setting up Excalidraw render pipeline..."
     if ! ( cd "$refs" && uv sync --quiet 2>/dev/null ); then
-        log_warn "Excalidraw render pipeline: uv sync failed (run manually in ${refs/#$HOME/~})"
+        log_warn "Excalidraw render pipeline: uv sync failed (run manually in ${refs/#$HOME/$HOME_ABBREV})"
         return 0
     fi
     if ( cd "$refs" && uv run --quiet playwright install chromium >/dev/null 2>&1 ); then
         log_success "Excalidraw render pipeline ready"
     else
-        log_warn "Excalidraw render pipeline: chromium install failed (Linux may need: cd ${refs/#$HOME/~} && uv run playwright install-deps)"
+        log_warn "Excalidraw render pipeline: chromium install failed (Linux may need: cd ${refs/#$HOME/$HOME_ABBREV} && uv run playwright install-deps)"
     fi
 }
 
@@ -983,16 +987,16 @@ run_doctor() {
                 local current
                 current="$(readlink "$target")"
                 if [[ "$current" == "$source" ]]; then
-                    log_success "${target/#$HOME/~}"
+                    log_success "${target/#$HOME/$HOME_ABBREV}"
                 else
-                    log_warn "${target/#$HOME/~} -> wrong target"
+                    log_warn "${target/#$HOME/$HOME_ABBREV} -> wrong target"
                     issues=$((issues + 1))
                 fi
             elif [[ -e "$target" ]]; then
-                log_warn "${target/#$HOME/~} exists but is not a symlink"
+                log_warn "${target/#$HOME/$HOME_ABBREV} exists but is not a symlink"
                 issues=$((issues + 1))
             else
-                log_error "${target/#$HOME/~} missing"
+                log_error "${target/#$HOME/$HOME_ABBREV} missing"
                 issues=$((issues + 1))
             fi
         done < "$SYMLINKS_CONF"
@@ -1013,16 +1017,16 @@ run_doctor() {
                     local _current
                     _current="$(readlink "$_tgt")"
                     if [[ "$_current" == "$_src" ]]; then
-                        log_success "${_tgt/#$HOME/~}"
+                        log_success "${_tgt/#$HOME/$HOME_ABBREV}"
                     else
-                        log_warn "${_tgt/#$HOME/~} -> wrong target"
+                        log_warn "${_tgt/#$HOME/$HOME_ABBREV} -> wrong target"
                         issues=$((issues + 1))
                     fi
                 elif [[ -d "$_tgt" ]]; then
-                    log_warn "${_tgt/#$HOME/~} exists but is not a symlink (remove it manually, then run setup.sh --link-only)"
+                    log_warn "${_tgt/#$HOME/$HOME_ABBREV} exists but is not a symlink (remove it manually, then run setup.sh --link-only)"
                     issues=$((issues + 1))
                 else
-                    log_error "${_tgt/#$HOME/~} missing"
+                    log_error "${_tgt/#$HOME/$HOME_ABBREV} missing"
                     issues=$((issues + 1))
                 fi
             done
@@ -1145,7 +1149,7 @@ main() {
     printf "\n"
     (( DRY_RUN )) && log_info "Dry run mode (no changes will be made)"
     log_info "Platform: $platform"
-    log_info "Dotfiles: ${DOTFILES_DIR/#$HOME/~}"
+    log_info "Dotfiles: ${DOTFILES_DIR/#$HOME/$HOME_ABBREV}"
     printf "\n"
 
     if (( DO_DOCTOR )); then
@@ -1198,7 +1202,7 @@ main() {
 
     if [[ ! -d "$DOTFILES_PRIVATE" ]]; then
         printf "\n"
-        log_info "Tip: Clone your private dotfiles to ${DOTFILES_PRIVATE/#$HOME/~}"
+        log_info "Tip: Clone your private dotfiles to ${DOTFILES_PRIVATE/#$HOME/$HOME_ABBREV}"
         log_info "     Then re-run: ./setup.sh --all"
     fi
 
