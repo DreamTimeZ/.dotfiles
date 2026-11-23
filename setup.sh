@@ -11,6 +11,9 @@ readonly PACKAGES_DIR="${DOTFILES_DIR}/packages"
 # tilde-expanded back to $HOME by bash 5 but not by 3.2, a replacement taken
 # from a variable is expanded by neither.
 readonly HOME_ABBREV='~'
+readonly ESPANSO_DEB_ARCH="amd64"
+# Upstream's install steps for the Wayland .deb grant this to the espanso binary
+readonly ESPANSO_WAYLAND_CAP="cap_dac_override+p"
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -537,17 +540,19 @@ install_cargo_packages() {
     done
 }
 
+# Returns 0 when it installed NAME in this run (or would in a dry run). Callers
+# test the status, so errexit does not apply inside: every failure is explicit.
 install_github_deb() {
     local name="$1" repo="$2" deb_pattern="$3"
 
     if command -v "$name" &>/dev/null && (( ! FORCE )); then
         log_skip "Already installed: $name"
-        return 0
+        return 1
     fi
 
-    if ! command -v dpkg &>/dev/null; then
-        log_warn "dpkg not found, skipping $name (Debian/Ubuntu required)"
-        return 0
+    if ! command -v apt-get &>/dev/null; then
+        log_warn "apt-get not found, skipping $name (Debian/Ubuntu required)"
+        return 1
     fi
 
     local url
@@ -559,26 +564,31 @@ install_github_deb() {
     fi
 
     local tmp
-    tmp="$(mktemp --suffix=.deb)"
+    if ! tmp="$(mktemp --suffix=.deb)"; then
+        log_warn "Could not create a temp file for $name"
+        PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
+        return 1
+    fi
 
     log_info "Downloading $name from GitHub releases..."
     if ! curl -fsSL -o "$tmp" "$url"; then
         log_warn "Failed to download $name"
         PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
         rm -f "$tmp"
-        return 0
+        return 1
     fi
 
+    local rc=1
     log_info "Installing $name..."
-    if sudo dpkg -i "$tmp"; then
+    if sudo apt-get install -y -qq "$tmp"; then
         log_success "$name"
-    elif sudo apt-get install -f -y -qq; then
-        log_success "$name (deps resolved)"
+        rc=0
     else
         log_warn "Failed to install $name"
         PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
     fi
     rm -f "$tmp"
+    return "$rc"
 }
 
 install_local_packages() {
@@ -612,12 +622,39 @@ install_linux_extras() {
     # espanso runs on the Windows side under WSL
     [[ "$platform" != "linux" ]] && return 0
 
-    local espanso_deb="espanso-debian-x11-amd64.deb"
-    if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
-        espanso_deb="espanso-debian-wayland-amd64.deb"
+    local arch
+    if command -v dpkg &>/dev/null; then
+        arch="$(dpkg --print-architecture 2>/dev/null)" || arch="unknown"
+        if [[ "$arch" != "$ESPANSO_DEB_ARCH" ]]; then
+            log_skip "espanso: no .deb for $arch (upstream publishes $ESPANSO_DEB_ARCH only)"
+            return 0
+        fi
     fi
 
-    install_github_deb "espanso" "espanso/espanso" "$espanso_deb"
+    local espanso_deb="espanso-debian-x11-${ESPANSO_DEB_ARCH}.deb" wayland=0
+    if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
+        espanso_deb="espanso-debian-wayland-${ESPANSO_DEB_ARCH}.deb"
+        wayland=1
+    fi
+
+    local installed=0 espanso_bin caps
+    install_github_deb "espanso" "espanso/espanso" "$espanso_deb" && installed=1
+    (( wayland )) || return 0
+    if (( ! installed )); then
+        espanso_bin="$(command -v espanso)" || return 0
+        # getcap shows the flags as =p or +p depending on the libcap version
+        caps="$(getcap "$espanso_bin" 2>/dev/null)" || caps=""
+        [[ "$caps" == *"${ESPANSO_WAYLAND_CAP%+*}"* ]] && return 0
+    fi
+
+    if (( DRY_RUN )); then
+        log_info "[dry-run] Would grant espanso the capability $ESPANSO_WAYLAND_CAP"
+        return 0
+    fi
+    if ! sudo setcap "$ESPANSO_WAYLAND_CAP" "$(command -v espanso)"; then
+        log_warn "Could not grant espanso $ESPANSO_WAYLAND_CAP (run: sudo setcap \"$ESPANSO_WAYLAND_CAP\" \"\$(command -v espanso)\")"
+        PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
+    fi
 }
 
 install_packages() {
