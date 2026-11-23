@@ -1106,12 +1106,14 @@ run_doctor() {
             issues=$((issues + 1))
         fi
         local missing_tools
-        missing_tools="$(mise ls --missing 2>/dev/null)"
-        if [[ -z "$missing_tools" ]]; then
-            log_success "All tools installed"
-        else
+        if ! missing_tools="$(mise ls --missing 2>/dev/null)"; then
+            log_warn "mise ls --missing failed (run it to see why)"
+            issues=$((issues + 1))
+        elif [[ -n "$missing_tools" ]]; then
             log_warn "Missing tools (run: mise install)"
             issues=$((issues + 1))
+        else
+            log_success "All tools installed"
         fi
     fi
 
