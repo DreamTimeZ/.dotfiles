@@ -1,107 +1,84 @@
 # Setup Architecture
 
+Why the setup is bash and symlinks instead of a dotfile manager, and why package
+categories are chosen per machine. Steps, options, and flags: [Installation Guide](installation.md).
+
 ## Decision: Shell-based setup over chezmoi
 
-**Date:** 2026-03-28
+**2026-03-28.** Bash scripts, a declarative symlink map, and package lists by category
+replaced manual `ln -sf` commands. chezmoi, yadm, and GNU stow were rejected.
 
-## Context
+chezmoi's value does not apply here:
 
-The dotfiles system uses a two-repo architecture:
+- **No secrets in the repos, by design.** SSH keys, GPG subkeys, and API tokens are
+  created per machine and never shared, so a compromised machine costs one revoked key.
+  Encryption and password manager integration, chezmoi's strongest features, solve a
+  problem this setup avoids.
+- **No ciphertext beats any ciphertext.** An encrypted secret in a repo can be copied once
+  and attacked offline indefinitely, or opened after a later key leak.
+- **No extra dependency.** Linking (`setup.sh --link-only`, `link.sh`) needs only bash and
+  standard Unix tools. Homebrew is needed only for packages. chezmoi is one more binary that
+  must be installed first and keep working across OS upgrades.
+- **Drift detection buys little.** With one user per machine, drift is rare and usually
+  intentional. `chezmoi verify` pays off for fleets and teams.
 
-- `~/.dotfiles` (public) contains all tool configurations
-- `~/.dotfiles-private` (private) contains sensitive and machine-specific overrides
+Technical mismatches, not dealbreakers alone:
 
-Private configs are layered (`shared/` > `platform/` > `machines/hostname/`) and symlinked into the public repo's `local/` directories via `link.sh`. Public configs are then symlinked from `~/.dotfiles/` into `$HOME`.
+- **Copies, not symlinks.** chezmoi writes copies by default, and its symlink mode skips
+  directories, executables, private files, and templates. This repo links whole
+  directories (`karabiner`, `hammerspoon`) and scripts (`bin/`). Karabiner-Elements
+  rewrites its own `karabiner.json`, which would need `chezmoi re-add` after every change,
+  and a direct edit to a target makes the next `chezmoi apply` ask before overwriting it,
+  unless made through `chezmoi edit` or followed by `chezmoi add`.
+- **One source repo.** The private repo would become a `.chezmoiexternal` git-repo, whose
+  files chezmoi leaves out of `chezmoi diff` and lists as unmanaged.
+- **Layers become templates.** The private layers (below) turn into Go template
+  conditionals scattered across files.
+- **Mangled source tree.** `private_dot_ssh/config` instead of `ssh/config`.
+- **Big-bang migration.** Hard to do incrementally.
 
-The missing pieces were:
+The others:
 
-- Automated symlinks from public repo to `$HOME` (was manual `ln -sf` commands)
-- Package installation with category selection
-- System health checks
+- **yadm** makes `$HOME` itself the Git work tree: no `~/.dotfiles` directory, no second
+  repo for the private split, and platform or host variants as filename suffixes instead
+  of directory layers.
+- **GNU stow** mirrors each package's tree into the target, so `nvim/init.lua` would have
+  to move to `nvim/.config/nvim/init.lua`, and a rename such as `ghostty/config` to
+  `~/.config/ghostty/config.ghostty` is impossible. It has no platform filter and adds
+  nothing over `symlinks.conf`.
 
-## Alternatives Considered
+## Decision: Per-machine category selection, converge without pruning
 
-### chezmoi
+**2026-11-21.** `setup.sh` saves the chosen categories in `~/.config/dotfiles/categories`
+and every later run installs what that selection lacks. Giving categories replaces the
+saved choice. Nothing is ever uninstalled.
 
-**Advantages:**
+- **Lists in the repo, choice on the machine.** The package lists are shared across
+  machines, which subset a machine wants is not, so it stays out of both repos.
+- **A re-run must not widen a subset.** Without a saved choice, re-running the one-liner
+  or `setup.sh` would fall back to everything.
+- **No automatic cleanup.** Pruning what a deselected category lists would also remove
+  packages installed by hand.
 
-- One-command bootstrap (`chezmoi init --apply`)
-- Built-in encryption (age/gpg) and 17+ password manager integrations
-- Drift detection (`chezmoi verify`), diagnostics (`chezmoi doctor`)
-- `run_once_` scripts with state tracking
-- Atomic file writes
+## Structure
 
-**Why we did not adopt it:**
+### Two repos, private layers
 
-The decisive reasons (why chezmoi's value doesn't apply here):
+- `~/.dotfiles` (public): all tool configs.
+- `~/.dotfiles-private` (private): sensitive and machine-specific overrides.
 
-- **We don't store secrets in dotfiles, by design.** API tokens, SSH keys, and GPG keys are generated per-device, never shared across machines. This means revocation is granular (one compromised machine = one revoked key), blast radius is smaller, and the audit trail is clear. chezmoi's encryption and password manager integration are its strongest differentiators, but they solve a problem we deliberately avoid.
-- **Encrypted secrets are still less secure than no secrets.** Even with age/GPG encryption, the ciphertext is exfiltrable. If someone gets the repo, they have the encrypted blobs forever and can brute-force or wait for a key leak. Zero ciphertext beats any ciphertext. chezmoi's secret management is harm reduction for users who would otherwise commit tokens in plaintext. It is not a best practice.
-- **Extra dependency with no payoff.** Linking (`setup.sh --link-only` and `link.sh`) depends on bash, ln, find, hostname, uname (present on every Unix system, always will be). Homebrew is needed only for package installs. chezmoi adds a Go binary that must be installed before anything else can be set up (chicken-and-egg on a fresh machine). Fewer dependencies means less breakage surface across OS upgrades and a longer-lived setup.
-- **Drift detection is irrelevant here.** On a personal machine with one user, config drift is rare and usually intentional. `chezmoi verify` shines in fleet/team contexts, not single-user dotfiles.
+The private repo's `link.sh` links its files into the public repo's `local/` directories,
+layer by layer: `shared/` > `<platform>/` (`macos/`, `linux/`, or `wsl/`) >
+`machines/<hostname>/` (lowercase, if present). `setup.sh` runs it before installing
+packages and creating home symlinks, so private packages and overrides exist by then.
 
-Technical drawbacks (annoyances, not dealbreakers on their own):
+Layers add files, they do not override each other: `link.sh` skips a target that already
+exists, so a path present in two layers keeps the earlier layer's link. Only `--force`
+lets the later layer replace it.
 
-- **Paradigm mismatch.** chezmoi copies files instead of symlinking. Programs that modify their own config (espanso, karabiner) would need `chezmoi re-add` after every change. With symlinks, changes are instant.
-- **Two-repo is a second-class citizen.** chezmoi is designed for a single source repo. The public/private split works via `.chezmoiexternal` but files from the external repo show as "unmanaged" in `chezmoi diff`.
-- **Layering has no direct equivalent.** Our `shared/ > platform/ > machine/` layering is structural and implicit. In chezmoi, this becomes scattered Go template conditionals across individual files.
-- **Source directory is unreadable.** `private_dot_ssh/private_encrypted_id_rsa.tmpl` instead of `.ssh/id_rsa`. Formatters and linters (shellcheck, shfmt) choke on `{{ }}` template delimiters.
-- **Editing friction.** Must use `chezmoi edit` or remember to `chezmoi add` after editing. Forget, and `chezmoi apply` overwrites your changes.
-- **Big-bang migration.** The migration plan is 600+ lines. Hard to do incrementally.
+### Symlink chain
 
-**Zero performance difference.** Both approaches have zero shell startup overhead. chezmoi runs only at apply time. Our setup.sh runs only when invoked.
-
-### yadm
-
-**Why not:** yadm wraps Git around `$HOME` directly, which conflicts with the `~/.dotfiles/` directory pattern. Its alternates system (filename suffixes like `##os.linux`) is less expressive than our directory-based layering for the platform/machine override system. No external repo support for the public/private split.
-
-### GNU stow
-
-**Why not:** Directory structure doesn't match stow conventions (e.g., `nvim/init.lua` should map to `~/.config/nvim/init.lua`, not `~/nvim/init.lua`). Would need restructuring. Adds no value over the current symlink approach since it can't do templating, platform detection, or external repos.
-
-## Solution: Enhanced shell-based setup
-
-Two files and a directory fill the gaps without introducing new tool dependencies:
-
-### `setup.sh`
-
-Single entry point for bootstrapping and managing dotfiles.
-
-- Installs packages by category (interactive selection or flags)
-- Creates symlinks from declarative config
-- Runs `~/.dotfiles-private/link.sh` if the private repo exists
-- Post-install tasks: sheldon lock, TPM, neovim plugins, permissions
-- `--doctor` flag for health checks
-- `--dry-run`, `--unlink`, and `--force` (replaces existing files and symlinks at link targets, never directories, no backup)
-- Idempotent (safe to run repeatedly)
-
-### `symlinks.conf`
-
-Declarative symlink map. Each line: `source  target  [platform_filter]`.
-Plain text, auditable, no templating. Platform filter restricts to `macos`, `linux`, or `wsl`.
-
-### `packages/`
-
-Package lists by category (Brewfile format for brew, plain text for apt/cargo).
-Categories: `core`, `cli`, `dev`, `extra`, `macos`.
-`setup.sh` runs `brew bundle` for each selected category's Brewfile.
-
-## Flow
-
-```text
-Fresh machine:
-  1. git clone <public-repo> ~/.dotfiles
-  2. (optional) git clone <private-repo> ~/.dotfiles-private
-  3. cd ~/.dotfiles && ./setup.sh --all    # runs link.sh first if step 2 was done
-  A private repo cloned later needs another ./setup.sh --all.
-
-Existing machine:
-  ./setup.sh --link-only        # just refresh symlinks
-  ./setup.sh --doctor           # check health
-  ./setup.sh dev extra          # add more packages
-```
-
-## Symlink chain
+How a private override reaches `$HOME`, with the git identity as example:
 
 ```text
 ~/.dotfiles-private/shared/git/local/.gitconfig.local   [real file]
@@ -117,3 +94,12 @@ Existing machine:
          | included by
 ~/.gitconfig -> ~/.dotfiles/git/.gitconfig               [symlink]
 ```
+
+### Components
+
+| Path | Role |
+|------|------|
+| `bootstrap.sh` | Fresh machine: category selection, prerequisites, SSH key, Homebrew, clones, then `setup.sh` |
+| `setup.sh` | Packages, private linking, home symlinks, post-install, `--doctor`. Safe to re-run |
+| `symlinks.conf` | Home symlink map, one `source target [platform]` per line, platform `macos`, `linux`, or `wsl`. Plain text, no templating |
+| `packages/` | A Brewfile per category, plus `apt.txt` and `apt.extra.txt` for Linux and WSL |
