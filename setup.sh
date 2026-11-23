@@ -494,7 +494,7 @@ install_brew_packages() {
     fi
 
     log_info "Installing $category packages (brew)..."
-    brew bundle --file="$brewfile" || {
+    brew bundle --file="$brewfile" --no-upgrade || {
         log_warn "Some $category packages may have failed (continuing)"
         PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
     }
@@ -599,7 +599,7 @@ install_local_packages() {
         fi
 
         log_info "Installing local packages ($name)..."
-        brew bundle --file="$brewfile" || {
+        brew bundle --file="$brewfile" --no-upgrade || {
             log_warn "Some local packages may have failed (continuing)"
             PACKAGES_WARNED=$((PACKAGES_WARNED + 1))
         }
