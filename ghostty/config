@@ -15,9 +15,11 @@ clipboard-read = allow
 # Paste protection triggers on Espanso multi-line expansions.
 clipboard-paste-protection = false
 
-# Guards against accidental Cmd+Q.
-# Single lever for both Cmd+W and Cmd+Q, a quit-only confirmation does not exist (1.4.0).
-confirm-close-surface = always
+# Quit-only confirmation does not exist (1.4.0, discussion #4009), confirm-close-surface
+# would also prompt on Cmd+W. A double Cmd+Q acts as the confirmation instead.
+# The sequence has no timeout: any other key cancels it.
+confirm-close-surface = false
+keybind = super+q>super+q=quit
 
 keybind = page_up=scroll_page_up
 keybind = page_down=scroll_page_down
